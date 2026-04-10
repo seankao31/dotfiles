@@ -1,0 +1,5 @@
+node_modules/
+manifest.json
+*.svg
+*.png
+graph.dot
