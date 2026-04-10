@@ -21,13 +21,14 @@ design notes — is split between two top-level directories:
 
 ```
 .
+├── CLAUDE.md                     # repo-scoped instructions (loaded only when cwd is inside this repo)
 ├── dot_claude/                   # chezmoi source for ~/.claude/
 │   ├── settings.json.tmpl        # templated copy-mode file
 │   ├── symlink_CLAUDE.md.tmpl    # → agent-config/CLAUDE.md
 │   ├── symlink_hooks.tmpl        # → agent-config/hooks/
 │   └── symlink_skills.tmpl       # → agent-config/skills/
 └── agent-config/                 # authored content (plain files, chezmoi-ignored)
-    ├── CLAUDE.md                 # global Claude Code instructions
+    ├── CLAUDE.md                 # user-global Claude Code instructions (symlinked from ~/.claude/CLAUDE.md, loaded in every project)
     ├── hooks/                    # shell hook scripts
     ├── skills/                   # custom skills
     ├── superpowers-overrides/    # patched superpowers plugin SKILL.md files
@@ -37,6 +38,12 @@ design notes — is split between two top-level directories:
         │   └── superpowers-patches.md
         └── specs/
 ```
+
+The two `CLAUDE.md` files serve different scopes: `agent-config/CLAUDE.md` is
+user-global (symlinked into `~/.claude/`, applied in every Claude Code
+session), while the repo-root `CLAUDE.md` only activates when the cwd is
+inside this repo — use it for guidance that should not leak into unrelated
+projects (e.g., this repo's Linear projects).
 
 `agent-config/` is listed in `.chezmoiignore`, so chezmoi treats it as if it
 doesn't exist. Three templated symlinks under `dot_claude/` reach into it at
