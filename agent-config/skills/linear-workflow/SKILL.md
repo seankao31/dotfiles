@@ -135,6 +135,7 @@ Team, initiative, and project context lives in each project's CLAUDE.md under a 
 
 - Priority values: 0=None, 1=Urgent, 2=High, 3=Medium, 4=Low
 - Statuses use American spelling: "Canceled" (one 'l')
+- When canceling an issue, add a comment explaining why the work was decided against. "Why we didn't" is harder to reconstruct later than "why we did."
 - Relation types: `blocked-by`, `blocks`, `duplicate`, `related`
 - One issue = one branch = one PR — don't bundle unrelated work
 - For CLI command details, flags, and output formats: see the **linear-cli** plugin skill
