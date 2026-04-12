@@ -1,6 +1,8 @@
 ---
 name: codex-review-gate
 description: Use when at a workflow checkpoint that requires cross-model code review — finishing a development branch or completing subagent-driven development tasks
+model: sonnet
+allowed-tools: Bash, Read, Glob, Grep
 ---
 
 # Codex Review Gate

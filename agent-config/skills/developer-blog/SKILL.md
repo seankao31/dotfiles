@@ -1,6 +1,8 @@
 ---
 name: developer-blog
 description: Use when writing blog posts about a project, finding blogworthy content in a repo, creating dev logs, or when user says "blog", "write about", "what's blogworthy", or "dev log" while in a project directory
+effort: high
+allowed-tools: Read, Glob, Grep, Bash(git:*)
 ---
 
 > **If not already announced, announce: "Using developer-blog to [purpose]" before proceeding.**

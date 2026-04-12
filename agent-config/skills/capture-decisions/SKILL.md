@@ -1,6 +1,8 @@
 ---
 name: capture-decisions
 description: Use before ending a session where non-obvious implementation choices were made — whether through discussion, on-the-fly debugging, or automatic fixes applied by skills. Triggers on phrases like "wrap up", "end session", "document decisions", "capture what we did", "before we finish". Especially important after a plan execution session where unforeseen issues came up.
+model: sonnet
+allowed-tools: Read, Glob, Grep, Bash(git:*), Write, Edit
 ---
 
 > **If not already announced, announce: "Using capture-decisions to [purpose]" before proceeding.**

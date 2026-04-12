@@ -1,6 +1,8 @@
 ---
 name: prune-completed-docs
 description: Use when there are too many docs, docs feel stale, plans have been completed, or memory files are getting bloated. Triggers on phrases like "too many docs", "clean up docs", "compact documentation", "docs are getting unwieldy", "archive old plans", or when the user wants to reduce documentation sprawl.
+model: sonnet
+allowed-tools: Read, Glob, Grep, Bash(git:*), Edit, Write
 ---
 
 > **If not already announced, announce: "Using prune-completed-docs to [purpose]" before proceeding.**

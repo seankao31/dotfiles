@@ -9,6 +9,8 @@ description: >
   Trigger even for vague requests about test robustness — mutation testing is
   the right tool whenever someone questions whether their test suite would
   catch real regressions.
+model: sonnet
+allowed-tools: Read, Glob, Grep, Bash, Edit
 ---
 
 > **If not already announced, announce: "Using mutation-testing to [purpose]" before proceeding.**

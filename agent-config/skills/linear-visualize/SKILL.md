@@ -1,6 +1,8 @@
 ---
 name: linear-visualize
 description: Use when the user asks to visualize Linear dependencies, see what's blocking progress, generate a dependency graph, or understand issue relationships across projects or an initiative
+model: sonnet
+allowed-tools: Bash(linear:*), Bash(dot:*), Read, Write
 ---
 
 > **If not already announced, announce: "Using linear-visualize to generate dependency graph" before proceeding.**

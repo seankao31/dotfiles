@@ -1,6 +1,8 @@
 ---
 name: context-efficient-delegation
 description: Use when running commands whose output you won't reference again, when investigating issues, when searching/mining/parsing unfamiliar data, when verifying subagent work, or when at 40%+ context usage. Also use when orchestrating multi-task plans with subagents.
+model: sonnet
+allowed-tools: Agent, Read, Glob, Grep
 ---
 
 # Context-Efficient Delegation

@@ -1,6 +1,8 @@
 ---
 name: update-stale-docs
 description: Use when completing a feature, bug fix, or refactor — before the final commit or declaring work done. Ensures all documentation surfaces are checked for staleness and updated as part of the same unit of work.
+model: sonnet
+allowed-tools: Read, Glob, Grep, Bash(git:*), Edit
 ---
 
 > **If not already announced, announce: "Using update-stale-docs to [purpose]" before proceeding.**

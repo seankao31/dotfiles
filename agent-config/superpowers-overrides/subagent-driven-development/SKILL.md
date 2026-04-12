@@ -1,6 +1,8 @@
 ---
 name: subagent-driven-development
 description: Use when executing implementation plans with independent tasks in the current session
+model: sonnet
+allowed-tools: Agent, Read, Glob, Grep, Bash(git:*)
 ---
 
 # Subagent-Driven Development
