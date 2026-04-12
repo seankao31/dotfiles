@@ -58,6 +58,7 @@ YOU MUST write comments explaining WHAT and WHY, never temporal context or what 
 
 - If the project isn't in a git repo, STOP and ask permission to initialize one.
 - YOU MUST STOP and ask how to handle uncommitted changes or untracked files when starting work.  Suggest committing existing work first.
+- YOU MUST use a git worktree (via the `using-git-worktrees` skill or the Agent tool's `isolation: "worktree"` parameter) when starting work on a new task. This keeps the main working directory clean and avoids cross-task contamination. The only exception is trivial single-file changes (typo fixes, config tweaks) that won't interfere with other in-progress work.
 - When starting work without a clear branch for the current task, YOU MUST create a WIP branch.
 - YOU MUST TRACK All non-trivial changes in git.
 - YOU MUST commit frequently throughout the development process, even if your high-level tasks are not yet done. Commit your journal entries.
