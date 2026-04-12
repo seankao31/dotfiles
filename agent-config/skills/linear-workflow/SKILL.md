@@ -89,9 +89,12 @@ Don't set "In Progress" when merely filing an issue (Entry Point 2) or during ex
 
 When proposing a new issue, confirm these with the user:
 
-- **Title**: "Done when" format — describe the acceptance criteria, not a vague label
-  - Good: "Swap step handles unknown opponent cards with inline stats input"
-  - Bad: "Fix swap step"
+- **Title**: Short, direct statement of the task. Start with an imperative verb when the action is clear. Scannable at a glance in board/list views — no ceremony or prefixes.
+  - Good: "Add inline stats input to swap step for unknown opponent cards"
+  - Good: "Auto-approve compound Bash cd commands when target matches cwd"
+  - Bad: "Done when swap step handles unknown opponent cards" (front-loads ceremony)
+  - Bad: "Fix swap step" (too vague to act on)
+  - Bad: "[FE] Swap step improvements" (use labels, not title prefixes)
 - **Project**: Assign to the correct project (see Workspace Context below)
 - **Priority**: Bugs → Urgent. Features → Medium.
 - **Labels**: `Bug` for bugs. Keep minimal otherwise.
