@@ -1,6 +1,6 @@
 ---
 name: linear-workflow
-description: Use when creating, filing, starting, or completing work on a Linear issue. Triggers when the user asks to create or file an issue, after brainstorming when the user commits to building something, when beginning ad-hoc implementation, when the user mentions issues or tickets, when completing work that references a Linear issue (commits, merged branches, finished features), or when finishing-a-development-branch runs. Do NOT trigger at session start or for trivial changes.
+description: Use for ANY interaction with Linear — creating, updating, querying, or completing issues, changing status, adding comments, modifying fields, or any other issue modification. This is the single entry point for all Linear work. Triggers when the user asks to create or file an issue, after brainstorming when the user commits to building something, when beginning ad-hoc implementation, when the user mentions issues or tickets, when completing work that references a Linear issue (commits, merged branches, finished features), or when finishing-a-development-branch runs. Do NOT trigger at session start or for trivial changes.
 ---
 
 > **If not already announced, announce: "Using linear-workflow to [purpose]" before proceeding.**
