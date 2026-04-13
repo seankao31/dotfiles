@@ -54,6 +54,8 @@ const ISSUES_QUERY = `
           id
           identifier
           title
+          priority
+          priorityLabel
           state { name type color }
           relations {
             nodes {
@@ -188,6 +190,8 @@ export function buildManifest(source, projects, rawIssuesByProject) {
         identifier: issue.identifier,
         title: issue.title,
         label: makeLabel(issue.title),
+        priority: issue.priority ?? 0,
+        priorityLabel: issue.priorityLabel ?? 'No priority',
         projectId,
         status: {
           name: issue.state?.name || 'Unknown',

@@ -30,6 +30,20 @@ function lightenHex(hex, factor) {
   return `#${toHex(blend(r))}${toHex(blend(g))}${toHex(blend(b))}`
 }
 
+// ── Priority helpers ─────────────────────────────────────
+
+// Linear priority: 0=none, 1=urgent, 2=high, 3=medium, 4=low
+const PRIORITY_PREFIX = { 1: '!! ', 2: '! ' }
+const PRIORITY_PENWIDTH = { 1: 3, 2: 2, 3: 1, 4: 1, 0: 1 }
+
+function priorityPrefix(priority) {
+  return PRIORITY_PREFIX[priority] ?? ''
+}
+
+function priorityPenwidth(priority) {
+  return PRIORITY_PENWIDTH[priority] ?? 1
+}
+
 // ── Escape DOT strings ──────────────────────────────────
 
 function esc(str) {
@@ -116,12 +130,15 @@ export function generateDot(manifest) {
       const fontColor = isCompleted ? '#9CA3AF' : '#1F2937'
       const borderCol = isCompleted ? '#D1D5DB' : darkenHex(project.color, 0.7)
 
+      const prefix = priorityPrefix(issue.priority)
+      const penwidth = priorityPenwidth(issue.priority)
       lines.push(
         `    "${issue.id}" [` +
-          `label="${esc(issue.identifier)}\\n${esc(issue.label)}", ` +
+          `label="${esc(prefix + issue.identifier)}\\n${esc(issue.label)}", ` +
           `fillcolor="${fillColor}", ` +
           `color="${borderCol}", ` +
-          `fontcolor="${fontColor}"` +
+          `fontcolor="${fontColor}", ` +
+          `penwidth=${penwidth}` +
           `];`,
       )
     }
