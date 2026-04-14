@@ -139,7 +139,7 @@ compact context before starting execution.
 
 **Plan document header template** — the blockquote should read:
 ```
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Final review includes cross-model verification via codex-review-gate.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Each task includes cross-model verification via codex-review-gate after code quality review, with a final cross-task codex review before branch completion.
 ```
 (No mention of executing-plans.)
 
@@ -157,7 +157,7 @@ Then generate a self-contained execution prompt formatted as a fenced code block
 1. The plan file path (exact)
 2. The worktree/branch to work in (if applicable)
 3. Any context the executor needs that isn't in the plan itself (e.g., environment setup, relevant CLAUDE.md rules, key architectural decisions made during brainstorming)
-4. The execution instruction: "Read the plan at `<path>` and execute it using `superpowers:subagent-driven-development`. Use fresh subagents per task with two-stage review. Final review includes cross-model verification via `codex-review-gate`."
+4. The execution instruction: "Read the plan at `<path>` and execute it using `superpowers:subagent-driven-development`. Use fresh subagents per task with three-stage review (spec, quality, codex). Final review includes cross-task codex verification via `codex-review-gate`."
 
 **Do NOT proceed with execution in the current session.** The whole point is a clean context window.
 ```
@@ -167,42 +167,59 @@ Remove any "If Inline Execution chosen" block or executing-plans reference.
 
 ## 4. subagent-driven-development/SKILL.md
 
-**Intent:** After all tasks complete and the final Claude code reviewer approves, run
-codex-review-gate for cross-model review before invoking finishing-a-development-branch.
+**Intent:** Run codex-review-gate at two points: (1) after each task's code quality
+review passes, before marking the task complete, and (2) after all tasks complete and
+the final Claude code reviewer approves, before invoking finishing-a-development-branch.
 
 ### Changes
 
-**Process flow diagram:** Insert a node between "Dispatch final code reviewer" and
-"finishing-a-development-branch":
+**Description line:** Change "two-stage review" to "three-stage review (spec compliance,
+code quality, cross-model codex)".
+
+**Core principle line:** Change "two-stage review (spec then quality)" to "three-stage
+review (spec, quality, codex)".
+
+**"vs. Executing Plans" comparison:** Change "Two-stage review" to "Three-stage review
+after each task: spec compliance, code quality, then codex cross-model review".
+
+**Process flow diagram — per-task cluster:** Insert a node between "Code quality reviewer
+subagent approves?" and "Mark task complete in TodoWrite":
+```dot
+"Run codex-review-gate for task changes" [shape=box];
+
+"Code quality reviewer subagent approves?" -> "Run codex-review-gate for task changes" [label="yes"];
+"Run codex-review-gate for task changes" -> "Mark task complete in TodoWrite";
+```
+Remove the direct edge from code quality approval to mark complete.
+
+**Process flow diagram — final review:** Keep the existing nodes:
 ```dot
 "Run codex-review-gate for cross-model review" [shape=box];
 
 "Dispatch final code reviewer subagent for entire implementation" -> "Run codex-review-gate for cross-model review";
 "Run codex-review-gate for cross-model review" -> "Use superpowers:finishing-a-development-branch";
 ```
-Remove any direct edge from final reviewer to finishing-a-development-branch.
 
-**Example Workflow:** After the final reviewer output, before "Done":
-```
-[Run codex-review-gate for cross-model review]
-Codex review: No critical issues. One minor suggestion about naming.
-> Fix naming issue? [User: yes, fix it]
+**Example Workflow:** After each task's code quality reviewer approves, add a codex
+review step before marking complete. Keep the final codex review after all tasks.
 
-[Use superpowers:finishing-a-development-branch]
+**Quality gates (under Advantages):** Replace the single codex bullet with:
 ```
-
-**Quality gates (under Advantages):** Add:
-```
-- Cross-model codex review catches blind spots in Claude-only review
+- Per-task codex review catches cross-model blind spots early
+- Final codex review catches cross-task integration issues
 ```
 
-**Red Flags "Never" list:** Add after "Skip reviews":
-```
-- Skip codex-review-gate after final code review
-```
+**Cost:** Change "implementer + 2 reviewers per task" to "implementer + 2 reviewers +
+codex review" per task.
 
-**Integration section:** Add an "Invokes" subsection:
+**Red Flags "Never" list:**
+- Change "Skip reviews (spec compliance OR code quality)" to include per-task codex
+- Add: "Start codex review before code quality review is ✅ (wrong order)"
+- Change "Move to next task while either review has open issues" to "any review"
+- Keep: "Skip codex-review-gate after final code review"
+
+**Integration section:**
 ```
 **Invokes:**
-- **codex-review-gate** - Cross-model code review after final Claude review, before finishing branch
+- **codex-review-gate** - Cross-model code review after each task's code quality review passes, and again after final Claude review before finishing branch
 ```
