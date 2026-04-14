@@ -7,11 +7,11 @@ allowed-tools: Agent, Read, Glob, Grep, Bash(git:*)
 
 # Subagent-Driven Development
 
-Execute plan by dispatching fresh subagent per task, with two-stage review after each: spec compliance review first, then code quality review.
+Execute plan by dispatching fresh subagent per task, with three-stage review after each: spec compliance, code quality, then cross-model codex review.
 
 **Why subagents:** You delegate tasks to specialized agents with isolated context. By precisely crafting their instructions and context, you ensure they stay focused and succeed at their task. They should never inherit your session's context or history — you construct exactly what they need. This also preserves your own context for coordination work.
 
-**Core principle:** Fresh subagent per task + two-stage review (spec then quality) = high quality, fast iteration
+**Core principle:** Fresh subagent per task + three-stage review (spec, quality, codex) = high quality, fast iteration
 
 ## When to Use
 
@@ -36,7 +36,7 @@ digraph when_to_use {
 **vs. Executing Plans (parallel session):**
 - Same session (no context switch)
 - Fresh subagent per task (no context pollution)
-- Two-stage review after each task: spec compliance first, then code quality
+- Three-stage review after each task: spec compliance, code quality, then codex cross-model review
 - Faster iteration (no human-in-loop between tasks)
 
 ## The Process
@@ -57,6 +57,7 @@ digraph process {
         "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [shape=box];
         "Code quality reviewer subagent approves?" [shape=diamond];
         "Implementer subagent fixes quality issues" [shape=box];
+        "Run codex-review-gate for task changes" [shape=box];
         "Mark task complete in TodoWrite" [shape=box];
     }
 
@@ -79,7 +80,8 @@ digraph process {
     "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" -> "Code quality reviewer subagent approves?";
     "Code quality reviewer subagent approves?" -> "Implementer subagent fixes quality issues" [label="no"];
     "Implementer subagent fixes quality issues" -> "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [label="re-review"];
-    "Code quality reviewer subagent approves?" -> "Mark task complete in TodoWrite" [label="yes"];
+    "Code quality reviewer subagent approves?" -> "Run codex-review-gate for task changes" [label="yes"];
+    "Run codex-review-gate for task changes" -> "Mark task complete in TodoWrite";
     "Mark task complete in TodoWrite" -> "More tasks remain?";
     "More tasks remain?" -> "Dispatch implementer subagent (./implementer-prompt.md)" [label="yes"];
     "More tasks remain?" -> "Dispatch final code reviewer subagent for entire implementation" [label="no"];
@@ -158,6 +160,9 @@ Spec reviewer: ✅ Spec compliant - all requirements met, nothing extra
 [Get git SHAs, dispatch code quality reviewer]
 Code reviewer: Strengths: Good test coverage, clean. Issues: None. Approved.
 
+[Run codex-review-gate for task changes]
+Codex review: No issues found.
+
 [Mark Task 1 complete]
 
 Task 2: Recovery modes
@@ -191,6 +196,10 @@ Implementer: Extracted PROGRESS_INTERVAL constant
 
 [Code reviewer reviews again]
 Code reviewer: ✅ Approved
+
+[Run codex-review-gate for task changes]
+Codex review: One suggestion — verify/repair modes should validate input before processing.
+> Fix input validation? [User: yes, fix it]
 
 [Mark Task 2 complete]
 
@@ -228,14 +237,15 @@ Codex review: No critical issues. One minor suggestion about naming.
 
 **Quality gates:**
 - Self-review catches issues before handoff
-- Two-stage review: spec compliance, then code quality
+- Three-stage review: spec compliance, code quality, then cross-model codex
 - Review loops ensure fixes actually work
 - Spec compliance prevents over/under-building
 - Code quality ensures implementation is well-built
-- Cross-model codex review catches blind spots in Claude-only review
+- Per-task codex review catches cross-model blind spots early
+- Final codex review catches cross-task integration issues
 
 **Cost:**
-- More subagent invocations (implementer + 2 reviewers per task)
+- More invocations per task (implementer + 2 reviewers + codex review)
 - Controller does more prep work (extracting all tasks upfront)
 - Review loops add iterations
 - But catches issues early (cheaper than debugging later)
@@ -244,7 +254,7 @@ Codex review: No critical issues. One minor suggestion about naming.
 
 **Never:**
 - Start implementation on main/master branch without explicit user consent
-- Skip reviews (spec compliance OR code quality)
+- Skip reviews (spec compliance, code quality, OR per-task codex)
 - Skip codex-review-gate after final code review
 - Proceed with unfixed issues
 - Dispatch multiple implementation subagents in parallel (conflicts)
@@ -255,7 +265,8 @@ Codex review: No critical issues. One minor suggestion about naming.
 - Skip review loops (reviewer found issues = implementer fixes = review again)
 - Let implementer self-review replace actual review (both are needed)
 - **Start code quality review before spec compliance is ✅** (wrong order)
-- Move to next task while either review has open issues
+- **Start codex review before code quality review is ✅** (wrong order)
+- Move to next task while any review has open issues
 
 **If subagent asks questions:**
 - Answer clearly and completely
@@ -281,7 +292,7 @@ Codex review: No critical issues. One minor suggestion about naming.
 - **superpowers:finishing-a-development-branch** - Complete development after all tasks
 
 **Invokes:**
-- **codex-review-gate** - Cross-model code review after final Claude review, before finishing branch
+- **codex-review-gate** - Cross-model code review after each task's code quality review passes, and again after final Claude review before finishing branch
 
 **Subagents should use:**
 - **superpowers:test-driven-development** - Subagents follow TDD for each task
