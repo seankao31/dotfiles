@@ -43,9 +43,9 @@ Stop. Don't proceed to Step 2.
 
 **After tests pass, before presenting merge options:**
 
-Invoke `update-stale-docs` to ensure all documentation surfaces reflect the changes, then invoke `prune-completed-docs` to clean up any doc bloat.
+Invoke `update-stale-docs` to ensure all documentation surfaces reflect the changes, then invoke `capture-decisions` to record any non-obvious implementation choices made during the branch, then invoke `prune-completed-docs` to clean up any doc bloat.
 
-Do not proceed to Step 2 until both complete.
+Do not proceed to Step 2 until all three complete.
 
 ### Step 2: Determine Base Branch
 
@@ -208,6 +208,7 @@ git worktree remove <worktree-path>
 
 **Invokes:**
 - **update-stale-docs** - Documentation sweep before completion (Step 1b)
+- **capture-decisions** - Record non-obvious implementation choices (Step 1b)
 - **prune-completed-docs** - Doc bloat cleanup (Step 1b)
 - **linear-workflow** - Mark Linear issue as Done (after Option 1 or 2)
 
