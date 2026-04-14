@@ -51,7 +51,7 @@ This structure informs the task decomposition. Each task should produce self-con
 ```markdown
 # [Feature Name] Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Final review includes cross-model verification via codex-review-gate.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Each task includes cross-model verification via codex-review-gate after code quality review, with a final cross-task codex review before branch completion.
 
 **Goal:** [One sentence describing what this builds]
 
@@ -145,6 +145,6 @@ Then generate a self-contained execution prompt formatted as a fenced code block
 1. The plan file path (exact)
 2. The worktree/branch to work in (if applicable)
 3. Any context the executor needs that isn't in the plan itself (e.g., environment setup, relevant CLAUDE.md rules, key architectural decisions made during brainstorming)
-4. The execution instruction: "Read the plan at `<path>` and execute it using `superpowers:subagent-driven-development`. Use fresh subagents per task with two-stage review. Final review includes cross-model verification via `codex-review-gate`."
+4. The execution instruction: "Read the plan at `<path>` and execute it using `superpowers:subagent-driven-development`. Use fresh subagents per task with three-stage review (spec, quality, codex). Final review includes cross-task codex verification via `codex-review-gate`."
 
 **Do NOT proceed with execution in the current session.** The whole point is a clean context window.
