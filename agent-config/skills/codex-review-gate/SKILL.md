@@ -11,7 +11,8 @@ Cross-model code review using OpenAI Codex at workflow checkpoints.
 
 ## When to Use
 
-- **subagent-driven-development**: After all tasks complete and final Claude code review passes, before invoking finishing-a-development-branch
+- **subagent-driven-development (per-task)**: After each task's code quality review passes, before marking the task complete. Reviews the task's commits only.
+- **subagent-driven-development (final)**: After all tasks complete and final Claude code review passes, before invoking finishing-a-development-branch. Reviews the full branch diff.
 
 ## Step 1: Locate the Companion Script
 
