@@ -47,6 +47,7 @@ digraph process {
 
     subgraph cluster_per_task {
         label="Per Task";
+        "Record task base SHA (git rev-parse HEAD)" [shape=box];
         "Dispatch implementer subagent (./implementer-prompt.md)" [shape=box];
         "Implementer subagent asks questions?" [shape=diamond];
         "Answer questions, provide context" [shape=box];
@@ -57,7 +58,9 @@ digraph process {
         "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [shape=box];
         "Code quality reviewer subagent approves?" [shape=diamond];
         "Implementer subagent fixes quality issues" [shape=box];
-        "Run codex-review-gate for task changes" [shape=box];
+        "Run codex-review-gate for task changes (task base SHA)" [shape=box];
+        "Codex review approves task?" [shape=diamond];
+        "Implementer subagent fixes codex issues" [shape=box];
         "Mark task complete in TodoWrite" [shape=box];
     }
 
@@ -67,7 +70,8 @@ digraph process {
     "Run codex-review-gate for cross-model review" [shape=box];
     "Use superpowers:finishing-a-development-branch" [shape=box style=filled fillcolor=lightgreen];
 
-    "Read plan, extract all tasks with full text, note context, create TodoWrite" -> "Dispatch implementer subagent (./implementer-prompt.md)";
+    "Read plan, extract all tasks with full text, note context, create TodoWrite" -> "Record task base SHA (git rev-parse HEAD)";
+    "Record task base SHA (git rev-parse HEAD)" -> "Dispatch implementer subagent (./implementer-prompt.md)";
     "Dispatch implementer subagent (./implementer-prompt.md)" -> "Implementer subagent asks questions?";
     "Implementer subagent asks questions?" -> "Answer questions, provide context" [label="yes"];
     "Answer questions, provide context" -> "Dispatch implementer subagent (./implementer-prompt.md)";
@@ -80,8 +84,11 @@ digraph process {
     "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" -> "Code quality reviewer subagent approves?";
     "Code quality reviewer subagent approves?" -> "Implementer subagent fixes quality issues" [label="no"];
     "Implementer subagent fixes quality issues" -> "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [label="re-review"];
-    "Code quality reviewer subagent approves?" -> "Run codex-review-gate for task changes" [label="yes"];
-    "Run codex-review-gate for task changes" -> "Mark task complete in TodoWrite";
+    "Code quality reviewer subagent approves?" -> "Run codex-review-gate for task changes (task base SHA)" [label="yes"];
+    "Run codex-review-gate for task changes (task base SHA)" -> "Codex review approves task?";
+    "Codex review approves task?" -> "Implementer subagent fixes codex issues" [label="no"];
+    "Implementer subagent fixes codex issues" -> "Run codex-review-gate for task changes (task base SHA)" [label="re-review"];
+    "Codex review approves task?" -> "Mark task complete in TodoWrite" [label="yes"];
     "Mark task complete in TodoWrite" -> "More tasks remain?";
     "More tasks remain?" -> "Dispatch implementer subagent (./implementer-prompt.md)" [label="yes"];
     "More tasks remain?" -> "Dispatch final code reviewer subagent for entire implementation" [label="no"];
@@ -197,9 +204,14 @@ Implementer: Extracted PROGRESS_INTERVAL constant
 [Code reviewer reviews again]
 Code reviewer: ✅ Approved
 
-[Run codex-review-gate for task changes]
-Codex review: One suggestion — verify/repair modes should validate input before processing.
-> Fix input validation? [User: yes, fix it]
+[Run codex-review-gate for task changes (using task base SHA)]
+Codex review: ❌ Issues: verify/repair modes should validate input before processing.
+
+[Implementer fixes codex issues]
+Implementer: Added input validation for verify/repair modes
+
+[Re-run codex-review-gate for task changes]
+Codex review: ✅ No issues found.
 
 [Mark Task 2 complete]
 
