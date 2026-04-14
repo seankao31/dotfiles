@@ -182,13 +182,21 @@ review (spec, quality, codex)".
 **"vs. Executing Plans" comparison:** Change "Two-stage review" to "Three-stage review
 after each task: spec compliance, code quality, then codex cross-model review".
 
-**Process flow diagram — per-task cluster:** Insert a node between "Code quality reviewer
-subagent approves?" and "Mark task complete in TodoWrite":
+**Process flow diagram — per-task cluster:** Add a "Record task base SHA" node at the
+start of each task iteration, and a codex review loop between code quality approval and
+mark complete:
 ```dot
-"Run codex-review-gate for task changes" [shape=box];
+"Record task base SHA (git rev-parse HEAD)" [shape=box];
+"Run codex-review-gate for task changes (task base SHA)" [shape=box];
+"Codex review approves task?" [shape=diamond];
+"Implementer subagent fixes codex issues" [shape=box];
 
-"Code quality reviewer subagent approves?" -> "Run codex-review-gate for task changes" [label="yes"];
-"Run codex-review-gate for task changes" -> "Mark task complete in TodoWrite";
+"Record task base SHA (git rev-parse HEAD)" -> "Dispatch implementer subagent ...";
+"Code quality reviewer subagent approves?" -> "Run codex-review-gate for task changes (task base SHA)" [label="yes"];
+"Run codex-review-gate for task changes (task base SHA)" -> "Codex review approves task?";
+"Codex review approves task?" -> "Implementer subagent fixes codex issues" [label="no"];
+"Implementer subagent fixes codex issues" -> "Run codex-review-gate for task changes (task base SHA)" [label="re-review"];
+"Codex review approves task?" -> "Mark task complete in TodoWrite" [label="yes"];
 ```
 Remove the direct edge from code quality approval to mark complete.
 

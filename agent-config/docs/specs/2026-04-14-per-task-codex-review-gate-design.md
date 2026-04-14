@@ -18,19 +18,20 @@ implement → spec review → code quality review → codex review → mark comp
 ### Per-task codex review
 
 - Runs after code quality review approves, before marking the task complete
-- Reviews the task's commits only (not the full branch diff)
-- Follows the same STOP-and-ask-user protocol — no auto-fixing
+- Reviews the task's commits only (scoped via `--base <task-base-sha>`)
+- Controller records base SHA (`git rev-parse HEAD`) before each task starts
+- Findings feed into an implementer fix loop: codex finds issues → implementer fixes → codex re-reviews → repeat until clean (matching the spec compliance and code quality review loops)
 - Assesses whether adversarial review is warranted for that task
 
 ### Final codex review (unchanged)
 
-The whole-implementation codex review stays. It reviews the full branch diff for cross-task integration issues that per-task reviews cannot see.
+The whole-implementation codex review stays. It reviews the full branch diff for cross-task integration issues that per-task reviews cannot see. The final review keeps the ask-user protocol (STOP, present findings, ask which to fix) since there is no implementer subagent in scope.
 
 ## Files to change
 
 ### 1. `subagent-driven-development/SKILL.md`
 
-- **Process flow diagram:** Add `"Run codex-review-gate for task changes"` node between `"Code quality reviewer subagent approves?"` and `"Mark task complete in TodoWrite"` inside the `cluster_per_task` subgraph.
+- **Process flow diagram:** Add task base SHA recording at start of each task, and a codex review loop (with implementer fix cycle) between code quality approval and mark complete inside the `cluster_per_task` subgraph.
 - **Prose description (line 10):** Change "two-stage review" to "three-stage review (spec compliance, code quality, cross-model codex)".
 - **Example workflow:** Add a codex review step after each task's code quality review passes.
 - **Quality gates section:** Add per-task cross-model review.
@@ -43,6 +44,9 @@ The whole-implementation codex review stays. It reviews the full branch diff for
 - **"When to Use" section:** List both checkpoints:
   - Per-task: after code quality review passes within subagent-driven-development
   - Final: after all tasks complete and final Claude code review passes (existing)
+- **Step 2 (Run Standard Review):** Add per-task variant with `--base <task-base-sha>` flag
+- **Step 4 (Handle Results):** Differentiate per-task (auto-fix loop) from final (ask-user) behavior
+- **Red flags and common mistakes:** Reflect per-task auto-fix and `--base` flag requirements
 
 ### 3. `writing-plans/SKILL.md`
 
