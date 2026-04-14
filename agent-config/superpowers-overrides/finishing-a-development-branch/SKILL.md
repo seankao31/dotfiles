@@ -77,6 +77,20 @@ Which option?
 
 #### Option 1: Merge Locally
 
+**First, ask the user to choose a merge strategy:**
+
+```
+How should I merge this branch?
+
+a. Rebase and merge (default) — linear history, commits land individually
+b. Merge commit — preserves branch history, explicit merge commit
+c. Squash merge — single commit on target branch, branch history discarded
+```
+
+If the user just says "merge" or picks Option 1 without specifying, use **rebase and merge**.
+
+**Then execute the chosen strategy:**
+
 ```bash
 # Switch to base branch
 git checkout <base-branch>
@@ -84,8 +98,16 @@ git checkout <base-branch>
 # Pull latest
 git pull
 
-# Merge feature branch
-git merge <feature-branch>
+# Strategy (a): Rebase and merge
+git rebase <feature-branch>  # replays feature commits onto base
+# (result is already fast-forwarded)
+
+# Strategy (b): Merge commit
+git merge --no-ff <feature-branch>
+
+# Strategy (c): Squash merge
+git merge --squash <feature-branch>
+git commit
 
 # Verify tests on merged result
 <test command>

@@ -102,7 +102,23 @@ Update "If tests pass" to say "Continue to Step 1b" instead of "Continue to Step
 - Run documentation sweep before offering options (Step 1b)
 ```
 
-### 2b. Linear issue completion (after merge or PR)
+### 2b. Merge strategy choice (Option 1)
+
+**Intent:** When the user chooses Option 1 (merge locally), prompt for a merge strategy
+instead of assuming a default. Rebase-and-merge is the default if the user doesn't specify.
+
+**Replace** the existing Option 1 `git merge <feature-branch>` block with a strategy prompt:
+```
+How should I merge this branch?
+
+a. Rebase and merge (default) — linear history, commits land individually
+b. Merge commit — preserves branch history, explicit merge commit
+c. Squash merge — single commit on target branch, branch history discarded
+```
+
+Then execute the chosen strategy (`git rebase`, `git merge --no-ff`, or `git merge --squash`).
+
+### 2c. Linear issue completion (after merge or PR)
 
 **Intent:** After executing Option 1 (merge) or Option 2 (PR), invoke `linear-workflow`
 to mark the associated Linear issue as Done. This is the "done" half of issue lifecycle
@@ -114,7 +130,7 @@ Then: Mark Linear issue as Done (invoke `linear-workflow`), then cleanup worktre
 ```
 Options 3 and 4 do not mark issues as Done.
 
-### 2c. Integration section
+### 2d. Integration section
 
 **Intent:** Document the skills this file invokes. Remove `executing-plans` from "Called by"
 if present (we always use subagent-driven-development now).
