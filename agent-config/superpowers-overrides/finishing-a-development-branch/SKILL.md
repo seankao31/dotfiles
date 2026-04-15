@@ -11,7 +11,7 @@ allowed-tools: Bash, Read, Glob, Grep, Agent
 
 Guide completion of development work by presenting clear options and handling chosen workflow.
 
-**Core principle:** Verify tests → Present options → Execute choice → Clean up.
+**Core principle:** Verify tests → Clean history → Present options → Execute choice → Clean up.
 
 ## The Process
 
@@ -37,7 +37,17 @@ Stop. Don't proceed to Step 2.
 
 **If tests pass:** Continue to Step 1b.
 
-### Step 1b: Documentation Sweep
+### Step 1b: Clean Branch History
+
+**After tests pass, before the documentation sweep:**
+
+Invoke `clean-branch-history` to reorganize the branch's commits into clean, logical units. This must run before the documentation sweep because the doc sweep may reference specific commits.
+
+If the branch has only 1 commit, this step is skipped automatically.
+
+Do not proceed to Step 1c until complete.
+
+### Step 1c: Documentation Sweep
 
 **After tests pass, before presenting merge options:**
 
@@ -207,7 +217,8 @@ git worktree remove <worktree-path>
 
 **Always:**
 - Verify tests before offering options
-- Run documentation sweep before offering options (Step 1b)
+- Clean branch history before documentation sweep (Step 1b)
+- Run documentation sweep before offering options (Step 1c)
 - Present exactly 4 options
 - Get typed confirmation for Option 4
 - Clean up worktree for Options 1 & 4 only
@@ -218,9 +229,10 @@ git worktree remove <worktree-path>
 - **subagent-driven-development** (Step 7) - After all tasks complete
 
 **Invokes:**
-- **update-stale-docs** - Documentation sweep before completion (Step 1b)
-- **capture-decisions** - Record non-obvious implementation choices (Step 1b)
-- **prune-completed-docs** - Doc bloat cleanup (Step 1b)
+- **clean-branch-history** - Reorganize commits into clean logical units (Step 1b)
+- **update-stale-docs** - Documentation sweep before completion (Step 1c)
+- **capture-decisions** - Record non-obvious implementation choices (Step 1c)
+- **prune-completed-docs** - Doc bloat cleanup (Step 1c)
 - **linear-workflow** - Mark Linear issue as Done (after Option 1 or 2)
 
 **Pairs with:**

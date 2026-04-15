@@ -84,14 +84,35 @@ And adjust the writing-plans bullet to follow it naturally ("Then invoke...").
 **Intent:** Claude Code now shows skill invocation automatically in the status line.
 Remove the `**Announce at start:**` line.
 
-### 2b. Documentation sweep (between tests passing and merge options)
+### 2b. Clean branch history (between tests passing and documentation sweep)
 
-**Intent:** After tests pass (Step 1) and before determining the base branch (Step 2),
-run a mandatory documentation sweep.
+**Intent:** After tests pass (Step 1) and before the documentation sweep, invoke
+`clean-branch-history` to reorganize commits into clean logical units. This must
+run before the doc sweep because the doc sweep may reference specific commits.
 
 **New Step 1b** after "If tests pass":
 ```markdown
-### Step 1b: Documentation Sweep
+### Step 1b: Clean Branch History
+
+**After tests pass, before the documentation sweep:**
+
+Invoke `clean-branch-history` to reorganize the branch's commits into clean, logical units. This must run before the documentation sweep because the doc sweep may reference specific commits.
+
+If the branch has only 1 commit, this step is skipped automatically.
+
+Do not proceed to Step 1c until complete.
+```
+
+**Core principle line:** Change to "Verify tests → Clean history → Present options → Execute choice → Clean up."
+
+### 2c. Documentation sweep (between history cleanup and merge options)
+
+**Intent:** After history cleanup (Step 1b) and before determining the base branch (Step 2),
+run a mandatory documentation sweep. (Renumbered from Step 1b to Step 1c.)
+
+**Step 1c** (previously Step 1b):
+```markdown
+### Step 1c: Documentation Sweep
 
 **After tests pass, before presenting merge options:**
 
@@ -103,10 +124,11 @@ Update "If tests pass" to say "Continue to Step 1b" instead of "Continue to Step
 
 **Red Flags "Always" list:** Add:
 ```
-- Run documentation sweep before offering options (Step 1b)
+- Clean branch history before documentation sweep (Step 1b)
+- Run documentation sweep before offering options (Step 1c)
 ```
 
-### 2c. Merge strategy choice (inlined into Step 3)
+### 2d. Merge strategy choice (inlined into Step 3)
 
 **Intent:** Present merge strategy sub-options under Option 1 in the same prompt as the
 four main options, so the user can answer in one shot (e.g. "1a") instead of two questions.
@@ -123,7 +145,7 @@ Rebase-and-merge is the default if the user picks "1" without a sub-option.
 **Option 1 in Step 4:** Remove the separate strategy prompt. Replace with:
 "Execute the merge strategy chosen in Step 3 (default: rebase and merge)."
 
-### 2d. Linear issue completion (after merge or PR)
+### 2e. Linear issue completion (after merge or PR)
 
 **Intent:** After executing Option 1 (merge) or Option 2 (PR), invoke `linear-workflow`
 to mark the associated Linear issue as Done. This is the "done" half of issue lifecycle
@@ -135,16 +157,17 @@ Then: Mark Linear issue as Done (invoke `linear-workflow`), then cleanup worktre
 ```
 Options 3 and 4 do not mark issues as Done.
 
-### 2e. Integration section
+### 2f. Integration section
 
 **Intent:** Document the skills this file invokes. Remove `executing-plans` from "Called by"
 if present (we always use subagent-driven-development now).
 
 ```markdown
 **Invokes:**
-- **update-stale-docs** - Documentation sweep before completion (Step 1b)
-- **capture-decisions** - Record non-obvious implementation choices (Step 1b)
-- **prune-completed-docs** - Doc bloat cleanup (Step 1b)
+- **clean-branch-history** - Reorganize commits into clean logical units (Step 1b)
+- **update-stale-docs** - Documentation sweep before completion (Step 1c)
+- **capture-decisions** - Record non-obvious implementation choices (Step 1c)
+- **prune-completed-docs** - Doc bloat cleanup (Step 1c)
 - **linear-workflow** - Mark Linear issue as Done (after Option 1 or 2)
 ```
 
