@@ -91,15 +91,15 @@ Which option?
 **Execute the merge strategy chosen in Step 3 (default: rebase and merge):**
 
 ```bash
-# Switch to base branch
+# Pull latest base branch
 git checkout <base-branch>
-
-# Pull latest
 git pull
 
 # Strategy (a): Rebase and merge
-git rebase <feature-branch>  # replays feature commits onto base
-# (result is already fast-forwarded)
+git checkout <feature-branch>
+git rebase <base-branch>       # replays feature commits onto base
+git checkout <base-branch>
+git merge --ff-only <feature-branch>
 
 # Strategy (b): Merge commit
 git merge --no-ff <feature-branch>
