@@ -1,3 +1,16 @@
+## Superpowers Overrides
+
+Custom overrides of upstream superpowers plugin skills live in
+`agent-config/superpowers-overrides/<skill-name>/SKILL.md`. Each is a
+complete copy of the upstream file with our changes applied.
+
+When modifying an override:
+1. Edit the override file in `agent-config/superpowers-overrides/`
+2. Update the patch description in `agent-config/docs/playbooks/superpowers-patches.md`
+3. If adding a new override, also symlink it into the plugin cache and add it to the symlink script in the patches doc
+
+The patches doc describes **what makes each override different from upstream** so changes can be re-applied when the plugin updates.
+
 ## Linear
 
 Team: **Engineering (ENG)**
