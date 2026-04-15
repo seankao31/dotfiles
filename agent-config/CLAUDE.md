@@ -82,6 +82,6 @@ IMPORTANT: When changing code behavior, proactively find and update all related 
 ## Reviewing code
 
 Use Codex only for reviews, never for task execution or rescue.
-Code review via `codex-review-gate` is mandatory before any work is declared complete - this is enforced in `finishing-a-development-branch` Step 1b.
+Code review via `codex-review-gate` is mandatory before any work is declared complete - this is enforced in `finishing-a-development-branch` Step 1c.
 Always assess whether adversarial review is warranted in addition to standard review.
 
