@@ -13,6 +13,7 @@ symlinked into the plugin cache:
 
 - `superpowers-overrides/brainstorming/SKILL.md`
 - `superpowers-overrides/finishing-a-development-branch/SKILL.md`
+- `superpowers-overrides/using-superpowers/SKILL.md`
 - `superpowers-overrides/writing-plans/SKILL.md`
 - `superpowers-overrides/subagent-driven-development/SKILL.md`
 
@@ -29,7 +30,7 @@ files, not symlinks. To re-apply:
    PLUGIN=~/.claude/plugins/cache/claude-plugins-official/superpowers/$VERSION/skills
    OVERRIDES=~/.local/share/chezmoi/agent-config/superpowers-overrides
 
-   for skill in brainstorming finishing-a-development-branch writing-plans subagent-driven-development; do
+   for skill in brainstorming finishing-a-development-branch using-superpowers writing-plans subagent-driven-development; do
      ln -sf "$OVERRIDES/$skill/SKILL.md" "$PLUGIN/$skill/SKILL.md"
    done
    ```
@@ -78,9 +79,12 @@ And adjust the writing-plans bullet to follow it naturally ("Then invoke...").
 
 ## 2. finishing-a-development-branch/SKILL.md
 
-Three changes to this file, all serving lifecycle management:
+### 2a. Remove skill announcement
 
-### 2a. Documentation sweep (between tests passing and merge options)
+**Intent:** Claude Code now shows skill invocation automatically in the status line.
+Remove the `**Announce at start:**` line.
+
+### 2b. Documentation sweep (between tests passing and merge options)
 
 **Intent:** After tests pass (Step 1) and before determining the base branch (Step 2),
 run a mandatory documentation sweep.
@@ -102,23 +106,24 @@ Update "If tests pass" to say "Continue to Step 1b" instead of "Continue to Step
 - Run documentation sweep before offering options (Step 1b)
 ```
 
-### 2b. Merge strategy choice (Option 1)
+### 2c. Merge strategy choice (inlined into Step 3)
 
-**Intent:** When the user chooses Option 1 (merge locally), prompt for a merge strategy
-instead of assuming a default. Rebase-and-merge is the default if the user doesn't specify.
+**Intent:** Present merge strategy sub-options under Option 1 in the same prompt as the
+four main options, so the user can answer in one shot (e.g. "1a") instead of two questions.
+Rebase-and-merge is the default if the user picks "1" without a sub-option.
 
-**Replace** the existing Option 1 `git merge <feature-branch>` block with a strategy prompt:
+**Step 3 options block:** Nest strategy choices under Option 1:
 ```
-How should I merge this branch?
-
-a. Rebase and merge (default) — linear history, commits land individually
-b. Merge commit — preserves branch history, explicit merge commit
-c. Squash merge — single commit on target branch, branch history discarded
+1. Merge back to <base-branch> locally
+   a. Rebase and merge (default) — linear history, commits land individually
+   b. Merge commit — preserves branch history, explicit merge commit
+   c. Squash merge — single commit on target branch, branch history discarded
 ```
 
-Then execute the chosen strategy (`git rebase`, `git merge --no-ff`, or `git merge --squash`).
+**Option 1 in Step 4:** Remove the separate strategy prompt. Replace with:
+"Execute the merge strategy chosen in Step 3 (default: rebase and merge)."
 
-### 2c. Linear issue completion (after merge or PR)
+### 2d. Linear issue completion (after merge or PR)
 
 **Intent:** After executing Option 1 (merge) or Option 2 (PR), invoke `linear-workflow`
 to mark the associated Linear issue as Done. This is the "done" half of issue lifecycle
@@ -130,7 +135,7 @@ Then: Mark Linear issue as Done (invoke `linear-workflow`), then cleanup worktre
 ```
 Options 3 and 4 do not mark issues as Done.
 
-### 2d. Integration section
+### 2e. Integration section
 
 **Intent:** Document the skills this file invokes. Remove `executing-plans` from "Called by"
 if present (we always use subagent-driven-development now).
@@ -147,7 +152,30 @@ In "Called by," keep only `subagent-driven-development` (remove `executing-plans
 
 ---
 
-## 3. writing-plans/SKILL.md
+## 3. using-superpowers/SKILL.md
+
+**Intent:** Remove the "Announce" node from the skill invocation flowchart. Claude Code
+now shows `Skill(name)` automatically in the status line, making manual announcement
+redundant.
+
+### Changes
+
+**Process flow diagram (dot graph):** Remove the `"Announce: 'Using [skill] to [purpose]'"` node
+and its edges. Connect `"Invoke Skill tool"` directly to `"Has checklist?"`:
+```dot
+"Invoke Skill tool" -> "Has checklist?";
+```
+
+---
+
+## 4. writing-plans/SKILL.md
+
+### 4a. Remove skill announcement
+
+**Intent:** Claude Code now shows skill invocation automatically in the status line.
+Remove the `**Announce at start:**` line.
+
+### 4b. Execution handoff and codex review
 
 **Intent:** Always use subagent-driven-development for plan execution (remove any
 two-option handoff that offers executing-plans as an alternative), ensure the plan
@@ -182,7 +210,7 @@ Remove any "If Inline Execution chosen" block or executing-plans reference.
 
 ---
 
-## 4. subagent-driven-development/SKILL.md
+## 5. subagent-driven-development/SKILL.md
 
 **Intent:** Run codex-review-gate at two points: (1) after each task's code quality
 review passes, before marking the task complete, and (2) after all tasks complete and
