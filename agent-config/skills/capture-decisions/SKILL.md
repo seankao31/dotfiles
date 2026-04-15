@@ -5,8 +5,6 @@ model: sonnet
 allowed-tools: Read, Glob, Grep, Bash(git:*), Write, Edit
 ---
 
-> **If not already announced, announce: "Using capture-decisions to [purpose]" before proceeding.**
-
 # Capture Decisions
 
 ## Overview

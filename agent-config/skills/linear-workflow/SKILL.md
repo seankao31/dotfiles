@@ -5,8 +5,6 @@ model: sonnet
 allowed-tools: Bash(linear:*), Read, Glob, Grep
 ---
 
-> **If not already announced, announce: "Using linear-workflow to [purpose]" before proceeding.**
-
 # Linear Workflow
 
 Every non-trivial feature or bug fix should have a corresponding Linear issue before code is written. This skill ensures issues are created and updated at the right moments.

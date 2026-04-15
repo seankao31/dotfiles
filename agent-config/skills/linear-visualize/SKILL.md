@@ -5,8 +5,6 @@ model: sonnet
 allowed-tools: Bash(linear:*), Bash(dot:*), Read, Write
 ---
 
-> **If not already announced, announce: "Using linear-visualize to generate dependency graph" before proceeding.**
-
 # Linear Dependency Visualization
 
 Generate Graphviz dependency graphs from Linear issues. Read-only — run without confirmation.

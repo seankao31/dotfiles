@@ -5,8 +5,6 @@ model: sonnet
 allowed-tools: Read, Glob, Grep, Bash(git:*), Edit, Write
 ---
 
-> **If not already announced, announce: "Using prune-completed-docs to [purpose]" before proceeding.**
-
 # Prune Completed Docs
 
 ## Overview

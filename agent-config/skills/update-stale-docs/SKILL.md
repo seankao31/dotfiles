@@ -5,8 +5,6 @@ model: sonnet
 allowed-tools: Read, Glob, Grep, Bash(git:*), Edit
 ---
 
-> **If not already announced, announce: "Using update-stale-docs to [purpose]" before proceeding.**
-
 # Update Stale Docs
 
 ## Overview

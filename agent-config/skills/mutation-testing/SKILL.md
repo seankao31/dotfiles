@@ -13,8 +13,6 @@ model: sonnet
 allowed-tools: Read, Glob, Grep, Bash, Edit
 ---
 
-> **If not already announced, announce: "Using mutation-testing to [purpose]" before proceeding.**
-
 # Mutation Testing
 
 Mutation testing answers: "If I introduced a bug, would my tests catch it?"

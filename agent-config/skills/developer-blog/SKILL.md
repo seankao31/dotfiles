@@ -5,8 +5,6 @@ effort: high
 allowed-tools: Read, Glob, Grep, Bash(git:*)
 ---
 
-> **If not already announced, announce: "Using developer-blog to [purpose]" before proceeding.**
-
 # Developer Blog
 
 Mine a project repo for blogworthy content and shape it into structured outlines with drafted technical sections and narrative prompts for the author to complete.
