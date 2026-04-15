@@ -58,12 +58,15 @@ Or ask: "This branch split from main - is that correct?"
 
 ### Step 3: Present Options
 
-Present exactly these 4 options:
+Present exactly these options:
 
 ```
 Implementation complete. What would you like to do?
 
 1. Merge back to <base-branch> locally
+   a. Rebase and merge (default) — linear history, commits land individually
+   b. Merge commit — preserves branch history, explicit merge commit
+   c. Squash merge — single commit on target branch, branch history discarded
 2. Push and create a Pull Request
 3. Keep the branch as-is (I'll handle it later)
 4. Discard this work
@@ -71,25 +74,13 @@ Implementation complete. What would you like to do?
 Which option?
 ```
 
-**Don't add explanation** - keep options concise.
+**Don't add explanation** beyond what's shown. If the user says "1" without a sub-option, use **1a (rebase and merge)**.
 
 ### Step 4: Execute Choice
 
 #### Option 1: Merge Locally
 
-**First, ask the user to choose a merge strategy:**
-
-```
-How should I merge this branch?
-
-a. Rebase and merge (default) — linear history, commits land individually
-b. Merge commit — preserves branch history, explicit merge commit
-c. Squash merge — single commit on target branch, branch history discarded
-```
-
-If the user just says "merge" or picks Option 1 without specifying, use **rebase and merge**.
-
-**Then execute the chosen strategy:**
+**Execute the merge strategy chosen in Step 3 (default: rebase and merge):**
 
 ```bash
 # Switch to base branch
