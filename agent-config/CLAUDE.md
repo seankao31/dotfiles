@@ -62,6 +62,7 @@ YOU MUST write comments explaining WHAT and WHY, never temporal context or what 
 - When starting work without a clear branch for the current task, YOU MUST create a WIP branch.
 - YOU MUST TRACK All non-trivial changes in git.
 - YOU MUST commit frequently throughout the development process, even if your high-level tasks are not yet done. Commit your journal entries.
+- NEVER commit implementation plans or other ephemeral working documents (e.g. plan.md files created by the writing-plans skill). These are temporary scaffolding, not deliverables.
 - NEVER SKIP, EVADE OR DISABLE A PRE-COMMIT HOOK
 - NEVER use `git add -A` unless you've just done a `git status` - Don't add random test files to the repo.
 
