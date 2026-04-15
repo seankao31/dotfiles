@@ -39,7 +39,7 @@ Read each file to determine its category:
 | Type | Keep if | Action when done |
 |------|---------|-----------------|
 | Implementation plan | Has open `- [ ]` tasks | Delete — task checklist, code is the ground truth |
-| Design spec | Contains reasoning not recoverable from reading the code | Update with implementation lessons, promote to decision record. Delete if the code is self-documenting for that feature. |
+| Design spec | Default KEEP. Read full body for trade-offs, constraints, rejected alternatives. | Only delete if purely an implementation checklist with zero reasoning. Optionally promote to decision record. |
 | Decision record | Captures WHY a decision was made | Keep unless pure duplication of MEMORY.md |
 | Memory file | Still accurate and relevant | Delete if stale, merged into MEMORY.md, or wrong |
 
@@ -47,7 +47,18 @@ Read each file to determine its category:
 
 **Plans** are the easiest call: if every `- [ ]` checkbox is ticked, or if the feature shipped and is confirmed working, the plan has served its purpose. Delete it — the implemented code is the ground truth now.
 
-**Design specs** capture motivation, scope decisions, and design rationale. When a spec's implementation is complete, ask: **does this spec contain reasoning someone couldn't reconstruct from reading the code?** Non-obvious trade-offs, rejected alternatives, lessons learned during implementation, motivation behind surprising choices — these are worth preserving. If the answer is yes, update the spec with implementation lessons (threshold changes, approach pivots) and move it to `docs/decisions/`. Strip task checklists and implementation details that are now in code; keep the *why* and *what we learned*. If the code is self-documenting for that feature, delete the spec.
+**Design specs default to KEEP.** Most specs contain non-obvious reasoning — trade-offs, rejected alternatives, API constraints discovered during implementation, scope decisions. This reasoning is often embedded in the body, not the headings. A shallow scan of titles will systematically miss it.
+
+Before proposing to delete a spec, you MUST read the full file and look for:
+- Trade-offs: "we chose X over Y because..."
+- Rejected alternatives: "considered Z but..."
+- API/library constraints: "this approach doesn't work because..."
+- Scope decisions: "deliberately deferred X" or "out of scope because..."
+- Future context: follow-up tickets, known limitations, planned evolution
+
+**Only delete a spec when it is purely an implementation checklist with no reasoning whatsoever** — no "why", no constraints, no alternatives, just steps. This is rare. If in doubt, keep it.
+
+When a spec IS worth keeping and its implementation is complete, you may optionally promote it to `docs/decisions/` — strip implementation details that are now in code; keep the *why* and *what we learned*.
 
 **Decision records** (ADRs) justify WHY things are the way they are. These have more lasting value than plans. Keep them unless the content is *verbatim* in MEMORY.md already. If it's summarized there, keep the full ADR for depth.
 
@@ -103,7 +114,11 @@ After approval, execute changes in this order:
 
 ## Common Mistakes
 
-**Auto-deleting specs along with plans** — Plans are task checklists; specs are design docs. Before deleting a spec, ask: does it contain reasoning not recoverable from the code? Non-obvious trade-offs, rejected alternatives, lessons learned — these are worth promoting to a decision record. Only delete if the code is genuinely self-documenting for that feature.
+**Shallow-scanning specs and proposing bulk deletion** — The most common failure mode. A title like "column tooltips design" sounds trivial, but the spec may document that DaisyUI's built-in tooltip gets clipped inside overflow containers, forcing an architectural pivot to @floating-ui. You cannot assess a spec from its title or headings alone. Read the full body before classifying. When in doubt, keep.
+
+**Delegating spec reads to a fast subagent** — Subagents optimize for speed and will skim rather than read carefully. Design reasoning is often a single sentence buried in a paragraph of implementation detail. If you delegate the survey, verify the subagent's DELETE recommendations by re-reading those files yourself before proposing them to the user.
+
+**Auto-deleting specs along with plans** — Plans are task checklists; specs are design docs. Plans can be deleted mechanically (all checkboxes ticked → delete). Specs require judgment — read first, always.
 
 **Deleting ADRs that look "done"** — ADRs aren't task lists. Their value is the preserved reasoning, not their completeness. Only delete if MEMORY.md already captures the essence.
 
