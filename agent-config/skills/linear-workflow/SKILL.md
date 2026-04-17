@@ -63,7 +63,10 @@ After brainstorming completes and the user commits to building, or when starting
 1. **Check for duplicates** (see "Duplicate Prevention" below)
 2. If existing issue found → fetch details with `linear issue view ID --json`, note the branch name and acceptance criteria
 3. If no match → suggest creating one. **Confirm all details with the user before running any CLI command.**
-4. **Move the issue to "In Progress"** — but only if it isn't already at or beyond that state. Check the current state first via `linear issue view ID --json` and transition only when the state is `Triage`, `Backlog`, `Todo`, or `Approved`. Never regress a later state (`In Progress`, `In Review`, `Done`) back to `In Progress`: another actor (e.g., the spec-queue orchestrator, or Sean returning to a session whose issue is already In Review) may have already moved it forward.
+4. **Move the issue to "In Progress"** with `linear issue update ID --state "In Progress"` — but read the current state first via `linear issue view ID --json` and branch on it:
+   - Already `In Progress`: skip the write. Another actor (e.g., the spec-queue orchestrator) may have pre-transitioned at dispatch; a second write is unnecessary noise.
+   - `Triage`, `Backlog`, `Todo`, `Approved`, or `In Review`: transition to `In Progress`. The `In Review` case is legitimate — when resuming implementation to address review feedback, the board must reflect that code is changing again (ralph v2's DAG rule treats `In Review` as resolved-enough-to-build-on, so downstream dispatch races if state lags behind reality).
+   - `Done` or `Canceled`: stop and ask the user. These are terminal; reopening warrants explicit confirmation.
 
 Then continue to writing-plans or TDD as normal.
 
@@ -85,7 +88,7 @@ Two transitions land here, each with its own trigger:
 
 If implementation deviated from acceptance criteria, update the issue description too.
 
-These transitions are independent of how the work was integrated. Don't wait for a branch-closing skill if the work is already merged to main. As with Entry Point 1, do not regress state: check the current state first and only transition forward.
+These transitions are independent of how the work was integrated. Don't wait for a branch-closing skill if the work is already merged to main. Before writing, check the current state and skip if it already matches the target — the transitions here go toward terminal states and repeated writes are just noise.
 
 ### Active Work Status
 
