@@ -69,18 +69,18 @@ for the re-apply procedure.
 ### Maintenance
 
 **`settings.json` drift.** Claude Code rewrites `~/.claude/settings.json`
-during normal use (enabling plugins, changing models, etc.). Periodically
-reconcile the source with the destination:
+during normal use (enabling plugins, changing models, etc.). Because the
+source is a template (`settings.json.tmpl`), `chezmoi re-add` refuses to
+overwrite it — templates are silently skipped. Reconcile manually:
 
 ```bash
-chezmoi re-add ~/.claude/settings.json
-cd ~/.local/share/chezmoi
-git diff dot_claude/settings.json.tmpl
+chezmoi diff ~/.claude/settings.json      # inspect what Claude Code changed
+chezmoi edit ~/.claude/settings.json      # opens the .tmpl source in $EDITOR
+chezmoi diff ~/.claude/settings.json      # confirm no drift remains
 ```
 
-`re-add` flattens any template expressions in the round-trip, so after the
-diff, re-introduce `{{ .chezmoi.homeDir }}` (or other template syntax) for
-anything that should stay portable before committing.
+Apply the target's changes to the template by hand, preserving existing
+template expressions (e.g. `{{ .chezmoi.homeDir }}`).
 
 **Superpowers plugin update.** When the superpowers plugin updates, merge
 upstream changes into the override files and recreate the plugin-cache
