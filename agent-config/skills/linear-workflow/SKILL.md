@@ -101,6 +101,7 @@ When proposing a new issue, confirm these with the user:
 - **Assignee**: Never set. Sean assigns issues to himself manually when he's ready to pick them up.
 - **Status**: "Todo" if the work is actionable now — clear enough to implement and reasonably scoped. "Backlog" if it's large, vague, or not yet thought through. Never "Triage" — that's for external intake, not deliberate dev work.
 - **Dependencies**: If the new issue is blocked by another issue, set `blocked-by` at creation time via `linear issue relation add`. When creating multiple related issues in a batch, set dependencies between them immediately — don't leave it as a follow-up.
+- **Follow-ups**: When filing an issue that came out of work on another issue (discovered during implementation, review, testing, or scope-cut from a parent issue), link it to the originating issue at creation time via `linear issue relation add`. Pick the relation that reflects the actual relationship — `blocked-by`/`blocks` when there's a real sequencing dependency, `related` otherwise. The link makes provenance visible; future readers shouldn't have to reconstruct where a follow-up came from.
 
 After creation, use Linear's auto-generated branch name (e.g. `eng-30-description-slug`) for `git checkout -b`. The `linear issue start` command does this automatically — it creates the branch and marks the issue as started.
 
