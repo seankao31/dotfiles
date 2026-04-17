@@ -36,8 +36,10 @@ digraph linear_flow {
     inprogress [label="Update issue → In Progress"];
     cont [label="Continue → writing-plans / TDD" shape=doublecircle];
     filed [label="Issue filed\n(no implementation)" shape=doublecircle];
-    workcomplete [label="work complete\n(commit, merge, or\nuser confirms done)"];
+    handoff [label="implementation done,\nready for review\n(e.g. prepare-for-review)"];
+    workcomplete [label="work merged\n(final commit, branch close,\nor user confirms done)"];
     finish [label="finishing-a-development-branch"];
+    inreview [label="Update issue → In Review"];
     done [label="Update issue → Done"];
 
     brainstorm -> exists;
@@ -48,6 +50,7 @@ digraph linear_flow {
     inprogress -> cont;
     fileonly -> create;
     create -> filed [label="no impl requested"];
+    handoff -> inreview;
     workcomplete -> done;
     finish -> done;
 }
@@ -60,7 +63,7 @@ After brainstorming completes and the user commits to building, or when starting
 1. **Check for duplicates** (see "Duplicate Prevention" below)
 2. If existing issue found → fetch details with `linear issue view ID --json`, note the branch name and acceptance criteria
 3. If no match → suggest creating one. **Confirm all details with the user before running any CLI command.**
-4. **Update the issue status to "In Progress"** with `linear issue update ID --state "In Progress"`.
+4. **Move the issue to "In Progress"** — but only if it isn't already at or beyond that state. Check the current state first via `linear issue view ID --json` and transition only when the state is `Triage`, `Backlog`, `Todo`, or `Approved`. Never regress a later state (`In Progress`, `In Review`, `Done`) back to `In Progress`: another actor (e.g., the spec-queue orchestrator, or Sean returning to a session whose issue is already In Review) may have already moved it forward.
 
 Then continue to writing-plans or TDD as normal.
 
@@ -73,11 +76,16 @@ When the user asks to create or file an issue without starting implementation:
 3. **Confirm details with the user before running any CLI command**
 4. Stop after filing — do not continue to writing-plans or TDD
 
-### Entry Point 3: Completing Work
+### Entry Point 3: Handoff or Completion
 
-When work on a Linear issue is complete — whether via `finishing-a-development-branch`, a final commit on main, or the user confirming the feature is done — update the associated Linear issue status to "Done" with `linear issue update ID --state "Done"`. If implementation deviated from acceptance criteria, update the issue description too.
+Two transitions land here, each with its own trigger:
 
-This entry point is independent of how the work was integrated. Don't wait for `finishing-a-development-branch` if the work is already merged or committed to main.
+- **In Progress → In Review** when implementation is done and the work is ready for human review. This is what `prepare-for-review` invokes at the end of an autonomous session. Command: `linear issue update ID --state "In Review"`.
+- **In Progress or In Review → Done** when the work has shipped — merged via `finishing-a-development-branch`, a project-local closing skill, a final commit on main, or user confirmation. Command: `linear issue update ID --state "Done"`.
+
+If implementation deviated from acceptance criteria, update the issue description too.
+
+These transitions are independent of how the work was integrated. Don't wait for a branch-closing skill if the work is already merged to main. As with Entry Point 1, do not regress state: check the current state first and only transition forward.
 
 ### Active Work Status
 
@@ -121,6 +129,15 @@ After creation, use Linear's auto-generated branch name (e.g. `eng-30-descriptio
    - **Already done but not marked Done:** Suggest closing it.
 
 This applies to all entry points — starting work, filing issues, and batch-creating multiple issues.
+
+## Autonomous Sessions
+
+Some sessions run without a human in the loop — e.g., the spec-queue orchestrator (ralph v2) dispatches autonomous `claude -p` sessions against pre-approved issues. In that context:
+
+- **Entry Point 1 does not run.** The orchestrator pre-selects the issue, pre-creates the worktree, and pre-transitions state to `In Progress` before dispatch. The agent reads its issue ID from the prompt and begins implementation directly. There is no "starting work" step to execute.
+- **Entry Point 2 (filing follow-ups) proceeds without confirmation.** Use the defaults in "Creating Issues" below: project per workspace context, priority Urgent for bugs / Medium for features, status `Backlog` when scope is vague or `Todo` when actionable. Always link back to the originating issue via `linear issue relation add` so provenance is preserved for later human review.
+- **Entry Point 3 targets `In Review`, not `Done`.** Autonomous sessions hand off for human review. The `Done` transition is Sean's when he merges the branch.
+- **Duplicate prevention resolves without human decision.** Exact duplicates: don't create. Partial overlaps: file the new issue anyway and post a comment on both linking them, so the human reviewer can merge or adjust later. Never block waiting on a "let the user decide" prompt.
 
 ## When This Does NOT Apply
 
