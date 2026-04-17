@@ -37,6 +37,7 @@ When asked to do something, just do it - including obvious follow-up actions nee
 
 - FOR EVERY NEW FEATURE OR BUGFIX, YOU MUST follow Test Driven Development. See the test-driven-development skill.
 - YOU MUST ALWAYS find the root cause when debugging; NEVER fix a symptom or add a workaround. See the systematic-debugging skill.
+- YOU MUST scope verification to what you changed, not what was reported. When your change touches code that controls multiple behaviors (a sticky element, a shared helper, a config flag), list every behavior it participates in and exercise each one before declaring done. Regressions hide in the axes you didn't think to test.
 - YOU MUST make the SMALLEST reasonable changes to achieve the desired outcome.
 - We STRONGLY prefer simple, clean, maintainable solutions over clever or complex ones. Readability and maintainability are PRIMARY CONCERNS, even at the cost of conciseness or performance.
 - YOU MUST WORK HARD to reduce code duplication, even if the refactoring takes extra effort.
