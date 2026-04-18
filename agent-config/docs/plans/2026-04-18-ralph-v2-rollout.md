@@ -22,16 +22,26 @@ Newest entry first. Each entry records: date, session summary, current state of 
 - Renamed skill from `run-queue` to `ralph-start` throughout the plan (Q4 resolution). ENG-184 ticket description still says `run-queue` — update it during ENG-184 execution.
 - Started autonomous execution: ENG-182 in a dedicated worktree.
 
-**Ticket status at end of session:** *(fill in as work progresses)*
-- ENG-182: in progress / complete / blocked — <details>
-- ENG-186: not started
-- ENG-184: not started (blocked by ENG-182)
-- ENG-185: not started
-- ENG-177: not started
-- ENG-178: not started
+**Ticket status at end of session:**
+- ENG-182: In Progress — SKILL.md written, going through iterative Codex review (20+ passes). Currently on pass 22. Core design is sound; the review has been catching real edge cases including: per-task vs final-branch codex mode, allowed-tools scope, base-SHA computation for DAG chains, mktemp portability, comment dedup, pre-flight clean tree requirement, `.ralph-base-sha` exemption, trunk detection with remote fallback.
+- ENG-186: Not started
+- ENG-184: Not started (blocked by ENG-182)
+- ENG-185: Not started
+- ENG-177: Not started
+- ENG-178: Not started
+
+**Design decisions made this session:**
+1. **Sequence reordered from design doc:** Codex review gate runs AFTER docs/decisions updates (Steps 1-3 then Step 4), not before. This ensures the review sees the full final branch state in one pass.
+2. **`update-stale-docs` limitation:** It uses `git diff --stat` (working tree diff, empty on clean tree). Work around: provide `git diff "$BASE_SHA" HEAD --stat` as context. Filed as a known limitation — needs a follow-up ticket to make `update-stale-docs` accept a branch base SHA.
+3. **`.ralph-base-sha` file:** Orchestrator (ENG-184) must write this to the worktree before dispatch so `prepare-for-review` can scope its review/summary to just the task's commits, not all of main.
+4. **Linear CLI is required:** Removed false claim that `linear-workflow` is a fallback for CLI failures — it uses the same CLI binary. If Linear CLI is unavailable, the skill cannot complete.
+5. **SHA-based comment dedup** (not header-based): avoids duplicate posting on retry while allowing re-runs after feedback commits.
 
 **Decisions/issues for the next session:**
-- *(fill in as they come up)*
+- ENG-182: Complete the Codex review loop, move to In Review.
+- ENG-182 → ENG-184 dependency: ENG-184 orchestrator script must write `.ralph-base-sha` to each worktree at dispatch time (recording `git rev-parse HEAD` before the first commit). This contract is documented in prepare-for-review's SKILL.md and must be implemented in ENG-184's orchestrator.sh.
+- ENG-183 is Done but the linear-workflow SKILL.md's graphviz diagram already shows `prepare-for-review` as a handoff node — no updates needed there.
+- Consider filing a follow-up ticket to make `update-stale-docs` use branch diff (not working tree diff). Low priority but noted.
 
 ---
 
