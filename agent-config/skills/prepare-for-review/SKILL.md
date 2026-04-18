@@ -32,6 +32,16 @@ Expected states:
 - **In Progress** — proceed with the sequence below.
 - **Any other state** — stop and surface to the reviewer. Something is off with the dispatch lifecycle.
 
+## Pre-flight: verify clean working tree
+
+Before running any steps, verify that all implementation work is committed:
+
+```bash
+git status --short
+```
+
+If this shows any modified or deleted tracked files (lines starting with `M`, `D`, `A`, or `R`), commit them first. Untracked files (lines starting with `??`) are acceptable — the doc steps in the sequence below will create them. Do not proceed with uncommitted implementation changes.
+
 ## The Sequence (run in order)
 
 ### Step 1: Update stale docs
@@ -91,7 +101,16 @@ Invoke the `codex-review-gate` skill in **per-task mode** — pass the branch st
 
 ### Step 5: Post Linear handoff comment
 
-Post a comment on the Linear issue using this template. Fill every section; empty sections signal the skill was run mechanically.
+First check whether a handoff comment was already posted (handles retries after partial failures):
+
+```bash
+ALREADY_POSTED=$(linear issue comment list <ISSUE-ID> --json 2>/dev/null \
+  | jq '[.[] | select(.body | contains("## Review Summary"))] | length > 0')
+```
+
+If `ALREADY_POSTED` is `true`, skip to Step 6.
+
+Otherwise, post a comment using this template. Fill every section; empty sections signal the skill was run mechanically.
 
 Write the body to a tempfile first (Linear CLI prefers `--body-file` for multi-paragraph markdown), then post. Use `mktemp` for the path so concurrent ralph sessions don't clobber each other:
 
