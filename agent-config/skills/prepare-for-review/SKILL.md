@@ -2,7 +2,7 @@
 name: prepare-for-review
 description: Use when implementation is complete and tests pass, before handing off for human review. Runs doc/decision updates, code review, posts a Linear comment with a review summary and QA plan, and moves the issue to In Review. Useful at the tail of autonomous ralph-loop sessions AND interactive "I just finished this feature" handoffs.
 model: sonnet
-allowed-tools: Skill, Bash(linear:*), Read, Glob, Grep, Write, Edit
+allowed-tools: Skill, Bash, Read, Glob, Grep, Write, Edit
 ---
 
 # Prepare for Review
@@ -32,7 +32,13 @@ Invoke the `prune-completed-docs` skill. Removes or archives now-stale planning 
 
 ### Step 4: Codex review gate
 
-Invoke the `codex-review-gate` skill in final-branch mode. Iterate on findings — the review may result in code changes, which is expected and correct. Re-run the gate if code changes were made, until it returns cleanly or the only remaining findings are explicitly acknowledged non-blockers.
+Invoke the `codex-review-gate` skill in **per-task mode** — pass the branch start SHA as base, so the review covers only the commits in this implementation session. Iterate on findings: fix, commit, re-run until the review is clean. This is the implementer fix loop; the human reviewer will do the final human-in-the-loop assessment when they pick up the In Review branch.
+
+The branch start SHA to pass as `--base` is the SHA of the last commit on main before this feature branch was created. Find it with:
+
+```bash
+git merge-base HEAD main
+```
 
 ### Step 5: Post Linear handoff comment
 
