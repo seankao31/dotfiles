@@ -66,7 +66,7 @@ Post a comment on the Linear issue using this template. Fill every section; empt
 Write the body to a tempfile first (Linear CLI prefers `--body-file` for multi-paragraph markdown), then post. Use `mktemp` for the path so concurrent ralph sessions don't clobber each other:
 
 ```bash
-COMMENT_FILE=$(mktemp /tmp/ralph-handoff-XXXXXX.md)
+COMMENT_FILE=$(mktemp /tmp/ralph-handoff-XXXXXX)
 cat > "$COMMENT_FILE" <<'COMMENT'
 ## Review Summary
 
