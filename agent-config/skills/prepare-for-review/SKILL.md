@@ -40,7 +40,13 @@ Before running any steps, verify that all implementation work is committed:
 git status --short
 ```
 
-If this shows any modified or deleted tracked files (lines starting with `M`, `D`, `A`, or `R`), commit them first. Untracked files (lines starting with `??`) are acceptable — the doc steps in the sequence below will create them. Do not proceed with uncommitted implementation changes.
+Acceptable state:
+- **No output / empty** — clean tree, proceed.
+- **`??` lines in known doc paths** (`agent-config/docs/`, `docs/`, `memory/`, `.claude/`) — acceptable; the doc steps will create files there.
+
+Stop conditions (fix before proceeding):
+- **Any `M`, `D`, `A`, or `R` lines** — uncommitted changes to tracked files. Commit them first.
+- **`??` lines outside doc/memory paths** — new implementation source files that were never committed. Commit them before running this skill. A branch with untracked source files must not be moved to In Review.
 
 ## The Sequence (run in order)
 
@@ -76,7 +82,7 @@ The `--quiet` guard skips the commit if Steps 1–3 made no changes. Using `git 
 
 ### Step 4: Codex review gate
 
-Invoke the `codex-review-gate` skill in **per-task mode** — pass the branch start SHA as base, so the review covers only the commits in this implementation session (code + the doc commit from Step 3.5). Iterate on findings: fix, commit, re-run until the review is clean.
+Invoke the `codex-review-gate` skill in **per-task mode** (not final-branch mode) — pass the branch start SHA as base, so the review covers only the commits in this implementation session (code + the doc commit from Step 3.5). Per-task mode supports an implementer fix loop: iterate on findings, fix, commit, re-run the gate until it is clean. This is correct — the `codex-review-gate` skill's own documentation says per-task mode uses the "implementer fix loop." The final-branch mode ("STOP and ask the user") is not used here.
 
 **Determining the base SHA** — check in this order:
 
