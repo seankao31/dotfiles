@@ -76,13 +76,16 @@ The base SHA is used in Steps 1, 4, and 5. Compute it once now so all steps stay
    if [ -n "$TRUNK_REF" ]; then
      BASE_SHA=$(git merge-base HEAD "$TRUNK_REF")
    else
-     TRUNK=""
-     git show-ref --verify --quiet refs/heads/main && TRUNK=main
-     [ -z "$TRUNK" ] && git show-ref --verify --quiet refs/heads/master && TRUNK=master
-     if [ -z "$TRUNK" ]; then
+     # Try local branches first, then remote tracking refs
+     TRUNK_REF=""
+     git show-ref --verify --quiet refs/heads/main && TRUNK_REF=refs/heads/main
+     [ -z "$TRUNK_REF" ] && git show-ref --verify --quiet refs/heads/master && TRUNK_REF=refs/heads/master
+     [ -z "$TRUNK_REF" ] && git show-ref --verify --quiet refs/remotes/origin/main && TRUNK_REF=refs/remotes/origin/main
+     [ -z "$TRUNK_REF" ] && git show-ref --verify --quiet refs/remotes/origin/master && TRUNK_REF=refs/remotes/origin/master
+     if [ -z "$TRUNK_REF" ]; then
        echo "Cannot determine trunk. Set .ralph-base-sha or pass base SHA explicitly." >&2; exit 1
      fi
-     BASE_SHA=$(git merge-base HEAD "$TRUNK")
+     BASE_SHA=$(git merge-base HEAD "$TRUNK_REF")
    fi
    ```
 
@@ -140,6 +143,8 @@ ALREADY_POSTED=$(linear issue comment list <ISSUE-ID> --json 2>/dev/null \
 ```
 
 Note: `linear issue comment list --json` returns `{"nodes": [...], "pageInfo": {...}}` — use `.nodes[]`, not `.[]`.
+
+**Known limitation:** The dedup check only scans the first page of comments. On issues with more than ~50 comments, a handoff comment from a prior run may be on a later page and go undetected, resulting in a duplicate post. Acceptable for this use case — most issues won't have that many comments.
 
 If `ALREADY_POSTED` is `true`, skip to Step 6.
 
