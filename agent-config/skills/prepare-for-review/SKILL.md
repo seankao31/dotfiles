@@ -51,13 +51,40 @@ All other lines in the output are stop conditions:
 
 Once the working tree is clean (with only the `.ralph-base-sha` exception), any untracked files that appear during Steps 1–3 are guaranteed to have been created by the skill itself and are safe to stage in Step 3.5.
 
+## Compute base SHA (do this before Step 1)
+
+The base SHA is used in Steps 1, 4, and 5. Compute it once now so all steps stay consistent:
+
+1. If `.ralph-base-sha` exists in the worktree root, read it:
+   ```bash
+   BASE_SHA=$(cat .ralph-base-sha)
+   ```
+
+2. Otherwise (interactive session), detect the trunk:
+   ```bash
+   TRUNK_REF=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null)
+   if [ -n "$TRUNK_REF" ]; then
+     BASE_SHA=$(git merge-base HEAD "$TRUNK_REF")
+   else
+     TRUNK=""
+     git show-ref --verify --quiet refs/heads/main && TRUNK=main
+     [ -z "$TRUNK" ] && git show-ref --verify --quiet refs/heads/master && TRUNK=master
+     if [ -z "$TRUNK" ]; then
+       echo "Cannot determine trunk. Set .ralph-base-sha or pass base SHA explicitly." >&2; exit 1
+     fi
+     BASE_SHA=$(git merge-base HEAD "$TRUNK")
+   fi
+   ```
+
+   **⚠ Stop if this might be a stacked branch.** For stacked branches (branching from a feature branch, not the trunk), `git merge-base HEAD <trunk>` includes parent-branch commits and scopes the doc sweep and review incorrectly. Provide `BASE_SHA` explicitly — the commit just before your first commit on this branch: `git rev-parse <your-first-commit>^`.
+
 ## The Sequence (run in order)
 
 ### Step 1: Update stale docs
 
 Invoke the `update-stale-docs` skill. Ensures READMEs, inline comments, and doc files reflect the final code behavior.
 
-**Important:** `update-stale-docs` uses `git diff --stat` to find what changed. When all implementation work is already committed (clean tree), this command returns empty output. To give the skill the correct context, run `git diff main HEAD --stat` and provide that output when invoking the skill so it can identify which docs to check. (This is a known limitation of `update-stale-docs` — it was designed for pre-commit use; a follow-up ticket should make it use the branch diff instead.)
+**Important:** `update-stale-docs` uses `git diff --stat` (working tree diff) to identify what changed, but this returns empty output when all work is committed. To give it the right scope, run `git diff "$BASE_SHA" HEAD --stat` and provide that output when invoking the skill. Using `$BASE_SHA` (not `main`) is correct for stacked branches too. (Known limitation of `update-stale-docs` — it was designed for pre-commit use; a follow-up should make it accept a branch base SHA.)
 
 ### Step 2: Capture decisions
 
@@ -87,33 +114,7 @@ The pre-flight required a clean working tree, so all untracked files staged here
 
 ### Step 4: Codex review gate
 
-Invoke the `codex-review-gate` skill in **per-task mode** (not final-branch mode) — pass the branch start SHA as base, so the review covers only the commits in this implementation session (code + the doc commit from Step 3.5). Per-task mode supports an implementer fix loop: iterate on findings, fix, commit, re-run the gate until it is clean. This is correct — the `codex-review-gate` skill's own documentation says per-task mode uses the "implementer fix loop." The final-branch mode ("STOP and ask the user") is not used here.
-
-**Determining the base SHA** — check in this order:
-
-1. Read `.ralph-base-sha` from the worktree root if it exists. The ralph orchestrator writes this file at dispatch time to record the exact SHA where the implementation session started (which may be a parent feature branch, not main, for DAG-chained tickets).
-
-2. If the file doesn't exist (interactive session), detect the trunk branch:
-
-   ```bash
-   # Prefer the remote ref (avoids failure when local trunk branch doesn't exist)
-   TRUNK_REF=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null)
-   if [ -n "$TRUNK_REF" ]; then
-     git merge-base HEAD "$TRUNK_REF"
-   else
-     # Fall back to well-known local branch names
-     TRUNK=""
-     git show-ref --verify --quiet refs/heads/main && TRUNK=main
-     [ -z "$TRUNK" ] && git show-ref --verify --quiet refs/heads/master && TRUNK=master
-     if [ -z "$TRUNK" ]; then
-       echo "Cannot determine trunk. Set .ralph-base-sha or pass base SHA explicitly." >&2
-       exit 1
-     fi
-     git merge-base HEAD "$TRUNK"
-   fi
-   ```
-
-   **⚠ Stop if this might be a stacked branch.** If this branch was based on another feature branch (not the trunk), `git merge-base HEAD <trunk>` will include the parent's commits in the review scope, producing spurious review findings and an inaccurate handoff summary. Before proceeding with the trunk merge-base, ask: "Is this branch cut from the trunk, or from another feature branch?" If stacked, provide the base SHA explicitly — the SHA of the commit immediately before your first commit on this branch (i.e., the parent branch tip at the time you branched: `git rev-parse <your-first-commit>^`) — and do not use the trunk merge-base. Git ranges (`<base>..HEAD`) exclude the base itself, so the base must be the commit before your work started, not the first commit of your work.
+Invoke the `codex-review-gate` skill in **per-task mode** (not final-branch mode), passing `--base "$BASE_SHA"` (computed above). The review covers code commits + the doc commit from Step 3.5. Per-task mode supports the implementer fix loop: iterate on findings, fix, commit, re-run the gate until clean.
 
 ### Step 5: Post Linear handoff comment
 
@@ -160,7 +161,7 @@ cat > "$COMMENT_FILE" <<COMMENT
 
 ## Commits in this branch
 
-<output of `git log --oneline <base>..HEAD`>
+<output of `git log --oneline "$BASE_SHA"..HEAD`>
 COMMENT
 
 linear issue comment add <ISSUE-ID> --body-file "$COMMENT_FILE"
