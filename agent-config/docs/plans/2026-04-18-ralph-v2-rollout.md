@@ -23,9 +23,9 @@ Newest entry first. Each entry records: date, session summary, current state of 
 - Started autonomous execution: ENG-182 in a dedicated worktree.
 
 **Ticket status at end of session:**
-- ENG-182: In Progress — SKILL.md written, going through iterative Codex review (20+ passes). Currently on pass 22. Core design is sound; the review has been catching real edge cases including: per-task vs final-branch codex mode, allowed-tools scope, base-SHA computation for DAG chains, mktemp portability, comment dedup, pre-flight clean tree requirement, `.ralph-base-sha` exemption, trunk detection with remote fallback.
+- ENG-182: **In Review** ✓ — SKILL.md complete, 24 Codex review passes, handoff comment posted. Branch: `eng-182-create-prepare-for-review-skill`. Key open design item for ENG-184: orchestrator must write `.ralph-base-sha` to each worktree before dispatch.
 - ENG-186: Not started
-- ENG-184: Not started (blocked by ENG-182)
+- ENG-184: Not started (blocked by ENG-182 — now unblocked)
 - ENG-185: Not started
 - ENG-177: Not started
 - ENG-178: Not started
@@ -38,7 +38,7 @@ Newest entry first. Each entry records: date, session summary, current state of 
 5. **SHA-based comment dedup** (not header-based): avoids duplicate posting on retry while allowing re-runs after feedback commits.
 
 **Decisions/issues for the next session:**
-- ENG-182: Complete the Codex review loop, move to In Review.
+- ENG-182 is done. ENG-184 is now unblocked.
 - ENG-182 → ENG-184 dependency: ENG-184 orchestrator script must write `.ralph-base-sha` to each worktree at dispatch time (recording `git rev-parse HEAD` before the first commit). This contract is documented in prepare-for-review's SKILL.md and must be implemented in ENG-184's orchestrator.sh.
 - ENG-183 is Done but the linear-workflow SKILL.md's graphviz diagram already shows `prepare-for-review` as a handoff node — no updates needed there.
 - Consider filing a follow-up ticket to make `update-stale-docs` use branch diff (not working tree diff). Low priority but noted.
