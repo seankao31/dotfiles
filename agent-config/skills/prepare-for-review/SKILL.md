@@ -18,11 +18,12 @@ Do NOT use this skill to cover up an incomplete implementation. If tests fail or
 
 ## Idempotency check (run first, before any steps)
 
-Check the current Linear issue state:
+Check the current Linear issue state. Use whichever method is available:
 
-```bash
-linear issue view <ISSUE-ID> --json | jq -r '.state.name'
-```
+- **CLI available** (`linear --version` succeeds): `linear issue view <ISSUE-ID> --json | jq -r '.state.name'`
+- **CLI not available**: invoke the `linear-workflow` skill and ask it to fetch the current state of the issue.
+
+Expected states:
 
 - **In Review** — the handoff already completed. Do not re-post the comment or re-transition. Exit cleanly.
 - **In Progress** — proceed with the sequence below.
@@ -44,7 +45,7 @@ Invoke the `codex-review-gate` skill in **per-task mode** — pass the branch st
    git merge-base HEAD main
    ```
 
-   This is reliable for single-branch tickets as long as main hasn't advanced past this branch's divergence point. In the rebase+ff-only workflow used here, that condition holds.
+   This is reliable for branches cut directly from main. **For stacked branches** (branching from another feature branch, not main) use `git merge-base HEAD <parent-branch-name>` instead, or record the SHA explicitly when you create the branch (`git rev-parse HEAD` before the first feature commit). Stacked interactive branches must provide the base SHA manually — there is no reliable automatic heuristic without `.ralph-base-sha`.
 
 ### Step 2: Update stale docs
 
@@ -62,10 +63,11 @@ Invoke the `prune-completed-docs` skill. Removes or archives now-stale planning 
 
 Post a comment on the Linear issue using this template. Fill every section; empty sections signal the skill was run mechanically.
 
-Write the body to a tempfile first (Linear CLI prefers `--body-file` for multi-paragraph markdown), then post:
+Write the body to a tempfile first (Linear CLI prefers `--body-file` for multi-paragraph markdown), then post. Use `mktemp` for the path so concurrent ralph sessions don't clobber each other:
 
 ```bash
-cat > /tmp/handoff-comment.md <<'COMMENT'
+COMMENT_FILE=$(mktemp /tmp/ralph-handoff-XXXXXX.md)
+cat > "$COMMENT_FILE" <<'COMMENT'
 ## Review Summary
 
 **What shipped:** <1-3 sentence summary of the implementation>
@@ -87,7 +89,8 @@ cat > /tmp/handoff-comment.md <<'COMMENT'
 <output of `git log --oneline <base>..HEAD`>
 COMMENT
 
-linear issue comment add <ISSUE-ID> --body-file /tmp/handoff-comment.md
+linear issue comment add <ISSUE-ID> --body-file "$COMMENT_FILE"
+rm -f "$COMMENT_FILE"
 ```
 
 Verify the exact CLI syntax against `linear issue comment add --help` at invocation time if uncertain — do not guess flags.
