@@ -34,11 +34,13 @@ Invoke the `prune-completed-docs` skill. Removes or archives now-stale planning 
 
 Invoke the `codex-review-gate` skill in **per-task mode** — pass the branch start SHA as base, so the review covers only the commits in this implementation session. Iterate on findings: fix, commit, re-run until the review is clean. This is the implementer fix loop; the human reviewer will do the final human-in-the-loop assessment when they pick up the In Review branch.
 
-The branch start SHA to pass as `--base` is the SHA of the last commit on main before this feature branch was created. Find it with:
+The branch start SHA to pass as `--base` is the SHA of the last commit on main before this feature branch was created. Preferred: record it at worktree-creation time (`git rev-parse main` before the first commit). If you didn't record it, fall back to:
 
 ```bash
 git merge-base HEAD main
 ```
+
+This fallback is reliable as long as main hasn't advanced past this branch's divergence point (i.e., no new main commits since branch creation). In the rebase+ff-only workflow used here, that condition holds.
 
 ### Step 5: Post Linear handoff comment
 
@@ -86,4 +88,4 @@ DO NOT call the `linear` CLI directly to change state. The `linear-workflow` ski
 - **`codex-review-gate` returns blocking findings.** Fix them, re-run the gate. Do not move to In Review with known blocking issues unsurfaced.
 - **The QA test plan is empty or generic.** Stop and actually think about what a reviewer would need to verify. A handoff comment that says "verify it works" is a failure of this skill — the agent that wrote the code knows the risky paths, and capturing them at handoff is the cheap moment.
 - **Deviations from the PRD are substantial enough they need discussion.** Post the comment anyway (the reviewer will see it), but flag loudly in the Review Summary section.
-- **Linear state is not In Progress.** Something is off. Check whether the ralph orchestrator set state externally, or whether the issue was never dispatched. Do not skip silently to In Review.
+- **Linear state is not In Progress AND not already In Review.** In Review means the handoff already happened — do not re-post the comment or re-transition; just exit cleanly. For any other unexpected state (Canceled, Backlog, Draft), stop and surface to the reviewer — something is off with the dispatch lifecycle.
