@@ -10,6 +10,31 @@
 
 ---
 
+## Progress Log
+
+Newest entry first. Each entry records: date, session summary, current state of each ticket, any blockers/decisions for the next session to pick up.
+
+### 2026-04-18 (session: plan reconstruction + autonomous rollout start)
+
+**What happened:**
+- Reconstructed this plan from scratch after the ENG-176 worktree was force-removed with the original plan.md untracked (unrecoverable).
+- Resolved open questions Q1, Q3, Q4 with Sean's answers; flagged Q2 as contested with pointers to design doc lines 185 and 468.
+- Renamed skill from `run-queue` to `ralph-start` throughout the plan (Q4 resolution). ENG-184 ticket description still says `run-queue` — update it during ENG-184 execution.
+- Started autonomous execution: ENG-182 in a dedicated worktree.
+
+**Ticket status at end of session:** *(fill in as work progresses)*
+- ENG-182: in progress / complete / blocked — <details>
+- ENG-186: not started
+- ENG-184: not started (blocked by ENG-182)
+- ENG-185: not started
+- ENG-177: not started
+- ENG-178: not started
+
+**Decisions/issues for the next session:**
+- *(fill in as they come up)*
+
+---
+
 ## 0. Rollout overview
 
 ### Source of truth
@@ -70,17 +95,15 @@ ENG-185, ENG-186 have no blockers per the design.
 
 Use `linear issue update` (verify exact relation-add flag via `linear issue update --help` at the time of running). This is a one-off Linear admin action, not a code change.
 
-### Open questions from the design doc (gate specific tasks)
+### Open questions from the design doc (status as of 2026-04-18)
 
-| # | Question | Gated task |
+| # | Question | Status |
 |---|---|---|
-| 1 | Auto-mode CLI flag for `claude -p` — exact flag, what it auto-approves | ENG-184 Task 9 (orchestrator dispatch) |
-| 2 | Permission-prompt deadlock handling | ENG-184 Task 10 (failure handling) |
-| 3 | Session persistence horizon (`claude --resume` GC policy) | ENG-184 Task 11 (`progress.json` design) |
-| 4 | `/run-queue` naming (`/run-loop`, `/dispatch-approved`, `/ralph-start`?) | ENG-184 Task 1 (skill directory naming) — cosmetic |
-| — | Linear comment format for review summary + QA plan | ENG-182 Task 4 |
-
-Resolve questions 1–3 via testing before the respective tasks. Question 4 is cosmetic; pick one and move on.
+| 1 | Auto-mode CLI flag for `claude -p` | **Resolved:** `claude --permission-mode auto`. `claude auto-mode defaults` prints built-in classifier rules as JSON. Reference: https://code.claude.com/docs/en/permission-modes#eliminate-prompts-with-auto-mode |
+| 2 | Permission-prompt deadlock handling | **Contested.** Design doc raises this at lines 185 and 468 (Decision 9 + Open Q #2), but Sean disputes it's a real issue. Likely resolution path: empirically test whether `--permission-mode auto` *blocks* on non-auto-approved actions or *fails fast*. If fails fast, no deadlock — `ralph-failed` already handles it. If blocks, revisit. Test at the start of ENG-184 Task 8. |
+| 3 | Session persistence horizon | **Resolved:** Conversation history is stored in `~/.claude/projects/` and is not GC'd. `claude --resume` remains available indefinitely. `progress.json` doesn't need expiration guards. |
+| 4 | Slash-command naming | **Resolved:** `/ralph-start`. Skill lives at `agent-config/skills/ralph-start/`. (Ticket description still says `/run-queue` — update the ticket during ENG-184 execution.) |
+| — | Linear comment format for review summary + QA plan | Defined inline in ENG-182 Task 3. |
 
 ---
 
@@ -266,7 +289,7 @@ git commit -m "document red flags and stop-conditions (ENG-182)"
 
 ## 2. ENG-184: Implement ralph v2 orchestrator skill
 
-**Goal:** A skill at `agent-config/skills/run-queue/` with bundled shell scripts that implements the autonomous spec-queue orchestrator — pre-flight sanity scan, topological sort, DAG-aware base-branch selection, dispatch loop with downstream-taint on failure, progress.json audit trail.
+**Goal:** A skill at `agent-config/skills/ralph-start/` with bundled shell scripts that implements the autonomous spec-queue orchestrator — pre-flight sanity scan, topological sort, DAG-aware base-branch selection, dispatch loop with downstream-taint on failure, progress.json audit trail.
 
 **Design reference:** `2026-04-17-ralph-loop-v2-design.md` — Architecture, Components, all Decisions.
 
@@ -276,27 +299,28 @@ git commit -m "document red flags and stop-conditions (ENG-182)"
 - [ ] ENG-183 is Done. (`/linear-workflow` works in autonomous sessions — already merged per current state.)
 - [ ] Blocked-by relation set in Linear: ENG-184 blocked by ENG-182.
 
-**Open questions to resolve before implementation:**
-- Auto-mode CLI flag for `claude -p` (Open Q #1). Check `claude --help`, Claude Code docs, or `~/.claude/CLAUDE.md` references. **Do not invent a flag.** If uncertain, stop and surface to Sean.
-- Permission-prompt deadlock handling (Open Q #2). Decide between session-timeout, permission-policy file, or acceptance-with-`ralph-failed`. Most likely answer per the design doc: accept rare blocking, rely on `ralph-failed` label.
-- `/run-queue` vs `/run-loop` vs `/dispatch-approved` vs `/ralph-start` (Open Q #4). Cosmetic; pick `/run-queue` as the design-doc default unless Sean prefers otherwise.
+**Open questions — status before starting ENG-184:**
+- Q1 (auto-mode flag) — **resolved** as `claude --permission-mode auto`.
+- Q2 (permission-prompt deadlock) — **contested.** Test fails-fast vs. blocks empirically at the start of Task 8. If it fails fast, no special handling needed. If it blocks, revisit.
+- Q3 (session persistence) — **resolved**; `~/.claude/projects/` persists indefinitely.
+- Q4 (skill name) — **resolved** as `ralph-start`. The ticket description uses `ralph-start` and should be updated during this ticket.
 
 **Scope divergence between design doc and ticket:**
-- Design doc uses plugin structure (`spec-queue/PLUGIN.md + skills/run-queue/ + scripts/`).
-- Ticket description uses skill structure (`agent-config/skills/run-queue/` with bundled scripts).
-- **Follow the ticket.** The skill form fits existing `agent-config/skills/` conventions; plugin-ification is a larger change and not in scope.
+- Design doc uses plugin structure (`spec-queue/PLUGIN.md + skills/ralph-start/ + scripts/`).
+- Ticket description uses skill structure (`agent-config/skills/run-queue/` with bundled scripts — use `ralph-start` per Q4 resolution, and update the ticket description during this ticket).
+- **Follow the ticket's skill form.** The skill form fits existing `agent-config/skills/` conventions; plugin-ification is a larger change and not in scope.
 
 **Files (all new):**
-- Create: `agent-config/skills/run-queue/SKILL.md` — slash-command entry point
-- Create: `agent-config/skills/run-queue/config.example.json`
-- Create: `agent-config/skills/run-queue/scripts/orchestrator.sh`
-- Create: `agent-config/skills/run-queue/scripts/toposort.sh`
-- Create: `agent-config/skills/run-queue/scripts/dag_base.sh`
-- Create: `agent-config/skills/run-queue/scripts/preflight_scan.sh`
-- Create: `agent-config/skills/run-queue/scripts/lib/config.sh`
-- Create: `agent-config/skills/run-queue/scripts/lib/linear.sh`
-- Create: `agent-config/skills/run-queue/scripts/lib/worktree.sh`
-- Create: `agent-config/skills/run-queue/scripts/test/*.bats`
+- Create: `agent-config/skills/ralph-start/SKILL.md` — slash-command entry point
+- Create: `agent-config/skills/ralph-start/config.example.json`
+- Create: `agent-config/skills/ralph-start/scripts/orchestrator.sh`
+- Create: `agent-config/skills/ralph-start/scripts/toposort.sh`
+- Create: `agent-config/skills/ralph-start/scripts/dag_base.sh`
+- Create: `agent-config/skills/ralph-start/scripts/preflight_scan.sh`
+- Create: `agent-config/skills/ralph-start/scripts/lib/config.sh`
+- Create: `agent-config/skills/ralph-start/scripts/lib/linear.sh`
+- Create: `agent-config/skills/ralph-start/scripts/lib/worktree.sh`
+- Create: `agent-config/skills/ralph-start/scripts/test/*.bats`
 
 **Task decomposition:** Sub-tasks are *script-level*, not line-level, because this is an autonomous orchestrator where each script is a unit. Within each task, follow bats-TDD (test first, verify fail, minimal impl, verify pass, commit) per the standard skill discipline. When starting this ticket in a fresh session, run `superpowers:subagent-driven-development` to parallelize across scripts where dependencies allow.
 
@@ -306,8 +330,8 @@ git commit -m "document red flags and stop-conditions (ENG-182)"
 
 ```markdown
 ---
-name: run-queue
-description: Entry point for Sean to dispatch the autonomous ralph-loop spec-queue. Do NOT auto-invoke. Sean runs this explicitly via /run-queue before stepping away from the desk.
+name: ralph-start
+description: Entry point for Sean to dispatch the autonomous ralph-loop spec-queue. Do NOT auto-invoke. Sean runs this explicitly via /ralph-start before stepping away from the desk.
 disable-model-invocation: true
 allowed-tools: Bash, Read, Glob, Grep
 ---
@@ -322,8 +346,8 @@ Use `disable-model-invocation: true` — this is a Sean-driven trigger, not a Cl
 - [ ] **Step 4:** Commit.
 
 ```bash
-git add agent-config/skills/run-queue/
-git commit -m "scaffold run-queue skill and script stubs (ENG-184)"
+git add agent-config/skills/ralph-start/
+git commit -m "scaffold ralph-start skill and script stubs (ENG-184)"
 ```
 
 ### Task 2: Config loader (`lib/config.sh`)
@@ -450,7 +474,7 @@ The main loop. Consumes: a queue of issue IDs (pre-sorted by `toposort.sh`). Per
 
 ### Task 9: Slash command entry (`SKILL.md`)
 
-Fill in the `run-queue` SKILL.md body with the workflow from Component 1:
+Fill in the `ralph-start` SKILL.md body with the workflow from Component 1:
 1. Read config.
 2. Invoke `preflight_scan.sh`; if failures, stop and ask Sean.
 3. Query `linear_list_approved_issues`, filter to strictly pickup-ready (no `ralph-failed`, all blockers ⊆ {Done, In Review}, no Canceled blockers).
@@ -466,7 +490,7 @@ Fill in the `run-queue` SKILL.md body with the workflow from Component 1:
 
 Per-run audit trail as specified in Component 6. Orchestrator appends runs; each run has `run_id` (ISO 8601 with tz), `dispatched` array, `skipped` array.
 
-- [ ] **Step 1:** Write bats tests for the append logic (ensure concurrent runs don't clobber — if two `/run-queue` invocations overlap, append atomically via a tmpfile+mv).
+- [ ] **Step 1:** Write bats tests for the append logic (ensure concurrent runs don't clobber — if two `/ralph-start` invocations overlap, append atomically via a tmpfile+mv).
 - [ ] **Step 2:** Run — verify FAIL.
 - [ ] **Step 3:** Implement inside `orchestrator.sh` or a small helper in `lib/`.
 - [ ] **Step 4:** Run — verify PASS.
@@ -475,7 +499,7 @@ Per-run audit trail as specified in Component 6. Orchestrator appends runs; each
 ### Task 11: End-to-end dogfood
 
 - [ ] **Step 1:** Create a throwaway Agent Config Linear issue in Approved state with a trivial PRD ("create a file `test-ralph-v2.txt` with contents `hello`") and no blockers.
-- [ ] **Step 2:** Run `/run-queue`. Confirm preview. Let the dispatch happen.
+- [ ] **Step 2:** Run `/ralph-start`. Confirm preview. Let the dispatch happen.
 - [ ] **Step 3:** Observe: worktree created, session dispatched with correct prompt, session completes, Linear state In Review, `progress.json` populated.
 - [ ] **Step 4:** If any step fails, diagnose. Do NOT mark the ticket done with a known failure mode — root-cause it per CLAUDE.md.
 - [ ] **Step 5:** Clean up the throwaway issue (move to Canceled with a comment noting it was a dogfood test).
@@ -483,7 +507,7 @@ Per-run audit trail as specified in Component 6. Orchestrator appends runs; each
 ### Task 12: Documentation sweep
 
 - [ ] **Step 1:** Update `agent-config/skills/` top-level README (if one exists) to reference the new skill.
-- [ ] **Step 2:** Add a short playbook at `agent-config/docs/playbooks/ralph-v2-usage.md` — two paragraphs on "how I use this" from Sean's seat: when to run `/run-queue`, what to expect, how to triage `ralph-failed` issues on return.
+- [ ] **Step 2:** Add a short playbook at `agent-config/docs/playbooks/ralph-v2-usage.md` — two paragraphs on "how I use this" from Sean's seat: when to run `/ralph-start`, what to expect, how to triage `ralph-failed` issues on return.
 - [ ] **Step 3:** Commit docs.
 - [ ] **Step 4:** Invoke `update-stale-docs` skill to catch anything else.
 
@@ -799,10 +823,10 @@ Spec-coverage check against `2026-04-17-ralph-loop-v2-design.md`:
 | Follow-up 4 (audit `/linear-workflow`) | ENG-183 (Done) |
 | Follow-up 5 (post-commit stale-parent hook) | ENG-185 |
 | Follow-up 6 (project-local close skill) | ENG-186 |
-| Open Q #1 (auto-mode flag) | Flagged against ENG-184 Task 8 |
-| Open Q #2 (permission-prompt deadlock) | Flagged against ENG-184 Task 8 |
-| Open Q #3 (session persistence) | Flagged against ENG-184 Task 10 |
-| Open Q #4 (`/run-queue` naming) | Flagged against ENG-184 Task 1 — cosmetic |
+| Open Q #1 (auto-mode flag) | Resolved: `claude --permission-mode auto` |
+| Open Q #2 (permission-prompt deadlock) | Contested; test empirically at ENG-184 Task 8 |
+| Open Q #3 (session persistence) | Resolved: `~/.claude/projects/` persists indefinitely |
+| Open Q #4 (slash-command naming) | Resolved: `/ralph-start` |
 | Open Q #5 (integration-merge cleanup) | Resolved in design ("no cleanup needed"); no task |
 
 Gaps: none identified.
