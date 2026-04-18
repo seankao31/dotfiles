@@ -1,6 +1,6 @@
 ---
 name: prepare-for-review
-description: Use when implementation is complete and tests pass, before handing off for human review. Runs code review (codex-review-gate), then doc/decision updates, posts a Linear comment with a review summary and QA plan, and moves the issue to In Review. Useful at the tail of autonomous ralph-loop sessions AND interactive "I just finished this feature" handoffs.
+description: Use when implementation is complete and tests pass, before handing off for human review. Runs doc/decision updates, codex review (all in one pass), posts a Linear comment with a review summary and QA plan, and moves the issue to In Review. Useful at the tail of autonomous ralph-loop sessions AND interactive "I just finished this feature" handoffs.
 model: sonnet
 allowed-tools: Skill, Bash, Read, Glob, Grep, Write, Edit
 ---
@@ -34,25 +34,46 @@ Expected states:
 
 ## The Sequence (run in order)
 
-### Step 1: Codex review gate
+### Step 1: Update stale docs
 
-Invoke the `codex-review-gate` skill in **per-task mode** — pass the branch start SHA as base, so the review covers only the commits in this implementation session. Iterate on findings: fix, commit, re-run until the review is clean. This is the implementer fix loop; the human reviewer does the final human-in-the-loop assessment when they pick up the In Review branch.
+Invoke the `update-stale-docs` skill. Ensures READMEs, inline comments, and doc files reflect the final code behavior.
+
+### Step 2: Capture decisions
+
+Invoke the `capture-decisions` skill. Records any non-obvious implementation choices made during the session — the *why*, not the *what*.
+
+**In autonomous sessions (ralph loop):** `capture-decisions` presents a proposal and says "wait for approval before writing." With no human present, treat this as a self-approval — propose, then execute immediately. Sean will review the decisions at review time.
+
+### Step 3: Prune completed docs
+
+Invoke the `prune-completed-docs` skill. Removes or archives now-stale planning docs, decision scratch, superseded specs, etc.
+
+**In autonomous sessions (ralph loop):** Same as Step 2 — `prune-completed-docs` also has an approval gate. Self-approve in autonomous mode; proceed immediately after presenting the proposal.
+
+### Step 3.5: Commit doc/decisions changes
+
+Steps 1–3 may have modified or created files. Commit them so the codex review in Step 4 sees the complete branch (including docs):
+
+```bash
+git status --short          # review what was added/modified by the preceding steps
+git add -A                  # stage all changes including new ADR/memory files from capture-decisions
+git diff --cached --quiet || git commit -m "docs: update stale docs and capture decisions"
+```
+
+The `--quiet` guard skips the commit if Steps 1–3 made no changes. The `git status` check before `git add -A` is required so you know exactly what is being staged.
+
+### Step 4: Codex review gate
+
+Invoke the `codex-review-gate` skill in **per-task mode** — pass the branch start SHA as base, so the review covers only the commits in this implementation session (code + the doc commit from Step 3.5). Iterate on findings: fix, commit, re-run until the review is clean.
 
 **Determining the base SHA** — check in this order:
 
 1. Read `.ralph-base-sha` from the worktree root if it exists. The ralph orchestrator writes this file at dispatch time to record the exact SHA where the implementation session started (which may be a parent feature branch, not main, for DAG-chained tickets).
 
-2. If the file doesn't exist (interactive session), fall back to:
-
-   ```bash
-   git merge-base HEAD main
-   ```
-
-   This is reliable for branches cut directly from the trunk. The trunk branch name varies by repo (`main`, `master`, or other) — detect it:
+2. If the file doesn't exist (interactive session), detect the trunk branch:
 
    ```bash
    TRUNK=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
-   # If origin/HEAD is unset, try well-known trunk names
    if [ -z "$TRUNK" ]; then
      git show-ref --verify --quiet refs/heads/main && TRUNK=main
    fi
@@ -66,35 +87,7 @@ Invoke the `codex-review-gate` skill in **per-task mode** — pass the branch st
    git merge-base HEAD "$TRUNK"
    ```
 
-   **For stacked branches** (branching from another feature branch, not the trunk): use `git merge-base HEAD <parent-branch-name>` instead, or record the SHA explicitly when you create the branch. Stacked interactive branches must provide the base SHA manually — there is no reliable automatic heuristic without `.ralph-base-sha`.
-
-### Step 2: Update stale docs
-
-Invoke the `update-stale-docs` skill. Run this AFTER the codex fix loop — review-driven code fixes may have changed behavior that the docs need to reflect. Ensures READMEs, inline comments, and doc files are current.
-
-### Step 3: Capture decisions
-
-Invoke the `capture-decisions` skill. Records any non-obvious implementation choices made during the session AND during the code review fix loop — the *why*, not the *what*.
-
-**In autonomous sessions (ralph loop):** `capture-decisions` presents a proposal and says "wait for approval before writing." With no human present, treat this as a self-approval — propose, then execute immediately. Sean will review the decisions at review time.
-
-### Step 4: Prune completed docs
-
-Invoke the `prune-completed-docs` skill. Removes or archives now-stale planning docs, decision scratch, superseded specs, etc.
-
-**In autonomous sessions (ralph loop):** Same as Step 3 — `prune-completed-docs` also has an approval gate. Self-approve in autonomous mode; proceed immediately after presenting the proposal.
-
-### Step 4.5: Commit doc/decisions changes
-
-After Steps 2–4 may have modified or created files, commit them before building the handoff summary, so the `git log` in the handoff comment reflects the complete branch work. Check status first to see what exists, then stage:
-
-```bash
-git status --short          # review what was added/modified by the preceding steps
-git add -A                  # stage all changes including new ADR/memory files created by capture-decisions
-git diff --cached --quiet || git commit -m "docs: update stale docs and capture decisions (post-review)"
-```
-
-The `--quiet` guard skips the commit if Steps 2–4 made no changes. The `git status` check before `git add -A` is required so you know exactly what is being staged.
+   **⚠ Stacked interactive branches:** If this branch was based on another feature branch (not the trunk), `git merge-base HEAD <trunk>` will include the parent's commits in the review scope, producing spurious findings and an inaccurate handoff summary. For stacked branches, provide the base SHA explicitly — the SHA of the first commit you made on this branch.
 
 ### Step 5: Post Linear handoff comment
 
@@ -132,18 +125,18 @@ rm -f "$COMMENT_FILE"
 
 Verify the exact CLI syntax against `linear issue comment add --help` at invocation time if uncertain — do not guess flags.
 
-**If the `linear` CLI is not installed** (`linear --version` fails): post the comment via the `linear-workflow` skill instead, describing what you need posted. The `linear-workflow` skill handles CLI-unavailable fallback to MCP tools.
+**If the `linear` CLI is not installed** (or fails for any reason): post the comment via the `linear-workflow` skill instead, describing what you need posted.
 
 ### Step 6: Move issue to In Review via linear-workflow
 
 Invoke the `linear-workflow` skill and request the `In Progress → In Review` transition.
 
-DO NOT call the `linear` CLI directly to change state. The `linear-workflow` skill handles idempotency (the ralph orchestrator may have already moved the issue to In Progress externally) and any pre-transition validation. ENG-183 audited this skill for autonomous-session compatibility; it handles the "state already changed externally" case.
+DO NOT call the `linear` CLI directly to change state. The `linear-workflow` skill handles idempotency and any pre-transition validation. ENG-183 audited this skill for autonomous-session compatibility; it handles the "state already changed externally" case.
 
 ## Red Flags / When to Stop
 
-- **Tests are failing.** Do NOT run this skill. Fix tests first. This skill is for handoff, not for papering over incomplete work.
+- **Tests are failing.** Do NOT run this skill. Fix tests first.
 - **`codex-review-gate` returns blocking findings.** Fix them, re-run the gate. Do not move to In Review with known blocking issues unsurfaced.
-- **The QA test plan is empty or generic.** Stop and actually think about what a reviewer would need to verify. A handoff comment that says "verify it works" is a failure of this skill — the agent that wrote the code knows the risky paths, and capturing them at handoff is the cheap moment.
+- **The QA test plan is empty or generic.** Stop and actually think about what a reviewer needs to verify — the agent that wrote the code knows the risky paths, and capturing them at handoff is the cheap moment.
 - **Deviations from the PRD are substantial enough they need discussion.** Post the comment anyway (the reviewer will see it), but flag loudly in the Review Summary section.
-- **Linear state is unexpected** (not In Progress and not In Review). Something is off with the dispatch lifecycle — stop and surface to the reviewer rather than proceeding. See the Idempotency check section above for the expected states.
+- **Linear state is unexpected** (not In Progress and not In Review). Something is off with the dispatch lifecycle — stop and surface to the reviewer.
