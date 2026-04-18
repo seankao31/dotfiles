@@ -28,8 +28,8 @@ If the CLI fails (exits non-zero or returns empty output), the Linear API is unr
 
 Expected states:
 
-- **In Review** — the handoff already completed. Do not re-post the comment or re-transition. Exit cleanly.
-- **In Progress** — proceed with the sequence below.
+- **In Review** — proceed with the sequence, but skip Step 6 (the issue is already in the right state). The SHA-based dedup in Step 5 handles avoiding duplicate comments for the same HEAD. This allows re-running the skill after new commits are pushed to a branch that's still In Review.
+- **In Progress** — proceed with the full sequence including Step 6.
 - **Any other state** — stop and surface to the reviewer. Something is off with the dispatch lifecycle.
 
 ## Pre-flight: verify clean working tree
@@ -57,6 +57,8 @@ Once the working tree is clean (with only the `.ralph-base-sha` exception), any 
 
 Invoke the `update-stale-docs` skill. Ensures READMEs, inline comments, and doc files reflect the final code behavior.
 
+**Important:** `update-stale-docs` uses `git diff --stat` to find what changed. When all implementation work is already committed (clean tree), this command returns empty output. To give the skill the correct context, run `git diff main HEAD --stat` and provide that output when invoking the skill so it can identify which docs to check. (This is a known limitation of `update-stale-docs` — it was designed for pre-commit use; a follow-up ticket should make it use the branch diff instead.)
+
 ### Step 2: Capture decisions
 
 Invoke the `capture-decisions` skill. Records any non-obvious implementation choices made during the session — the *why*, not the *what*.
@@ -76,7 +78,8 @@ Steps 1–3 may have modified or created files. Commit them so the codex review 
 ```bash
 git status --short          # confirm only expected new files from Steps 1-3
 git add -u                  # stage modifications to tracked files
-git ls-files --others --exclude-standard | grep -v '^\.ralph-base-sha$' | xargs -r git add  # stage new files from doc skills (excludes .ralph-base-sha)
+NEW_FILES=$(git ls-files --others --exclude-standard | grep -v '^\.ralph-base-sha$')
+[ -n "$NEW_FILES" ] && echo "$NEW_FILES" | xargs git add  # stage new files from doc skills (macOS-safe)
 git diff --cached --quiet || git commit -m "docs: update stale docs and capture decisions"
 ```
 
