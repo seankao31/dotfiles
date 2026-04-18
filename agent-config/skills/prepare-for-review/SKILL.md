@@ -66,11 +66,13 @@ Steps 1–3 may have modified or created files. Commit them so the codex review 
 
 ```bash
 git status --short          # review what was added/modified by the preceding steps
-git add -A                  # stage all changes including new ADR/memory files from capture-decisions
+git add -u                  # stage modifications to already-tracked files
+# Also add new files in the doc/decision/memory directories created by the doc skills
+git add -- agent-config/docs/ docs/ memory/ .claude/projects/ 2>/dev/null || true
 git diff --cached --quiet || git commit -m "docs: update stale docs and capture decisions"
 ```
 
-The `--quiet` guard skips the commit if Steps 1–3 made no changes. The `git status` check before `git add -A` is required so you know exactly what is being staged.
+The `--quiet` guard skips the commit if Steps 1–3 made no changes. Using `git add -u` plus explicit doc paths (rather than `git add -A`) avoids accidentally staging pre-existing untracked scratch files in the worktree.
 
 ### Step 4: Codex review gate
 
@@ -101,14 +103,20 @@ Invoke the `codex-review-gate` skill in **per-task mode** — pass the branch st
 
 ### Step 5: Post Linear handoff comment
 
-First check whether a handoff comment was already posted (handles retries after partial failures):
+First check whether a handoff comment for this specific revision was already posted (handles retries after partial failures, without suppressing re-runs after feedback commits):
 
 ```bash
+CURRENT_SHA=$(git rev-parse HEAD)
 ALREADY_POSTED=$(linear issue comment list <ISSUE-ID> --json 2>/dev/null \
-  | jq '[.[] | select(.body | contains("## Review Summary"))] | length > 0')
+  | jq --arg sha "$CURRENT_SHA" \
+      '[.[] | select(.body | contains("## Review Summary") and contains($sha))] | length > 0')
 ```
 
 If `ALREADY_POSTED` is `true`, skip to Step 6.
+
+**Note:** If the `linear` CLI is unavailable, this check cannot run — proceed with posting and accept a potential duplicate on retry after a partial failure.
+
+Include `<!-- review-sha: $CURRENT_SHA -->` as the first line of the `## Review Summary` section in the comment body so the SHA-based dedup check can find it on retry.
 
 Otherwise, post a comment using this template. Fill every section; empty sections signal the skill was run mechanically.
 
@@ -116,8 +124,9 @@ Write the body to a tempfile first (Linear CLI prefers `--body-file` for multi-p
 
 ```bash
 COMMENT_FILE=$(mktemp /tmp/ralph-handoff-XXXXXX)
-cat > "$COMMENT_FILE" <<'COMMENT'
+cat > "$COMMENT_FILE" <<COMMENT
 ## Review Summary
+<!-- review-sha: $CURRENT_SHA -->
 
 **What shipped:** <1-3 sentence summary of the implementation>
 
