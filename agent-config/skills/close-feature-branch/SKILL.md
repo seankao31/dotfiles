@@ -39,13 +39,15 @@ Expected: `In Review`.
 - **Done** — nothing to do; the branch was already closed. Investigate whether this worktree is leftover and can be removed.
 - **Any other state** — stop and surface to Sean. The dispatch lifecycle is off.
 
-### 2. Verify a clean working tree
+### 2. Verify no uncommitted tracked-file changes
 
 ```bash
 git status --short
 ```
 
-Any output is a stop condition. Commit or handle uncommitted/untracked files before proceeding. `git worktree remove` will refuse to clean up a dirty worktree for good reason, and `--force` has destroyed work before — never reach for it.
+- **Lines starting with `M`, `D`, `A`, `R`** — uncommitted changes to tracked files. STOP. Commit or discard them before proceeding. `git worktree remove` will refuse to clean up a dirty worktree, and `--force` has destroyed work before — never reach for it.
+- **Lines starting with `??`** — untracked files. Proceed to §3, which handles them explicitly.
+- **No output** — clean; proceed.
 
 ### 3. Preserve untracked files
 
