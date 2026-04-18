@@ -108,7 +108,7 @@ Invoke the `codex-review-gate` skill in **per-task mode** (not final-branch mode
    fi
    ```
 
-   **⚠ Stop if this might be a stacked branch.** If this branch was based on another feature branch (not the trunk), `git merge-base HEAD <trunk>` will include the parent's commits in the review scope, producing spurious review findings and an inaccurate handoff summary. Before proceeding with the trunk merge-base, ask: "Is this branch cut from the trunk, or from another feature branch?" If stacked, provide the base SHA explicitly — the SHA of the first commit you made on this branch — and do not use the trunk merge-base.
+   **⚠ Stop if this might be a stacked branch.** If this branch was based on another feature branch (not the trunk), `git merge-base HEAD <trunk>` will include the parent's commits in the review scope, producing spurious review findings and an inaccurate handoff summary. Before proceeding with the trunk merge-base, ask: "Is this branch cut from the trunk, or from another feature branch?" If stacked, provide the base SHA explicitly — the SHA of the commit immediately before your first commit on this branch (i.e., the parent branch tip at the time you branched: `git rev-parse <your-first-commit>^`) — and do not use the trunk merge-base. Git ranges (`<base>..HEAD`) exclude the base itself, so the base must be the commit before your work started, not the first commit of your work.
 
 ### Step 5: Post Linear handoff comment
 
