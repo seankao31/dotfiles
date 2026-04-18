@@ -40,12 +40,16 @@ Before running any steps, verify that all implementation work is committed and n
 git status --short
 ```
 
-The working tree must be **completely clean** (no output). Any line in the output is a stop condition:
+The working tree must be **completely clean** (no output), with one exception:
+
+- **`?? .ralph-base-sha`** — acceptable and expected in ralph-loop sessions. The orchestrator writes this file before dispatch. Do not commit or remove it.
+
+All other lines in the output are stop conditions:
 
 - **`M`, `D`, `A`, `R` lines** — uncommitted changes to tracked files. Commit them first.
-- **`??` lines** — untracked files. Commit or remove them before running this skill. This includes scratch files in `docs/` or `memory/` — because Step 3.5 stages all new untracked files, any untracked files present at the start of this skill will end up in the docs commit.
+- **Any other `??` lines** — untracked files. Commit or remove them before running this skill. This includes scratch files in `docs/` or `memory/` — because Step 3.5 stages all new untracked files, any untracked files (other than `.ralph-base-sha`) present at the start of this skill will end up in the docs commit.
 
-Once the working tree is clean, any untracked files that appear during Steps 1–3 are guaranteed to have been created by the skill itself and are safe to stage in Step 3.5.
+Once the working tree is clean (with only the `.ralph-base-sha` exception), any untracked files that appear during Steps 1–3 are guaranteed to have been created by the skill itself and are safe to stage in Step 3.5.
 
 ## The Sequence (run in order)
 
@@ -72,7 +76,7 @@ Steps 1–3 may have modified or created files. Commit them so the codex review 
 ```bash
 git status --short          # confirm only expected new files from Steps 1-3
 git add -u                  # stage modifications to tracked files
-git add $(git ls-files --others --exclude-standard) 2>/dev/null || true  # stage new files from doc skills
+git ls-files --others --exclude-standard | grep -v '^\.ralph-base-sha$' | xargs -r git add  # stage new files from doc skills (excludes .ralph-base-sha)
 git diff --cached --quiet || git commit -m "docs: update stale docs and capture decisions"
 ```
 
