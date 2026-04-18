@@ -24,9 +24,9 @@ Newest entry first. Each entry records: date, session summary, current state of 
 
 **Ticket status at end of session:**
 - ENG-182: **In Review** ✓ — SKILL.md complete, 24 Codex review passes, handoff comment posted. Branch: `eng-182-create-prepare-for-review-skill`. Key open design item for ENG-184: orchestrator must write `.ralph-base-sha` to each worktree before dispatch.
-- ENG-186: Not started
-- ENG-184: Not started (blocked by ENG-182 — now unblocked)
-- ENG-185: Not started
+- ENG-186: **In Review** ✓ — close-feature-branch SKILL.md complete, 5 Codex review passes, handoff comment posted. Branch: `eng-186-project-local-close-feature-branch-skill-for-chezmoi`. Has a forward-reference to `/prepare-for-review` that works once ENG-182 ships.
+- ENG-184: Not started (unblocked once ENG-182 merges)
+- ENG-185: Starting now (independent)
 - ENG-177: Not started
 - ENG-178: Not started
 
