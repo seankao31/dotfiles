@@ -34,19 +34,18 @@ Expected states:
 
 ## Pre-flight: verify clean working tree
 
-Before running any steps, verify that all implementation work is committed:
+Before running any steps, verify that all implementation work is committed and no untracked files exist:
 
 ```bash
 git status --short
 ```
 
-Acceptable state:
-- **No output / empty** — clean tree, proceed.
-- **`??` lines in known doc paths** (`agent-config/docs/`, `docs/`, `memory/`, `.claude/`) — acceptable; the doc steps will create files there.
+The working tree must be **completely clean** (no output). Any line in the output is a stop condition:
 
-Stop conditions (fix before proceeding):
-- **Any `M`, `D`, `A`, or `R` lines** — uncommitted changes to tracked files. Commit them first.
-- **`??` lines outside doc/memory paths** — new implementation source files that were never committed. Commit them before running this skill. A branch with untracked source files must not be moved to In Review.
+- **`M`, `D`, `A`, `R` lines** — uncommitted changes to tracked files. Commit them first.
+- **`??` lines** — untracked files. Commit or remove them before running this skill. This includes scratch files in `docs/` or `memory/` — because Step 3.5 stages all new untracked files, any untracked files present at the start of this skill will end up in the docs commit.
+
+Once the working tree is clean, any untracked files that appear during Steps 1–3 are guaranteed to have been created by the skill itself and are safe to stage in Step 3.5.
 
 ## The Sequence (run in order)
 
@@ -71,14 +70,13 @@ Invoke the `prune-completed-docs` skill. Removes or archives now-stale planning 
 Steps 1–3 may have modified or created files. Commit them so the codex review in Step 4 sees the complete branch (including docs):
 
 ```bash
-git status --short          # review what was added/modified by the preceding steps
-git add -u                  # stage modifications to already-tracked files
-# Also add new files in the doc/decision/memory directories created by the doc skills
-git add -- agent-config/docs/ docs/ memory/ .claude/projects/ 2>/dev/null || true
+git status --short          # confirm only expected new files from Steps 1-3
+git add -u                  # stage modifications to tracked files
+git add $(git ls-files --others --exclude-standard) 2>/dev/null || true  # stage new files from doc skills
 git diff --cached --quiet || git commit -m "docs: update stale docs and capture decisions"
 ```
 
-The `--quiet` guard skips the commit if Steps 1–3 made no changes. Using `git add -u` plus explicit doc paths avoids staging pre-existing untracked scratch files at the repo root. **Known limitation:** if pre-existing untracked scratch files exist inside the doc directories, they will be staged. The pre-flight check above should catch this — if `git status` showed `??` lines in doc paths before running the skill, verify those files were put there intentionally.
+The pre-flight required a clean working tree, so all untracked files staged here were created by the skill steps (Steps 1–3). The `--quiet` guard skips the commit if nothing changed.
 
 ### Step 4: Codex review gate
 
