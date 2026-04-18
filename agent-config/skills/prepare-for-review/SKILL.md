@@ -18,10 +18,13 @@ Do NOT use this skill to cover up an incomplete implementation. If tests fail or
 
 ## Idempotency check (run first, before any steps)
 
-Check the current Linear issue state. Use whichever method is available:
+Check the current Linear issue state. Attempt the CLI first; if it fails for any reason (binary not found, authentication failure, network error), fall back to `linear-workflow`:
 
-- **CLI available** (`linear --version` succeeds): `linear issue view <ISSUE-ID> --json | jq -r '.state.name'`
-- **CLI not available**: invoke the `linear-workflow` skill and ask it to fetch the current state of the issue.
+```bash
+linear issue view <ISSUE-ID> --json 2>/dev/null | jq -r '.state.name'
+# If the above exits non-zero or returns empty: invoke linear-workflow
+# skill instead and ask it to fetch the current issue state.
+```
 
 Expected states:
 
@@ -45,7 +48,16 @@ Invoke the `codex-review-gate` skill in **per-task mode** — pass the branch st
    git merge-base HEAD main
    ```
 
-   This is reliable for branches cut directly from main. **For stacked branches** (branching from another feature branch, not main) use `git merge-base HEAD <parent-branch-name>` instead, or record the SHA explicitly when you create the branch (`git rev-parse HEAD` before the first feature commit). Stacked interactive branches must provide the base SHA manually — there is no reliable automatic heuristic without `.ralph-base-sha`.
+   This is reliable for branches cut directly from the trunk. The trunk branch name varies by repo (`main`, `master`, or other) — detect it:
+
+   ```bash
+   TRUNK=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
+   # If that fails: try main, then master
+   [ -z "$TRUNK" ] && TRUNK=$(git show-ref --verify --quiet refs/heads/main && echo main || echo master)
+   git merge-base HEAD "$TRUNK"
+   ```
+
+   **For stacked branches** (branching from another feature branch, not the trunk): use `git merge-base HEAD <parent-branch-name>` instead, or record the SHA explicitly when you create the branch. Stacked interactive branches must provide the base SHA manually — there is no reliable automatic heuristic without `.ralph-base-sha`.
 
 ### Step 2: Update stale docs
 
