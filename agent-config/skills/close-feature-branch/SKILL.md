@@ -47,7 +47,7 @@ Expected: `In Review`.
 git status --short
 ```
 
-- **Lines starting with `M`, `D`, `A`, `R`** — uncommitted changes to tracked files. STOP. Commit or discard them before proceeding. `git worktree remove` will refuse to clean up a dirty worktree, and `--force` has destroyed work before — never reach for it.
+- **Any line NOT starting with `??`** — uncommitted changes to tracked files (includes ` M`, `MM`, `UU`, `T`, `A`, `D`, `R`, etc.). STOP. Commit or discard them before proceeding. `git worktree remove` will refuse to clean up a dirty worktree, and `--force` has destroyed work before — never reach for it.
 - **Lines starting with `??`** — untracked files. Proceed to §3, which handles them explicitly.
 - **No output** — clean; proceed.
 
@@ -83,6 +83,19 @@ Switch to the main checkout (NOT the worktree) — the main repo at the chezmoi 
 
 ```bash
 cd /Users/seankao/.local/share/chezmoi
+```
+
+Verify it's clean (Sean also uses this checkout for ad-hoc edits):
+
+```bash
+git status --short
+```
+
+If this produces any output, STOP and surface to Sean. Do not merge into a dirty main checkout — a failed `git pull --ff-only` or `git merge --ff-only` can leave both the main checkout and the close ritual half-completed.
+
+Once clean:
+
+```bash
 git checkout main
 git pull --ff-only origin main
 git merge --ff-only "$FEATURE_BRANCH"
@@ -100,7 +113,14 @@ Still in the main checkout:
 git push origin main
 ```
 
-If the push is rejected (someone pushed in between), pull with `--ff-only`, then re-run from Step 1 if needed.
+**If the push is rejected** (someone pushed in between): local main has already absorbed the feature commits via ff-merge, so it has diverged from the new origin/main. `git pull --ff-only` won't resolve this. Recovery:
+
+1. `git reset --hard origin/main` on the main checkout (discards the local ff-merge).
+2. `cd "$WORKTREE_PATH"` back to the feature worktree.
+3. Re-run Step 1 (rebase onto the new origin/main).
+4. Re-run Step 2 and Step 3.
+
+Alternatively, escalate to Sean if you're unsure — losing an ff-merge state is recoverable, but making it worse is harder to undo.
 
 ### Step 4: Remove the worktree
 
