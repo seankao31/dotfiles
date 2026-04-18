@@ -14,15 +14,17 @@ The merge-and-cleanup ritual for this repo, run AFTER Sean has reviewed the work
 - After Sean has reviewed an In Review Linear issue and approved the work for merge.
 - On a feature branch in a worktree under `.worktrees/` (created by `using-git-worktrees` or the ralph orchestrator).
 
-## Determine the Linear issue ID
+## Capture branch identity up front
 
-The issue ID is embedded in the branch name:
+Record the feature branch name AND Linear issue ID before doing anything else. Once Step 2 checks out main and Step 4 removes the worktree, these values can no longer be derived automatically:
 
 ```bash
-ISSUE_ID=$(git rev-parse --abbrev-ref HEAD | grep -oiE '[A-Z]+-[0-9]+' | head -1)
+FEATURE_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+ISSUE_ID=$(echo "$FEATURE_BRANCH" | grep -oiE '[A-Z]+-[0-9]+' | head -1)
+WORKTREE_PATH=$(git rev-parse --show-toplevel)
 ```
 
-All subsequent commands reference `$ISSUE_ID`.
+All subsequent shell commands reference `$FEATURE_BRANCH`, `$ISSUE_ID`, and `$WORKTREE_PATH`.
 
 ## Pre-flight
 
@@ -83,10 +85,10 @@ Switch to the main checkout (NOT the worktree) — the main repo at the chezmoi 
 cd /Users/seankao/.local/share/chezmoi
 git checkout main
 git pull --ff-only origin main
-git merge --ff-only <feature-branch>
+git merge --ff-only "$FEATURE_BRANCH"
 ```
 
-Replace `<feature-branch>` with the actual branch name. If the merge is not fast-forward (origin/main advanced between the rebase and the merge), return to the worktree and re-run Step 1.
+If the merge is not fast-forward (origin/main advanced between the rebase and the merge), return to the worktree and re-run Step 1.
 
 Never create a merge commit here. This repo uses rebase + ff-only as a durable convention — see user memory `feedback_rebase_merge.md`.
 
@@ -107,10 +109,8 @@ The worktree has the feature branch checked out, so it must be removed *before* 
 Ensure the current shell is NOT inside the worktree (Step 2 `cd`'d to main, so you should already be in the main checkout). Then:
 
 ```bash
-git worktree remove "<worktree-path>"
+git worktree remove "$WORKTREE_PATH"
 ```
-
-Replace `<worktree-path>` with the full path (e.g., `/Users/seankao/.local/share/chezmoi/.worktrees/eng-186-...`).
 
 **If removal fails:** Do NOT use `--force`. Check for:
 - Uncommitted changes (re-run pre-flight)
@@ -125,15 +125,15 @@ Replace `<worktree-path>` with the full path (e.g., `/Users/seankao/.local/share
 Now that the worktree is gone, delete the branch locally and on the remote:
 
 ```bash
-git branch -d "<feature-branch>"
-git push origin --delete "<feature-branch>"
+git branch -d "$FEATURE_BRANCH"
+git push origin --delete "$FEATURE_BRANCH"
 ```
 
 Use `-d` (safe delete), not `-D` (force delete). If `-d` refuses because the branch isn't merged, something went wrong with the rebase/merge — investigate before escalating to `-D`.
 
 ### Step 6: Move Linear issue to Done
 
-Invoke the `linear-workflow` skill and request the `In Review → Done` transition. Do NOT call the `linear` CLI directly.
+Invoke the `linear-workflow` skill with the explicit issue ID (`$ISSUE_ID`), requesting the `In Review → Done` transition. Passing the ID explicitly is required — by this point, the feature branch and worktree are gone, so `linear-workflow` cannot infer the target issue from the current branch context. Do NOT call the `linear` CLI directly.
 
 ## Red Flags / When to Stop
 
