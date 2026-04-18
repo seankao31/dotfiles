@@ -98,18 +98,11 @@ git push origin main
 
 If the push is rejected (someone pushed in between), pull with `--ff-only`, then re-run from Step 1 if needed.
 
-### Step 4: Delete the feature branch
+### Step 4: Remove the worktree
 
-Local and remote:
+The worktree has the feature branch checked out, so it must be removed *before* the branch can be deleted (`git branch -d` refuses to delete a branch that is checked out anywhere).
 
-```bash
-git branch -d "<feature-branch>"
-git push origin --delete "<feature-branch>"
-```
-
-Use `-d` (safe delete), not `-D` (force delete). If `-d` refuses because the branch isn't merged, something went wrong with the rebase/merge — investigate before escalating to `-D`.
-
-### Step 5: Remove the worktree
+Ensure the current shell is NOT inside the worktree (Step 2 `cd`'d to main, so you should already be in the main checkout). Then:
 
 ```bash
 git worktree remove "<worktree-path>"
@@ -124,6 +117,17 @@ Replace `<worktree-path>` with the full path (e.g., `/Users/seankao/.local/share
 - A shell `cd`'d into the worktree
 
 `--force` has destroyed work before; the failure is informational, not an obstacle to blast through.
+
+### Step 5: Delete the feature branch
+
+Now that the worktree is gone, delete the branch locally and on the remote:
+
+```bash
+git branch -d "<feature-branch>"
+git push origin --delete "<feature-branch>"
+```
+
+Use `-d` (safe delete), not `-D` (force delete). If `-d` refuses because the branch isn't merged, something went wrong with the rebase/merge — investigate before escalating to `-D`.
 
 ### Step 6: Move Linear issue to Done
 
