@@ -18,13 +18,13 @@ Do NOT use this skill to cover up an incomplete implementation. If tests fail or
 
 ## Idempotency check (run first, before any steps)
 
-Check the current Linear issue state. Attempt the CLI first; if it fails for any reason (binary not found, authentication failure, network error), fall back to `linear-workflow`:
+Check the current Linear issue state via the Linear CLI:
 
 ```bash
 linear issue view <ISSUE-ID> --json 2>/dev/null | jq -r '.state.name'
-# If the above exits non-zero or returns empty: invoke linear-workflow
-# skill instead and ask it to fetch the current issue state.
 ```
+
+If the CLI fails (exits non-zero or returns empty output), the Linear API is unreachable from this environment. In that case, surface this to the reviewer and stop — do not attempt to complete the handoff without being able to verify state or post the review comment.
 
 Expected states:
 
@@ -78,7 +78,7 @@ git add -- agent-config/docs/ docs/ memory/ .claude/projects/ 2>/dev/null || tru
 git diff --cached --quiet || git commit -m "docs: update stale docs and capture decisions"
 ```
 
-The `--quiet` guard skips the commit if Steps 1–3 made no changes. Using `git add -u` plus explicit doc paths (rather than `git add -A`) avoids accidentally staging pre-existing untracked scratch files in the worktree.
+The `--quiet` guard skips the commit if Steps 1–3 made no changes. Using `git add -u` plus explicit doc paths avoids staging pre-existing untracked scratch files at the repo root. **Known limitation:** if pre-existing untracked scratch files exist inside the doc directories, they will be staged. The pre-flight check above should catch this — if `git status` showed `??` lines in doc paths before running the skill, verify those files were put there intentionally.
 
 ### Step 4: Codex review gate
 
@@ -91,18 +91,21 @@ Invoke the `codex-review-gate` skill in **per-task mode** (not final-branch mode
 2. If the file doesn't exist (interactive session), detect the trunk branch:
 
    ```bash
-   TRUNK=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
-   if [ -z "$TRUNK" ]; then
+   # Prefer the remote ref (avoids failure when local trunk branch doesn't exist)
+   TRUNK_REF=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null)
+   if [ -n "$TRUNK_REF" ]; then
+     git merge-base HEAD "$TRUNK_REF"
+   else
+     # Fall back to well-known local branch names
+     TRUNK=""
      git show-ref --verify --quiet refs/heads/main && TRUNK=main
+     [ -z "$TRUNK" ] && git show-ref --verify --quiet refs/heads/master && TRUNK=master
+     if [ -z "$TRUNK" ]; then
+       echo "Cannot determine trunk. Set .ralph-base-sha or pass base SHA explicitly." >&2
+       exit 1
+     fi
+     git merge-base HEAD "$TRUNK"
    fi
-   if [ -z "$TRUNK" ]; then
-     git show-ref --verify --quiet refs/heads/master && TRUNK=master
-   fi
-   if [ -z "$TRUNK" ]; then
-     echo "Cannot determine trunk branch. Set .ralph-base-sha or pass base SHA explicitly." >&2
-     exit 1
-   fi
-   git merge-base HEAD "$TRUNK"
    ```
 
    **⚠ Stacked interactive branches:** If this branch was based on another feature branch (not the trunk), `git merge-base HEAD <trunk>` will include the parent's commits in the review scope, producing spurious findings and an inaccurate handoff summary. For stacked branches, provide the base SHA explicitly — the SHA of the first commit you made on this branch.
@@ -159,7 +162,7 @@ rm -f "$COMMENT_FILE"
 
 Verify the exact CLI syntax against `linear issue comment add --help` at invocation time if uncertain — do not guess flags.
 
-**If the `linear` CLI is not installed** (or fails for any reason): post the comment via the `linear-workflow` skill instead, describing what you need posted.
+**If the `linear` CLI fails:** The `linear-workflow` skill also uses the same CLI binary, so it is not a fallback. If Linear is unreachable, this skill cannot complete the handoff — surface the error and stop.
 
 ### Step 6: Move issue to In Review via linear-workflow
 
