@@ -97,7 +97,7 @@ The base SHA is used in Steps 1, 4, and 5. Compute it once now so all steps stay
 
 Invoke the `update-stale-docs` skill. Ensures READMEs, inline comments, and doc files reflect the final code behavior.
 
-**Important:** `update-stale-docs` uses `git diff --stat` (working tree diff) to identify what changed, but this returns empty output when all work is committed. To give it the right scope, run `git diff "$BASE_SHA" HEAD --stat` and provide that output when invoking the skill. Using `$BASE_SHA` (not `main`) is correct for stacked branches too. (Known limitation of `update-stale-docs` — it was designed for pre-commit use; a follow-up should make it accept a branch base SHA.)
+**Important:** `update-stale-docs` uses `git diff --stat` (working tree diff) to identify what changed, but this returns empty output when all work is committed. To give it the right scope — including inline comment text it needs to check — run `git diff "$BASE_SHA" HEAD` and provide the full diff output when invoking the skill. Using `$BASE_SHA` (not `main`) is correct for stacked branches too. (Known limitation: `update-stale-docs` was designed for pre-commit use; a follow-up should make it accept a branch base SHA directly.)
 
 ### Step 2: Capture decisions
 
@@ -148,7 +148,7 @@ Note: `linear issue comment list --json` returns `{"nodes": [...], "pageInfo": {
 
 If `ALREADY_POSTED` is `true`, skip to Step 6.
 
-**Note:** If the `linear` CLI is unavailable, this check cannot run — proceed with posting and accept a potential duplicate on retry after a partial failure.
+**If the `linear` CLI is unavailable:** Stop immediately — the handoff cannot complete without the CLI. The comment posting in the next step also requires it, so there's no point continuing.
 
 Include `<!-- review-sha: $CURRENT_SHA -->` as the first line of the `## Review Summary` section in the comment body so the SHA-based dedup check can find it on retry.
 
