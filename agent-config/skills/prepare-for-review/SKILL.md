@@ -16,6 +16,18 @@ Hand-off checklist for "implementation is done, tests pass, now it needs human r
 
 Do NOT use this skill to cover up an incomplete implementation. If tests fail or the work isn't done, fix that first.
 
+## Idempotency check (run first, before any steps)
+
+Check the current Linear issue state:
+
+```bash
+linear issue view <ISSUE-ID> --json | jq -r '.state.name'
+```
+
+- **In Review** — the handoff already completed. Do not re-post the comment or re-transition. Exit cleanly.
+- **In Progress** — proceed with the sequence below.
+- **Any other state** — stop and surface to the reviewer. Something is off with the dispatch lifecycle.
+
 ## The Sequence (run in order)
 
 ### Step 1: Codex review gate
@@ -80,6 +92,8 @@ linear issue comment add <ISSUE-ID> --body-file /tmp/handoff-comment.md
 
 Verify the exact CLI syntax against `linear issue comment add --help` at invocation time if uncertain — do not guess flags.
 
+**If the `linear` CLI is not installed** (`linear --version` fails): post the comment via the `linear-workflow` skill instead, describing what you need posted. The `linear-workflow` skill handles CLI-unavailable fallback to MCP tools.
+
 ### Step 6: Move issue to In Review via linear-workflow
 
 Invoke the `linear-workflow` skill and request the `In Progress → In Review` transition.
@@ -92,4 +106,4 @@ DO NOT call the `linear` CLI directly to change state. The `linear-workflow` ski
 - **`codex-review-gate` returns blocking findings.** Fix them, re-run the gate. Do not move to In Review with known blocking issues unsurfaced.
 - **The QA test plan is empty or generic.** Stop and actually think about what a reviewer would need to verify. A handoff comment that says "verify it works" is a failure of this skill — the agent that wrote the code knows the risky paths, and capturing them at handoff is the cheap moment.
 - **Deviations from the PRD are substantial enough they need discussion.** Post the comment anyway (the reviewer will see it), but flag loudly in the Review Summary section.
-- **Linear state is not In Progress AND not already In Review.** In Review means the handoff already happened — do not re-post the comment or re-transition; just exit cleanly. For any other unexpected state (Canceled, Backlog, Draft), stop and surface to the reviewer — something is off with the dispatch lifecycle.
+- **Linear state is unexpected** (not In Progress and not In Review). Something is off with the dispatch lifecycle — stop and surface to the reviewer rather than proceeding. See the Idempotency check section above for the expected states.
