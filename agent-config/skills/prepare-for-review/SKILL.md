@@ -108,7 +108,7 @@ Invoke the `codex-review-gate` skill in **per-task mode** (not final-branch mode
    fi
    ```
 
-   **⚠ Stacked interactive branches:** If this branch was based on another feature branch (not the trunk), `git merge-base HEAD <trunk>` will include the parent's commits in the review scope, producing spurious findings and an inaccurate handoff summary. For stacked branches, provide the base SHA explicitly — the SHA of the first commit you made on this branch.
+   **⚠ Stop if this might be a stacked branch.** If this branch was based on another feature branch (not the trunk), `git merge-base HEAD <trunk>` will include the parent's commits in the review scope, producing spurious review findings and an inaccurate handoff summary. Before proceeding with the trunk merge-base, ask: "Is this branch cut from the trunk, or from another feature branch?" If stacked, provide the base SHA explicitly — the SHA of the first commit you made on this branch — and do not use the trunk merge-base.
 
 ### Step 5: Post Linear handoff comment
 
@@ -118,8 +118,10 @@ First check whether a handoff comment for this specific revision was already pos
 CURRENT_SHA=$(git rev-parse HEAD)
 ALREADY_POSTED=$(linear issue comment list <ISSUE-ID> --json 2>/dev/null \
   | jq --arg sha "$CURRENT_SHA" \
-      '[.[] | select(.body | contains("## Review Summary") and contains($sha))] | length > 0')
+      '[.nodes[] | select(.body | contains("## Review Summary") and contains($sha))] | length > 0')
 ```
+
+Note: `linear issue comment list --json` returns `{"nodes": [...], "pageInfo": {...}}` — use `.nodes[]`, not `.[]`.
 
 If `ALREADY_POSTED` is `true`, skip to Step 6.
 
