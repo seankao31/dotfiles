@@ -52,8 +52,17 @@ Invoke the `codex-review-gate` skill in **per-task mode** — pass the branch st
 
    ```bash
    TRUNK=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
-   # If that fails: try main, then master
-   [ -z "$TRUNK" ] && TRUNK=$(git show-ref --verify --quiet refs/heads/main && echo main || echo master)
+   # If origin/HEAD is unset, try well-known trunk names
+   if [ -z "$TRUNK" ]; then
+     git show-ref --verify --quiet refs/heads/main && TRUNK=main
+   fi
+   if [ -z "$TRUNK" ]; then
+     git show-ref --verify --quiet refs/heads/master && TRUNK=master
+   fi
+   if [ -z "$TRUNK" ]; then
+     echo "Cannot determine trunk branch. Set .ralph-base-sha or pass base SHA explicitly." >&2
+     exit 1
+   fi
    git merge-base HEAD "$TRUNK"
    ```
 
@@ -77,14 +86,15 @@ Invoke the `prune-completed-docs` skill. Removes or archives now-stale planning 
 
 ### Step 4.5: Commit doc/decisions changes
 
-After Steps 2–4 may have modified files, commit them before building the handoff summary, so the `git log` in the handoff comment reflects the complete branch work:
+After Steps 2–4 may have modified or created files, commit them before building the handoff summary, so the `git log` in the handoff comment reflects the complete branch work. Check status first to see what exists, then stage:
 
 ```bash
-git add -u
+git status --short          # review what was added/modified by the preceding steps
+git add -A                  # stage all changes including new ADR/memory files created by capture-decisions
 git diff --cached --quiet || git commit -m "docs: update stale docs and capture decisions (post-review)"
 ```
 
-The `--quiet` guard skips the commit if Steps 2–4 made no changes.
+The `--quiet` guard skips the commit if Steps 2–4 made no changes. The `git status` check before `git add -A` is required so you know exactly what is being staged.
 
 ### Step 5: Post Linear handoff comment
 
