@@ -67,9 +67,24 @@ Invoke the `update-stale-docs` skill. Run this AFTER the codex fix loop — revi
 
 Invoke the `capture-decisions` skill. Records any non-obvious implementation choices made during the session AND during the code review fix loop — the *why*, not the *what*.
 
+**In autonomous sessions (ralph loop):** `capture-decisions` presents a proposal and says "wait for approval before writing." With no human present, treat this as a self-approval — propose, then execute immediately. Sean will review the decisions at review time.
+
 ### Step 4: Prune completed docs
 
 Invoke the `prune-completed-docs` skill. Removes or archives now-stale planning docs, decision scratch, superseded specs, etc.
+
+**In autonomous sessions (ralph loop):** Same as Step 3 — `prune-completed-docs` also has an approval gate. Self-approve in autonomous mode; proceed immediately after presenting the proposal.
+
+### Step 4.5: Commit doc/decisions changes
+
+After Steps 2–4 may have modified files, commit them before building the handoff summary, so the `git log` in the handoff comment reflects the complete branch work:
+
+```bash
+git add -u
+git diff --cached --quiet || git commit -m "docs: update stale docs and capture decisions (post-review)"
+```
+
+The `--quiet` guard skips the commit if Steps 2–4 made no changes.
 
 ### Step 5: Post Linear handoff comment
 
