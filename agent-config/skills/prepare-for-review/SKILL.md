@@ -24,7 +24,7 @@ In ralph-loop sessions, the issue ID is in the prompt template. In interactive s
 ISSUE_ID=$(git rev-parse --abbrev-ref HEAD | grep -oiE '[A-Z]+-[0-9]+' | head -1)
 ```
 
-If the branch name doesn't contain an issue ID (e.g., no `eng-123` slug), you must supply it manually. All `<ISSUE-ID>` references below use `$ISSUE_ID`.
+If the branch name doesn't contain an issue ID (e.g., no `eng-123` slug), you must supply it manually. All subsequent shell commands use `$ISSUE_ID`.
 
 ## Idempotency check (run first, before any steps)
 
@@ -105,6 +105,8 @@ Invoke the `capture-decisions` skill. Records any non-obvious implementation cho
 
 **In autonomous sessions (ralph loop):** `capture-decisions` presents a proposal and says "wait for approval before writing." With no human present, treat this as a self-approval — propose, then execute immediately. Sean will review the decisions at review time.
 
+**Note on commits:** `capture-decisions` ends with its own `git commit`. This means this workflow may produce two separate doc commits (one from Step 2, one from Step 3.5 covering prune changes). Both will be in the `$BASE_SHA..HEAD` codex review scope — no action needed.
+
 ### Step 3: Prune completed docs
 
 Invoke the `prune-completed-docs` skill. Removes or archives now-stale planning docs, decision scratch, superseded specs, etc.
@@ -137,7 +139,7 @@ First check whether a handoff comment for this specific revision was already pos
 
 ```bash
 CURRENT_SHA=$(git rev-parse HEAD)
-ALREADY_POSTED=$(linear issue comment list <ISSUE-ID> --json 2>/dev/null \
+ALREADY_POSTED=$(linear issue comment list "$ISSUE_ID" --json 2>/dev/null \
   | jq --arg sha "$CURRENT_SHA" \
       '[.nodes[] | select(.body | contains("## Review Summary") and contains($sha))] | length > 0')
 ```
@@ -181,7 +183,7 @@ cat > "$COMMENT_FILE" <<COMMENT
 <output of `git log --oneline "$BASE_SHA"..HEAD`>
 COMMENT
 
-linear issue comment add <ISSUE-ID> --body-file "$COMMENT_FILE"
+linear issue comment add "$ISSUE_ID" --body-file "$COMMENT_FILE"
 rm -f "$COMMENT_FILE"
 ```
 
