@@ -37,7 +37,7 @@ linear issue view "$ISSUE_ID" --json 2>/dev/null | jq -r '.state.name'
 Expected: `In Review`.
 
 - **In Review** — proceed.
-- **In Progress** — the work hasn't been handed off for review yet. Run `/prepare-for-review` first.
+- **In Progress** — the work hasn't been handed off for review yet. Run `/prepare-for-review` first (added in ENG-182; must be merged before this skill is usable on a branch still in In Progress).
 - **Done** — nothing to do; the branch was already closed. Investigate whether this worktree is leftover and can be removed.
 - **Any other state** — stop and surface to Sean. The dispatch lifecycle is off.
 
