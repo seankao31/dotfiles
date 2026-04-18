@@ -16,12 +16,22 @@ Hand-off checklist for "implementation is done, tests pass, now it needs human r
 
 Do NOT use this skill to cover up an incomplete implementation. If tests fail or the work isn't done, fix that first.
 
+## Determine the Linear issue ID
+
+In ralph-loop sessions, the issue ID is in the prompt template. In interactive sessions, derive it from the branch name:
+
+```bash
+ISSUE_ID=$(git rev-parse --abbrev-ref HEAD | grep -oiE '[A-Z]+-[0-9]+' | head -1)
+```
+
+If the branch name doesn't contain an issue ID (e.g., no `eng-123` slug), you must supply it manually. All `<ISSUE-ID>` references below use `$ISSUE_ID`.
+
 ## Idempotency check (run first, before any steps)
 
 Check the current Linear issue state via the Linear CLI:
 
 ```bash
-linear issue view <ISSUE-ID> --json 2>/dev/null | jq -r '.state.name'
+linear issue view "$ISSUE_ID" --json 2>/dev/null | jq -r '.state.name'
 ```
 
 If the CLI fails (exits non-zero or returns empty output), the Linear API is unreachable from this environment. In that case, surface this to the reviewer and stop — do not attempt to complete the handoff without being able to verify state or post the review comment.
@@ -115,6 +125,8 @@ The pre-flight required a clean working tree, so all untracked files staged here
 ### Step 4: Codex review gate
 
 Invoke the `codex-review-gate` skill in **per-task mode** (not final-branch mode), passing `--base "$BASE_SHA"` (computed above). The review covers code commits + the doc commit from Step 3.5. Per-task mode supports the implementer fix loop: iterate on findings, fix, commit, re-run the gate until clean.
+
+**Known limitation:** If the codex fix loop results in behavioral code changes, the doc/decision captures from Steps 1–3 may be slightly stale. For minor fixes (style, error handling) this is acceptable. For behavioral changes, re-run `/prepare-for-review` from the top on the updated branch.
 
 ### Step 5: Post Linear handoff comment
 
