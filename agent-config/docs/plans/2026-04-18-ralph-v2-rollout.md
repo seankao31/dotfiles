@@ -26,7 +26,7 @@ Newest entry first. Each entry records: date, session summary, current state of 
 - ENG-182: **In Review** ✓ — SKILL.md complete, 24 Codex review passes, handoff comment posted. Branch: `eng-182-create-prepare-for-review-skill`. Key open design item for ENG-184: orchestrator must write `.ralph-base-sha` to each worktree before dispatch.
 - ENG-186: **In Review** ✓ — close-feature-branch SKILL.md complete, 5 Codex review passes, handoff comment posted. Branch: `eng-186-project-local-close-feature-branch-skill-for-chezmoi`. Has a forward-reference to `/prepare-for-review` that works once ENG-182 ships.
 - ENG-184: Not started (unblocked once ENG-182 merges)
-- ENG-185: Starting now (independent)
+- ENG-185: **Stopped at discovery phase** — needs Sean's design decision on install mechanism. Findings: no existing git hook infrastructure in this repo (only `.git/hooks/*.sample` files, no `core.hooksPath` set globally or locally, no `.githooks/` dir). The `agent-config/hooks/` directory that exists is for Claude Code event hooks, not git hooks. **Design question for Sean:** Should the post-commit git hook install globally (via `git config --global core.hooksPath ~/.config/git/hooks` + chezmoi-managed script), or per-repo, or some other mechanism? The plan's Task 1 says "pause and ask Sean" at this branch point — not proceeding without a decision.
 - ENG-177: Not started
 - ENG-178: Not started
 
@@ -38,7 +38,11 @@ Newest entry first. Each entry records: date, session summary, current state of 
 5. **SHA-based comment dedup** (not header-based): avoids duplicate posting on retry while allowing re-runs after feedback commits.
 
 **Decisions/issues for the next session:**
-- ENG-182 is done. ENG-184 is now unblocked.
+- ENG-182 and ENG-186 are In Review on their own branches. Sean's review merges both.
+- ENG-184 is unblocked once ENG-182 merges. Key contract from ENG-182 for ENG-184: orchestrator.sh must write `.ralph-base-sha` to each worktree at dispatch time (before the session's first commit). This file records the SHA where the session started and is what `prepare-for-review` uses to scope codex review + handoff summary.
+- **ENG-185 needs a design decision before it can proceed** — see above. Install mechanism is the blocker.
+- ENG-177 and ENG-178 are R&D experiments; not attempted this session (open-ended, not amenable to autonomous execution without Sean's subjective evaluation).
+- Open Q #2 (permission-prompt deadlock) remains contested — resolve empirically at the start of ENG-184 Task 8.
 - ENG-182 → ENG-184 dependency: ENG-184 orchestrator script must write `.ralph-base-sha` to each worktree at dispatch time (recording `git rev-parse HEAD` before the first commit). This contract is documented in prepare-for-review's SKILL.md and must be implemented in ENG-184's orchestrator.sh.
 - ENG-183 is Done but the linear-workflow SKILL.md's graphviz diagram already shows `prepare-for-review` as a handoff node — no updates needed there.
 - Consider filing a follow-up ticket to make `update-stale-docs` use branch diff (not working tree diff). Low priority but noted.
