@@ -151,9 +151,10 @@ Invoke the `linear-workflow` skill with the explicit issue ID (`$ISSUE_ID`), req
 
 **This must be the last step.** When the skill is invoked from inside the worktree being closed — the common case — Claude Code's Bash tool session CWD is pinned to this worktree at session start. Removing it destroys that CWD, and every subsequent Bash tool call fails to spawn a shell. Putting worktree removal last means all prior steps (branch delete, Linear transition) run while the CWD is still valid, and nothing after this step needs to run.
 
-Ensure the current shell is NOT inside the worktree (Step 2 `cd`'d to main, so you should already be in the main checkout). Then:
+Switch to the main checkout first — do not rely on Step 2's `cd` having persisted across Bash invocations:
 
 ```bash
+cd /Users/seankao/.local/share/chezmoi
 git worktree remove "$WORKTREE_PATH"
 ```
 
