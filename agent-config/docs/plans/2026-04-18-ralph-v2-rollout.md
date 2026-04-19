@@ -680,8 +680,10 @@ cd into the feature worktree:
 
 ~~~bash
 git fetch origin main
-git rebase origin/main
+git rebase main
 ~~~
+
+Rebase onto **local** `main` (not `origin/main`) so that any unpushed commits Sean has made directly to local main are absorbed; otherwise Step 2's `git merge --ff-only` will fail when the feature branch and local main have diverged.
 
 If conflicts arise, resolve them or abort (`git rebase --abort`) and escalate to Sean — do NOT auto-resolve silently.
 

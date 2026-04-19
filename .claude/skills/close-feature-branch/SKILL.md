@@ -72,8 +72,10 @@ Working directory is the feature worktree throughout, except where noted.
 
 ```bash
 git fetch origin main
-git rebase origin/main
+git rebase main
 ```
+
+Rebase onto **local** `main`, not `origin/main`. Sean sometimes commits directly to local main (progress logs, plan tweaks) without pushing immediately; rebasing onto local main absorbs those commits so Step 2's `git merge --ff-only` succeeds. The `git fetch` is still useful — Step 2's `git pull --ff-only origin main` catches any movement on the remote before the merge.
 
 **If rebase fails with conflicts:** run `git rebase --abort` and escalate to Sean. Do NOT auto-resolve silently. Reason: Sean prefers to resolve conflicts himself rather than discover a bad rebase weeks later.
 
