@@ -1,6 +1,6 @@
 ---
 name: close-feature-branch
-description: Project-local skill for chezmoi/agent-config. Use when Sean has finished reviewing a feature branch and is ready to ship — runs rebase, fast-forward merge to main, push, branch deletion, worktree removal, and the Linear Done transition. NOT for multi-branch cascades (dev/staging/main) — this repo is main-only. NOT a replacement for prepare-for-review; that skill runs earlier to produce the review artifacts.
+description: Project-local skill for chezmoi/agent-config. Use when Sean has finished reviewing a feature branch and is ready to ship — runs rebase, fast-forward merge to main, push, branch deletion, Linear Done transition, and worktree removal. NOT for multi-branch cascades (dev/staging/main) — this repo is main-only. NOT a replacement for prepare-for-review; that skill runs earlier to produce the review artifacts.
 model: sonnet
 allowed-tools: Skill, Bash, Read, Glob, Grep
 ---
@@ -16,7 +16,7 @@ The merge-and-cleanup ritual for this repo, run AFTER Sean has reviewed the work
 
 ## Capture branch identity up front
 
-Record the feature branch name AND Linear issue ID before doing anything else. Once Step 2 checks out main and Step 4 removes the worktree, these values can no longer be derived automatically:
+Record the feature branch name AND Linear issue ID before doing anything else. Once Step 2 checks out main, Step 4 detaches HEAD in the worktree, and Step 7 removes the worktree, these values can no longer be derived automatically:
 
 ```bash
 FEATURE_BRANCH=$(git rev-parse --abbrev-ref HEAD)
@@ -122,9 +122,34 @@ git push origin main
 
 Alternatively, escalate to Sean if you're unsure — losing an ff-merge state is recoverable, but making it worse is harder to undo.
 
-### Step 4: Remove the worktree
+### Step 4: Detach HEAD in the worktree
 
-The worktree has the feature branch checked out, so it must be removed *before* the branch can be deleted (`git branch -d` refuses to delete a branch that is checked out anywhere).
+`git branch -d` refuses to delete a branch that is checked out in any worktree. Rather than remove the worktree first (which destroys the Bash tool's session CWD mid-ritual — see Step 7), detach HEAD in the worktree. The branch is then no longer "checked out anywhere" and is safe to delete.
+
+```bash
+git -C "$WORKTREE_PATH" checkout --detach
+```
+
+The worktree directory stays intact with a detached HEAD; working files are unchanged.
+
+### Step 5: Delete the feature branch
+
+With the branch no longer checked out anywhere, delete it locally and on the remote:
+
+```bash
+git branch -d "$FEATURE_BRANCH"
+git push origin --delete "$FEATURE_BRANCH"
+```
+
+Use `-d` (safe delete), not `-D` (force delete). If `-d` refuses because the branch isn't merged, something went wrong with the rebase/merge — investigate before escalating to `-D`.
+
+### Step 6: Move Linear issue to Done
+
+Invoke the `linear-workflow` skill with the explicit issue ID (`$ISSUE_ID`), requesting the `In Review → Done` transition. Passing the ID explicitly is required — by this point, the feature branch is gone, so `linear-workflow` cannot infer the target issue from the current branch context. Do NOT call the `linear` CLI directly.
+
+### Step 7: Remove the worktree
+
+**This must be the last step.** When the skill is invoked from inside the worktree being closed — the common case — Claude Code's Bash tool session CWD is pinned to this worktree at session start. Removing it destroys that CWD, and every subsequent Bash tool call fails to spawn a shell. Putting worktree removal last means all prior steps (branch delete, Linear transition) run while the CWD is still valid, and nothing after this step needs to run.
 
 Ensure the current shell is NOT inside the worktree (Step 2 `cd`'d to main, so you should already be in the main checkout). Then:
 
@@ -139,21 +164,6 @@ git worktree remove "$WORKTREE_PATH"
 - A shell `cd`'d into the worktree
 
 `--force` has destroyed work before; the failure is informational, not an obstacle to blast through.
-
-### Step 5: Delete the feature branch
-
-Now that the worktree is gone, delete the branch locally and on the remote:
-
-```bash
-git branch -d "$FEATURE_BRANCH"
-git push origin --delete "$FEATURE_BRANCH"
-```
-
-Use `-d` (safe delete), not `-D` (force delete). If `-d` refuses because the branch isn't merged, something went wrong with the rebase/merge — investigate before escalating to `-D`.
-
-### Step 6: Move Linear issue to Done
-
-Invoke the `linear-workflow` skill with the explicit issue ID (`$ISSUE_ID`), requesting the `In Review → Done` transition. Passing the ID explicitly is required — by this point, the feature branch and worktree are gone, so `linear-workflow` cannot infer the target issue from the current branch context. Do NOT call the `linear` CLI directly.
 
 ## Red Flags / When to Stop
 
