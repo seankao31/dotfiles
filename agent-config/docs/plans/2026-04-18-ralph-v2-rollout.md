@@ -14,6 +14,36 @@
 
 Newest entry first. Each entry records: date, session summary, current state of each ticket, any blockers/decisions for the next session to pick up.
 
+### 2026-04-19 (session: handoff to a new session after ENG-182/186 merged)
+
+**What happened between sessions:**
+- Sean reviewed and merged ENG-182 and ENG-186 to main. Both are now **Done** in Linear.
+- ENG-186 was relocated during merge to `.claude/skills/close-feature-branch/` (project-local `.claude/skills/` rather than `agent-config/skills/`). This makes it invokable as a project-local slash command without chezmoi symlink plumbing.
+- Sean filed three follow-up tickets from the review:
+  - **ENG-197** — "Reorder close-feature-branch skill: detach HEAD + worktree-remove-last." **State: Approved, priority ⚠⚠⚠ (urgent).** Fixes an issue in ENG-186's close ritual.
+  - **ENG-193** — "update-stale-docs: accept explicit base SHA instead of relying on working-tree diff." State: Backlog. Resolves the known limitation flagged in yesterday's design decisions (item 2).
+  - **ENG-194** — "prepare-for-review: paginate Linear comment list in dedup check." State: Backlog. Addresses the P3 pagination limitation documented in ENG-182's SKILL.md.
+
+**Ticket status snapshot (2026-04-19):**
+- ENG-182: **Done** ✓
+- ENG-186: **Done** ✓ (relocated to `.claude/skills/`)
+- ENG-197: **Approved, urgent** — NEW follow-up to ENG-186; ready for autonomous pickup.
+- ENG-184: **Todo**, unblocked. Critical-path: the orchestrator itself.
+- ENG-185: **Todo**, still stopped at discovery — awaits Sean's design decision on git hook install mechanism (see 2026-04-18 entry for findings).
+- ENG-193, ENG-194: **Backlog** — lower priority, not blocking anything.
+- ENG-177, ENG-178: **Todo** — R&D experiments, need Sean's subjective evaluation.
+
+**Recommended priority for the next session:**
+1. ENG-197 (Approved + urgent; fixes something Sean already merged).
+2. ENG-185 — once Sean picks the install mechanism.
+3. ENG-184 — the big one.
+4. ENG-193, ENG-194 — backlog cleanup.
+5. ENG-177, ENG-178 — need Sean's involvement, not autonomous work.
+
+**Open design questions carried forward:**
+- ENG-185: global `core.hooksPath` via chezmoi `run_once_` vs. per-repo vs. other? Unanswered.
+- ENG-184 open questions: Q2 (permission-prompt deadlock) remains contested; test empirically at Task 8.
+
 ### 2026-04-18 (session: plan reconstruction + autonomous rollout start)
 
 **What happened:**
