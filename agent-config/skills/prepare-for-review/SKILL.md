@@ -95,9 +95,7 @@ The base SHA is used in Steps 1, 4, and 5. Compute it once now so all steps stay
 
 ### Step 1: Update stale docs
 
-Invoke the `update-stale-docs` skill. Ensures READMEs, inline comments, and doc files reflect the final code behavior.
-
-**Important:** `update-stale-docs` uses `git diff --stat` (working tree diff) to identify what changed, but this returns empty output when all work is committed. To give it the right scope — including inline comment text it needs to check — run `git diff "$BASE_SHA" HEAD` and provide the full diff output when invoking the skill. Using `$BASE_SHA` (not `main`) is correct for stacked branches too. (Known limitation: `update-stale-docs` was designed for pre-commit use; a follow-up should make it accept a branch base SHA directly.)
+Invoke the `update-stale-docs` skill with `--base "$BASE_SHA"` so it scopes to committed branch work (`$BASE_SHA..HEAD`) rather than the working tree. The working-tree default is empty on a clean branch and would yield a no-op sweep. Using `$BASE_SHA` (not `main`) is correct for stacked branches too.
 
 ### Step 2: Capture decisions
 

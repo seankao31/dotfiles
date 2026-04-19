@@ -23,19 +23,33 @@ Systematic checklist for finding and updating all documentation affected by a co
 
 ## The Checklist
 
-Run `git diff --stat` to see what changed. Then check each surface below. For each, ask: *does this describe behavior, structure, or relationships that my change affected?*
+**Scope the diff.** By default, inspect the working tree — the pre-commit use case:
+
+```bash
+git diff --stat
+```
+
+When invoked with a base SHA argument (`--base <sha>`), scope to committed branch work instead:
+
+```bash
+git diff --stat "$BASE" HEAD
+```
+
+Use the base-SHA form when work is already committed (e.g. when `prepare-for-review` invokes this skill after the final commit). The working-tree form is empty on a clean branch and would make the sweep trivially "no changes."
+
+Then check each surface below. For each, ask: *does this describe behavior, structure, or relationships that my change affected?*
 
 ```dot
 digraph sweep {
   "Code + tests pass" [shape=doublecircle];
-  "git diff --stat" [shape=plaintext];
+  "Inspect diff (working tree or BASE..HEAD)" [shape=plaintext];
   "Walk checklist (8 surfaces)" [shape=box];
   "Any stale docs found?" [shape=diamond];
   "Update stale docs" [shape=box];
   "Commit code + doc updates together" [shape=doublecircle];
 
-  "Code + tests pass" -> "git diff --stat";
-  "git diff --stat" -> "Walk checklist (8 surfaces)";
+  "Code + tests pass" -> "Inspect diff (working tree or BASE..HEAD)";
+  "Inspect diff (working tree or BASE..HEAD)" -> "Walk checklist (8 surfaces)";
   "Walk checklist (8 surfaces)" -> "Any stale docs found?";
   "Any stale docs found?" -> "Update stale docs" [label="yes"];
   "Any stale docs found?" -> "Commit code + doc updates together" [label="no"];
@@ -56,7 +70,7 @@ grep -rn "ABOUTME" src/ tests/    # find all ABOUTME comments
 
 ### 2. Inline comments in the diff
 
-Read every comment visible in `git diff`. Do any describe old behavior, old callers, or old data flow? Fix them.
+Read every comment visible in the diff (same scope as the `--stat` run above — working tree or `BASE..HEAD`). Do any describe old behavior, old callers, or old data flow? Fix them.
 
 ### 3. Decision docs
 
@@ -117,15 +131,15 @@ Follow-up doc tasks don't get done. Update now or it stays stale.
 ## Quick Reference
 
 ```
-After code + tests pass, before commit:
-1. git diff --stat           → what changed?
-2. ABOUTME comments          → still accurate?
-3. Inline comments in diff   → describe current behavior?
-4. docs/decisions/           → grep for changed concepts
-5. Specs + plans             → completed? mark done
-6. CLAUDE.md                 → tech stack, structure current?
-7. MEMORY.md + memory files  → project state, decisions current?
-8. README                    → setup, architecture current?
-9. Related source files      → references to renamed/moved things?
+After code + tests pass, before commit (or post-commit with `--base <sha>`):
+1. git diff --stat [BASE..HEAD] → what changed?
+2. ABOUTME comments             → still accurate?
+3. Inline comments in diff      → describe current behavior?
+4. docs/decisions/              → grep for changed concepts
+5. Specs + plans                → completed? mark done
+6. CLAUDE.md                    → tech stack, structure current?
+7. MEMORY.md + memory files     → project state, decisions current?
+8. README                       → setup, architecture current?
+9. Related source files         → references to renamed/moved things?
 → Update all stale docs, then commit together
 ```
