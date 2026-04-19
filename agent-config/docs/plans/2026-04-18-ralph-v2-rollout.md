@@ -50,7 +50,7 @@ Newest entry first. Each entry records: date, session summary, current state of 
 1. ~~ENG-197 (Approved + urgent; fixes something the user already merged).~~ **Done this session.**
 2. ENG-184 — the big one. Coordinate with ENG-199 on worktree-path convention before coding the path.
 3. ENG-199 — follow-up to ENG-197; can land independently of ENG-184 once the worktree-path convention is decided.
-4. ENG-193, ENG-194 — backlog cleanup.
+4. ENG-193, ~~ENG-194~~ — backlog cleanup. ~~ENG-194~~ **In Review** (server-side comment filter, 2026-04-20).
 5. ENG-177, ENG-178 — need the user's involvement, not autonomous work.
 
 **Open design questions carried forward:**
