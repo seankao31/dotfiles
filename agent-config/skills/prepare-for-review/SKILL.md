@@ -137,14 +137,14 @@ First check whether a handoff comment for this specific revision was already pos
 
 ```bash
 CURRENT_SHA=$(git rev-parse HEAD)
-ALREADY_POSTED=$(linear issue comment list "$ISSUE_ID" --json 2>/dev/null \
-  | jq --arg sha "$CURRENT_SHA" \
-      '[.nodes[] | select(.body | contains("## Review Summary") and contains($sha))] | length > 0')
+MARKER="<!-- review-sha: $CURRENT_SHA -->"
+ALREADY_POSTED=$(linear api 'query($issueId: String!, $marker: String!) { issue(id: $issueId) { comments(filter: { body: { contains: $marker } }, first: 1) { nodes { id } } } }' \
+  --variable "issueId=$ISSUE_ID" \
+  --variable "marker=$MARKER" 2>/dev/null \
+  | jq '((.data.issue.comments.nodes) // []) | length > 0')
 ```
 
-Note: `linear issue comment list --json` returns `{"nodes": [...], "pageInfo": {...}}` — use `.nodes[]`, not `.[]`.
-
-**Known limitation:** The dedup check only scans the first page of comments. On issues with more than ~50 comments, a handoff comment from a prior run may be on a later page and go undetected, resulting in a duplicate post. Acceptable for this use case — most issues won't have that many comments.
+The `<!-- review-sha: ... -->` marker is unique per HEAD, so the server-side `body.contains` filter returns at most one match regardless of how many comments the issue has. `linear issue comment list` isn't suitable here — it returns only the first ~50 comments with no cursor flag exposed, so a prior handoff comment on a long-running issue could sit on a later page and go undetected.
 
 If `ALREADY_POSTED` is `true`, skip to Step 6.
 
