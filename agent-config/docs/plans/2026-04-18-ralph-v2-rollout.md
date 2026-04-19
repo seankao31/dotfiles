@@ -604,7 +604,7 @@ Logic:
 **Parallel track:** No dependencies. Can land any time.
 
 **Files:**
-- Create: `agent-config/skills/close-feature-branch/SKILL.md`
+- Create: `.claude/skills/close-feature-branch/SKILL.md` (project-local at chezmoi repo root, not `agent-config/skills/` — the latter is symlinked to `~/.claude/skills/` and would load globally).
 
 **Critical memory constraints from Sean:**
 - **Rebase + ff-only, no merge commits** (`feedback_rebase_merge.md`).
@@ -612,7 +612,7 @@ Logic:
 
 ### Task 1: Scaffold
 
-- [ ] **Step 1:** Create `agent-config/skills/close-feature-branch/SKILL.md` with frontmatter:
+- [ ] **Step 1:** Create `.claude/skills/close-feature-branch/SKILL.md` (repo-root project-local path; not `agent-config/skills/`) with frontmatter:
 
 ```markdown
 ---
