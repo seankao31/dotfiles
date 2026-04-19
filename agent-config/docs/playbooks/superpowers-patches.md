@@ -1,6 +1,6 @@
 # Superpowers Plugin Patches
 
-These patches integrate Sean's custom workflow skills into the superpowers plugin's
+These patches integrate custom workflow skills into the superpowers plugin's
 orchestration flow. They must be re-applied whenever the superpowers plugin updates.
 
 **Current version patched:** 5.0.7

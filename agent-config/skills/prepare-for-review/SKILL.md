@@ -12,7 +12,7 @@ Hand-off checklist for "implementation is done, tests pass, now it needs human r
 ## When to Use
 
 - **At the end of an autonomous ralph-loop session** — the orchestrator prompt template names `/prepare-for-review` as the session's closing step.
-- **At the end of an interactive implementation session** — when Sean finishes a feature and wants the handoff polish done consistently.
+- **At the end of an interactive implementation session** — when the user finishes a feature and wants the handoff polish done consistently.
 
 Do NOT use this skill to cover up an incomplete implementation. If tests fail or the work isn't done, fix that first.
 
@@ -101,7 +101,7 @@ Invoke the `update-stale-docs` skill with `--base "$BASE_SHA"` so it scopes to c
 
 Invoke the `capture-decisions` skill. Records any non-obvious implementation choices made during the session — the *why*, not the *what*.
 
-**In autonomous sessions (ralph loop):** `capture-decisions` presents a proposal and says "wait for approval before writing." With no human present, treat this as a self-approval — propose, then execute immediately. Sean will review the decisions at review time.
+**In autonomous sessions (ralph loop):** `capture-decisions` presents a proposal and says "wait for approval before writing." With no human present, treat this as a self-approval — propose, then execute immediately. The user will review the decisions at review time.
 
 **Note on commits:** `capture-decisions` ends with its own `git commit`. This means this workflow may produce two separate doc commits (one from Step 2, one from Step 3.5 covering prune changes). Both will be in the `$BASE_SHA..HEAD` codex review scope — no action needed.
 

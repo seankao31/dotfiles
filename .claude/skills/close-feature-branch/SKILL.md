@@ -1,17 +1,17 @@
 ---
 name: close-feature-branch
-description: Project-local skill for chezmoi/agent-config. Use when Sean has finished reviewing a feature branch and is ready to ship — runs rebase, fast-forward merge to main, push, branch deletion, Linear Done transition, and worktree removal. NOT for multi-branch cascades (dev/staging/main) — this repo is main-only. NOT a replacement for prepare-for-review; that skill runs earlier to produce the review artifacts.
+description: Project-local skill for chezmoi/agent-config. Use when the user has finished reviewing a feature branch and is ready to ship — runs rebase, fast-forward merge to main, push, branch deletion, Linear Done transition, and worktree removal. NOT for multi-branch cascades (dev/staging/main) — this repo is main-only. NOT a replacement for prepare-for-review; that skill runs earlier to produce the review artifacts.
 model: sonnet
 allowed-tools: Skill, Bash, Read, Glob, Grep
 ---
 
 # Close Feature Branch (chezmoi)
 
-The merge-and-cleanup ritual for this repo, run AFTER Sean has reviewed the work. This skill is explicitly NOT for doing tests, code review, docs, or decision captures — those belong in `/prepare-for-review`, which runs earlier in the lifecycle.
+The merge-and-cleanup ritual for this repo, run AFTER the user has reviewed the work. This skill is explicitly NOT for doing tests, code review, docs, or decision captures — those belong in `/prepare-for-review`, which runs earlier in the lifecycle.
 
 ## When to Use
 
-- After Sean has reviewed an In Review Linear issue and approved the work for merge.
+- After the user has reviewed an In Review Linear issue and approved the work for merge.
 - On a feature branch in a worktree under `.worktrees/` (created by `using-git-worktrees` or the ralph orchestrator).
 
 ## Capture branch identity up front
@@ -39,7 +39,7 @@ Expected: `In Review`.
 - **In Review** — proceed.
 - **In Progress** — the work hasn't been handed off for review yet. Run `/prepare-for-review` first (added in ENG-182; must be merged before this skill is usable on a branch still in In Progress).
 - **Done** — nothing to do; the branch was already closed. Investigate whether this worktree is leftover and can be removed.
-- **Any other state** — stop and surface to Sean. The dispatch lifecycle is off.
+- **Any other state** — stop and surface to the user. The dispatch lifecycle is off.
 
 ### 2. Verify no uncommitted tracked-file changes
 
@@ -57,7 +57,7 @@ git status --short
 git ls-files --others --exclude-standard
 ```
 
-If this lists any files, stop and ask Sean what to do with each one. Options:
+If this lists any files, stop and ask the user what to do with each one. Options:
 - Commit them (if they're part of the work that should land).
 - Copy them out to a safe location (e.g., `~/ralph-handoff-artifacts/$ISSUE_ID/`) before removing the worktree.
 - Explicitly discard if they're truly ephemeral.
@@ -75,9 +75,9 @@ git fetch origin main
 git rebase main
 ```
 
-Rebase onto **local** `main`, not `origin/main`. Sean sometimes commits directly to local main (progress logs, plan tweaks) without pushing immediately; rebasing onto local main absorbs those commits so Step 2's `git merge --ff-only` succeeds. The `git fetch` is still useful — Step 2's `git pull --ff-only origin main` catches any movement on the remote before the merge.
+Rebase onto **local** `main`, not `origin/main`. The user sometimes commits directly to local main (progress logs, plan tweaks) without pushing immediately; rebasing onto local main absorbs those commits so Step 2's `git merge --ff-only` succeeds. The `git fetch` is still useful — Step 2's `git pull --ff-only origin main` catches any movement on the remote before the merge.
 
-**If rebase fails with conflicts:** run `git rebase --abort` and escalate to Sean. Do NOT auto-resolve silently. Reason: Sean prefers to resolve conflicts himself rather than discover a bad rebase weeks later.
+**If rebase fails with conflicts:** run `git rebase --abort` and escalate to the user. Do NOT auto-resolve silently. Reason: the user prefers to resolve conflicts themselves rather than discover a bad rebase weeks later.
 
 ### Step 2: Fast-forward merge to main
 
@@ -87,13 +87,13 @@ Switch to the main checkout (NOT the worktree) — the main repo at the chezmoi 
 cd /Users/seankao/.local/share/chezmoi
 ```
 
-Verify it's clean (Sean also uses this checkout for ad-hoc edits):
+Verify it's clean (the user also uses this checkout for ad-hoc edits):
 
 ```bash
 git status --short
 ```
 
-If this produces any output, STOP and surface to Sean. Do not merge into a dirty main checkout — a failed `git pull --ff-only` or `git merge --ff-only` can leave both the main checkout and the close ritual half-completed.
+If this produces any output, STOP and surface to the user. Do not merge into a dirty main checkout — a failed `git pull --ff-only` or `git merge --ff-only` can leave both the main checkout and the close ritual half-completed.
 
 Once clean:
 
@@ -122,7 +122,7 @@ git push origin main
 3. Re-run Step 1 (rebase onto the new origin/main).
 4. Re-run Step 2 and Step 3.
 
-Alternatively, escalate to Sean if you're unsure — losing an ff-merge state is recoverable, but making it worse is harder to undo.
+Alternatively, escalate to the user if you're unsure — losing an ff-merge state is recoverable, but making it worse is harder to undo.
 
 ### Step 4: Detach HEAD in the worktree
 

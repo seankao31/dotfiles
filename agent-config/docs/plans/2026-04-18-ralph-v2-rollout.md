@@ -2,7 +2,7 @@
 
 > **For agentic workers:** This plan coordinates a rollout spanning multiple Linear tickets — not a single feature. Each per-ticket section is a self-contained task list executable cold (by a fresh session). Tickets are independent units of work; do NOT attempt to execute all of them in one session. For any individual ticket, use `superpowers:subagent-driven-development` if the ticket decomposes into parallelizable tasks; use linear TDD steps otherwise. Steps use checkbox (`- [ ]`) syntax for tracking. Each per-ticket section ends with the standard review gate (codex-review-gate before declaring done).
 
-**Goal:** Ship the ralph v2 autonomous spec-queue orchestrator and its supporting skills/hooks, so Sean can queue approved Linear issues and have them worked overnight with human review happening at review-time, not dispatch-time.
+**Goal:** Ship the ralph v2 autonomous spec-queue orchestrator and its supporting skills/hooks, so the user can queue approved Linear issues and have them worked overnight with human review happening at review-time, not dispatch-time.
 
 **Architecture:** The design doc at `agent-config/docs/specs/2026-04-17-ralph-loop-v2-design.md` is the source of truth. Two critical-path tickets (ENG-182, ENG-184) must ship sequentially; four parallel-track tickets (ENG-185, ENG-186, ENG-177, ENG-178) can land independently. The orchestrator is a skill-with-bundled-scripts inside this repo's `agent-config/skills/` tree, not a standalone plugin.
 
@@ -17,22 +17,22 @@ Newest entry first. Each entry records: date, session summary, current state of 
 ### 2026-04-19 (session: handoff to a new session after ENG-182/186 merged)
 
 **What happened between sessions:**
-- Sean reviewed and merged ENG-182 and ENG-186 to main. Both are now **Done** in Linear.
+- The user reviewed and merged ENG-182 and ENG-186 to main. Both are now **Done** in Linear.
 - ENG-186 was relocated during merge to `.claude/skills/close-feature-branch/` (project-local `.claude/skills/` rather than `agent-config/skills/`). This makes it invokable as a project-local slash command without chezmoi symlink plumbing.
-- Sean filed three follow-up tickets from the review:
+- The user filed three follow-up tickets from the review:
   - **ENG-197** — "Reorder close-feature-branch skill: detach HEAD + worktree-remove-last." **State: Approved, priority ⚠⚠⚠ (urgent).** Fixes an issue in ENG-186's close ritual.
   - **ENG-193** — "update-stale-docs: accept explicit base SHA instead of relying on working-tree diff." State: Backlog. Resolves the known limitation flagged in yesterday's design decisions (item 2).
   - **ENG-194** — "prepare-for-review: paginate Linear comment list in dedup check." State: Backlog. Addresses the P3 pagination limitation documented in ENG-182's SKILL.md.
 
 **This session (ENG-185 design decision):**
-- Sean canceled ENG-185 (post-commit git hook for stale-parent detection) and replaced it with **ENG-198** — "Add stale-parent check to close-feature-branch skill." Same detection moves from commit-time (git hook) to review/merge-time (one-liner inside `close-feature-branch`: `git merge-base --is-ancestor $parent_head HEAD`). Rationale: no existing hook infrastructure in chezmoi, per-commit Linear API cost, and the incident hasn't occurred yet (ENG-184 isn't even built) — classic YAGNI. Full cancellation comment on ENG-185. ENG-198 is blocked-by ENG-184 and sits in Backlog; not actionable until ralph v2 has been running long enough to produce multi-level DAG dispatches in practice.
+- The user canceled ENG-185 (post-commit git hook for stale-parent detection) and replaced it with **ENG-198** — "Add stale-parent check to close-feature-branch skill." Same detection moves from commit-time (git hook) to review/merge-time (one-liner inside `close-feature-branch`: `git merge-base --is-ancestor $parent_head HEAD`). Rationale: no existing hook infrastructure in chezmoi, per-commit Linear API cost, and the incident hasn't occurred yet (ENG-184 isn't even built) — classic YAGNI. Full cancellation comment on ENG-185. ENG-198 is blocked-by ENG-184 and sits in Backlog; not actionable until ralph v2 has been running long enough to produce multi-level DAG dispatches in practice.
 
 **This session (ENG-197 dogfood close + findings):**
 - Ran `/close-feature-branch` on ENG-197 itself. Merged to main as `808ab5c`. Linear: Done.
-- **Finding 1 — skill bug, fixed inline:** The skill rebased onto `origin/main`, which silently skipped Sean's unpushed local-main commits. Step 2's ff-merge then failed when local main was ahead of origin. Hit live: local main had `0910e0d` (the ENG-185 cancellation log entry) that the rebase ignored. Switched to `git rebase main`. Committed in the same close as part of ENG-197. The rollout plan's Step 1 sketch was updated for the same reason.
+- **Finding 1 — skill bug, fixed inline:** The skill rebased onto `origin/main`, which silently skipped the user's unpushed local-main commits. Step 2's ff-merge then failed when local main was ahead of origin. Hit live: local main had `0910e0d` (the ENG-185 cancellation log entry) that the rebase ignored. Switched to `git rebase main`. Committed in the same close as part of ENG-197. The rollout plan's Step 1 sketch was updated for the same reason.
 - **Finding 2 — design doc misattribution at line 45:** The spec claims `~/.claude/worktrees/<branch>` is the "native `claude --worktree` convention." It isn't. The flag's actual native default is `<repo>/.claude/worktrees/<name>` (relative to repo, not in home). Our home-dir choice is defensible (worktrees outside the repo, accessible across multiple projects) but the justification is wrong. Worth a copy-edit on the design doc; not a behavior change. **Open question:** should we keep `~/.claude/worktrees/` (design's choice), switch to `<repo>/.claude/worktrees/` (so `claude --worktree` "just works"), or keep the existing `<repo>/.worktrees/` convention used in chezmoi today?
 - **Finding 3 — ENG-197's reorder is necessary but not sufficient.** ENG-197 protects against the *intentional* worktree-removal path destroying the Bash session mid-ritual. But today the worktree directory vanished *before* Step 7 ran (cause unknown — between the successful Linear update and the failed `git worktree remove` attempt, nothing in the session ran that should have touched it). The Bash tool died the moment the CWD was gone, regardless of cause. `dangerouslyDisableSandbox` did not bypass the path-exists check. ENG-197 still helped: branch delete and Linear transition both ran successfully because they came before the disappearance. But the residual gap matters: as long as the close session is pinned inside the worktree being closed, *any* external cause (manual rm, watcher process, hook) destroys the session.
-- **Filed as ENG-199:** Refactor `close-feature-branch` to run from main-checkout CWD using `git -C "$WORKTREE_PATH" …` for worktree-side operations. Skill takes the issue ID as an argument and resolves the worktree path via `git worktree list --porcelain`. Sean's review workflow stays the same (still cd into worktree to review), but the *close* step is invoked from a separate session started at the project root. Removes the CWD-pinning class of failure entirely. State: Todo; coordinate with ENG-184's worktree-path convention (see workflow finding below).
+- **Filed as ENG-199:** Refactor `close-feature-branch` to run from main-checkout CWD using `git -C "$WORKTREE_PATH" …` for worktree-side operations. Skill takes the issue ID as an argument and resolves the worktree path via `git worktree list --porcelain`. The user's review workflow stays the same (still cd into worktree to review), but the *close* step is invoked from a separate session started at the project root. Removes the CWD-pinning class of failure entirely. State: Todo; coordinate with ENG-184's worktree-path convention (see workflow finding below).
 - **Workflow finding for next-session worktree convention:** When ralph v2 (ENG-184) ships, the orchestrator will create worktrees at the design's chosen path. The location decision (above) and the close-skill refactor (above) should be coordinated with ENG-184's pre-creation step so that the close skill knows where to find worktrees. This is not a blocker — pick a convention, document it once, both ENG-184 and the close-skill refactor read from the same constant.
 
 **Ticket status snapshot (2026-04-19):**
@@ -44,14 +44,14 @@ Newest entry first. Each entry records: date, session summary, current state of 
 - ENG-198: **Backlog** — new follow-up; blocked-by ENG-184. Pick up after ralph v2 is live.
 - ENG-199: **Todo** — new follow-up to ENG-197; refactor `close-feature-branch` to run from main-checkout CWD. Coordinate worktree-path convention with ENG-184.
 - ENG-193, ENG-194: **Backlog** — lower priority, not blocking anything.
-- ENG-177, ENG-178: **Todo** — R&D experiments, need Sean's subjective evaluation.
+- ENG-177, ENG-178: **Todo** — R&D experiments, need the user's subjective evaluation.
 
 **Recommended priority for the next session:**
-1. ~~ENG-197 (Approved + urgent; fixes something Sean already merged).~~ **Done this session.**
+1. ~~ENG-197 (Approved + urgent; fixes something the user already merged).~~ **Done this session.**
 2. ENG-184 — the big one. Coordinate with ENG-199 on worktree-path convention before coding the path.
 3. ENG-199 — follow-up to ENG-197; can land independently of ENG-184 once the worktree-path convention is decided.
 4. ENG-193, ENG-194 — backlog cleanup.
-5. ENG-177, ENG-178 — need Sean's involvement, not autonomous work.
+5. ENG-177, ENG-178 — need the user's involvement, not autonomous work.
 
 **Open design questions carried forward:**
 - ENG-184 open questions: Q2 (permission-prompt deadlock) remains contested; test empirically at Task 8.
@@ -60,7 +60,7 @@ Newest entry first. Each entry records: date, session summary, current state of 
 
 **What happened:**
 - Reconstructed this plan from scratch after the ENG-176 worktree was force-removed with the original plan.md untracked (unrecoverable).
-- Resolved open questions Q1, Q3, Q4 with Sean's answers; flagged Q2 as contested with pointers to design doc lines 185 and 468.
+- Resolved open questions Q1, Q3, Q4 with the user's answers; flagged Q2 as contested with pointers to design doc lines 185 and 468.
 - Renamed skill from `run-queue` to `ralph-start` throughout the plan (Q4 resolution). ENG-184 ticket description still says `run-queue` — update it during ENG-184 execution.
 - Started autonomous execution: ENG-182 in a dedicated worktree.
 
@@ -68,7 +68,7 @@ Newest entry first. Each entry records: date, session summary, current state of 
 - ENG-182: **In Review** ✓ — SKILL.md complete, 24 Codex review passes, handoff comment posted. Branch: `eng-182-create-prepare-for-review-skill`. Key open design item for ENG-184: orchestrator must write `.ralph-base-sha` to each worktree before dispatch.
 - ENG-186: **In Review** ✓ — close-feature-branch SKILL.md complete, 5 Codex review passes, handoff comment posted. Branch: `eng-186-project-local-close-feature-branch-skill-for-chezmoi`. Has a forward-reference to `/prepare-for-review` that works once ENG-182 ships.
 - ENG-184: Not started (unblocked once ENG-182 merges)
-- ENG-185: **Stopped at discovery phase** — needs Sean's design decision on install mechanism. Findings: no existing git hook infrastructure in this repo (only `.git/hooks/*.sample` files, no `core.hooksPath` set globally or locally, no `.githooks/` dir). The `agent-config/hooks/` directory that exists is for Claude Code event hooks, not git hooks. **Design question for Sean:** Should the post-commit git hook install globally (via `git config --global core.hooksPath ~/.config/git/hooks` + chezmoi-managed script), or per-repo, or some other mechanism? The plan's Task 1 says "pause and ask Sean" at this branch point — not proceeding without a decision.
+- ENG-185: **Stopped at discovery phase** — needs the user's design decision on install mechanism. Findings: no existing git hook infrastructure in this repo (only `.git/hooks/*.sample` files, no `core.hooksPath` set globally or locally, no `.githooks/` dir). The `agent-config/hooks/` directory that exists is for Claude Code event hooks, not git hooks. **Design question for the user:** Should the post-commit git hook install globally (via `git config --global core.hooksPath ~/.config/git/hooks` + chezmoi-managed script), or per-repo, or some other mechanism? The plan's Task 1 says "pause and ask the user" at this branch point — not proceeding without a decision.
 - ENG-177: Not started
 - ENG-178: Not started
 
@@ -80,10 +80,10 @@ Newest entry first. Each entry records: date, session summary, current state of 
 5. **SHA-based comment dedup** (not header-based): avoids duplicate posting on retry while allowing re-runs after feedback commits.
 
 **Decisions/issues for the next session:**
-- ENG-182 and ENG-186 are In Review on their own branches. Sean's review merges both.
+- ENG-182 and ENG-186 are In Review on their own branches. The user's review merges both.
 - ENG-184 is unblocked once ENG-182 merges. Key contract from ENG-182 for ENG-184: orchestrator.sh must write `.ralph-base-sha` to each worktree at dispatch time (before the session's first commit). This file records the SHA where the session started and is what `prepare-for-review` uses to scope codex review + handoff summary.
 - **ENG-185 needs a design decision before it can proceed** — see above. Install mechanism is the blocker.
-- ENG-177 and ENG-178 are R&D experiments; not attempted this session (open-ended, not amenable to autonomous execution without Sean's subjective evaluation).
+- ENG-177 and ENG-178 are R&D experiments; not attempted this session (open-ended, not amenable to autonomous execution without the user's subjective evaluation).
 - Open Q #2 (permission-prompt deadlock) remains contested — resolve empirically at the start of ENG-184 Task 8.
 - ENG-182 → ENG-184 dependency: ENG-184 orchestrator script must write `.ralph-base-sha` to each worktree at dispatch time (recording `git rev-parse HEAD` before the first commit). This contract is documented in prepare-for-review's SKILL.md and must be implemented in ENG-184's orchestrator.sh.
 - ENG-183 is Done but the linear-workflow SKILL.md's graphviz diagram already shows `prepare-for-review` as a handoff node — no updates needed there.
@@ -133,11 +133,11 @@ ENG-176 (Done) ──┬─► ENG-181 (Done)
 
 1. ENG-182 (prepare-for-review skill) — unblocks ENG-184
 2. ENG-184 (orchestrator) — the main deliverable
-3. ENG-186 (close-feature-branch skill) — needed for Sean's merge ritual post-ralph-run
+3. ENG-186 (close-feature-branch skill) — needed for the user's merge ritual post-ralph-run
 4. ENG-185 (stale-parent hook) — nice-to-have review-time safety net
 5. ENG-177 / ENG-178 (upstream experiments) — can run any time after ENG-184 is operational
 
-Parallel tracks (ENG-185, ENG-186) can interleave with the critical path if Sean wants variety. The only strict order is ENG-182 before ENG-184.
+Parallel tracks (ENG-185, ENG-186) can interleave with the critical path if the user wants variety. The only strict order is ENG-182 before ENG-184.
 
 ### Cross-cutting prerequisite: set Linear `blocked-by` relations
 
@@ -156,7 +156,7 @@ Use `linear issue update` (verify exact relation-add flag via `linear issue upda
 | # | Question | Status |
 |---|---|---|
 | 1 | Auto-mode CLI flag for `claude -p` | **Resolved:** `claude --permission-mode auto`. `claude auto-mode defaults` prints built-in classifier rules as JSON. Reference: https://code.claude.com/docs/en/permission-modes#eliminate-prompts-with-auto-mode |
-| 2 | Permission-prompt deadlock handling | **Contested.** Design doc raises this at lines 185 and 468 (Decision 9 + Open Q #2), but Sean disputes it's a real issue. Likely resolution path: empirically test whether `--permission-mode auto` *blocks* on non-auto-approved actions or *fails fast*. If fails fast, no deadlock — `ralph-failed` already handles it. If blocks, revisit. Test at the start of ENG-184 Task 8. |
+| 2 | Permission-prompt deadlock handling | **Contested.** Design doc raises this at lines 185 and 468 (Decision 9 + Open Q #2), but the user disputes it's a real issue. Likely resolution path: empirically test whether `--permission-mode auto` *blocks* on non-auto-approved actions or *fails fast*. If fails fast, no deadlock — `ralph-failed` already handles it. If blocks, revisit. Test at the start of ENG-184 Task 8. |
 | 3 | Session persistence horizon | **Resolved:** Conversation history is stored in `~/.claude/projects/` and is not GC'd. `claude --resume` remains available indefinitely. `progress.json` doesn't need expiration guards. |
 | 4 | Slash-command naming | **Resolved:** `/ralph-start`. Skill lives at `agent-config/skills/ralph-start/`. (Ticket description still says `/run-queue` — update the ticket during ENG-184 execution.) |
 | — | Linear comment format for review summary + QA plan | Defined inline in ENG-182 Task 3. |
@@ -211,7 +211,7 @@ git commit -m "scaffold prepare-for-review skill (ENG-182)"
 ## When to Use
 
 - **At the end of an autonomous ralph-loop session** — the prompt template names `/prepare-for-review` as the entry point.
-- **At the end of an interactive implementation session** — when Sean finishes a feature and wants the handoff polish done consistently.
+- **At the end of an interactive implementation session** — when the user finishes a feature and wants the handoff polish done consistently.
 
 ## The Sequence (run in order)
 
@@ -313,7 +313,7 @@ git commit -m "document In Review handoff via linear-workflow (ENG-182)"
 - **Tests are failing:** Do NOT run `/prepare-for-review`. Fix tests first. This skill is for handoff, not for papering over incomplete work.
 - **codex-review-gate returns blocking findings:** Fix them, re-run the gate. Do not move to In Review with known blocking issues unsurfaced.
 - **QA test plan is empty or generic:** Stop and actually think about what a reviewer would need to verify. A handoff comment that says "verify it works" is a failure of this skill.
-- **Deviations from PRD are substantial enough they need discussion:** Post the comment anyway (Sean will see it at review time), but flag loudly in the Review Summary section.
+- **Deviations from PRD are substantial enough they need discussion:** Post the comment anyway (the user will see it at review time), but flag loudly in the Review Summary section.
 ```
 
 - [ ] **Step 2:** Commit.
@@ -331,7 +331,7 @@ git commit -m "document red flags and stop-conditions (ENG-182)"
   - `allowed-tools` covers every tool actually used.
   - Every referenced skill (`update-stale-docs`, `capture-decisions`, `prune-completed-docs`, `codex-review-gate`, `linear-workflow`) exists in `agent-config/skills/` or the superpowers plugin.
 
-- [ ] **Step 2:** Manually dry-run the skill on a throwaway finished feature branch. The test is *invocation*, not code behavior — can Claude read the skill and follow the sequence without ambiguity? Fix any step that requires Sean to guess.
+- [ ] **Step 2:** Manually dry-run the skill on a throwaway finished feature branch. The test is *invocation*, not code behavior — can Claude read the skill and follow the sequence without ambiguity? Fix any step that requires the user to guess.
 
 - [ ] **Step 3:** Invoke `codex-review-gate` on the skill file.
 
@@ -339,7 +339,7 @@ git commit -m "document red flags and stop-conditions (ENG-182)"
 
 - [ ] **Step 5:** Run `/prepare-for-review` on this ticket itself (meta — eat our own dogfood). The Linear comment format and review summary should be generated by running the skill on its own implementation branch.
 
-- [ ] **Step 6:** Close via project-local close skill once ENG-186 ships. Until then, close by hand per Sean's rebase+ff-only preference.
+- [ ] **Step 6:** Close via project-local close skill once ENG-186 ships. Until then, close by hand per the user's rebase+ff-only preference.
 
 ---
 
@@ -387,13 +387,13 @@ git commit -m "document red flags and stop-conditions (ENG-182)"
 ```markdown
 ---
 name: ralph-start
-description: Entry point for Sean to dispatch the autonomous ralph-loop spec-queue. Do NOT auto-invoke. Sean runs this explicitly via /ralph-start before stepping away from the desk.
+description: Entry point for the user to dispatch the autonomous ralph-loop spec-queue. Do NOT auto-invoke. The user runs this explicitly via /ralph-start before stepping away from the desk.
 disable-model-invocation: true
 allowed-tools: Bash, Read, Glob, Grep
 ---
 ```
 
-Use `disable-model-invocation: true` — this is a Sean-driven trigger, not a Claude-driven one.
+Use `disable-model-invocation: true` — this is a the user-driven trigger, not a Claude-driven one.
 
 - [ ] **Step 2:** Stub `config.example.json` matching the design doc's Component 7 structure. Keys: `project`, `approved_state`, `review_state`, `failed_label`, `worktree_base`, `model`, `stdout_log_filename`, `prompt_template`.
 
@@ -492,8 +492,8 @@ Direct translation of Component 4 pseudo-code:
 ### Task 7: Pre-flight sanity scan (`preflight_scan.sh`)
 
 Detect anomalies per design Decision 6. For each Approved issue in the project, check and flag:
-- Canceled blocker → warn, ask Sean (keep/cancel/edit).
-- Duplicate blocker → warn, ask Sean.
+- Canceled blocker → warn, ask the user (keep/cancel/edit).
+- Duplicate blocker → warn, ask the user.
 - Blocker chain stuck (blocker is Approved, its blockers are not In Review/Done) → warn.
 - Approved but no PRD (issue description is empty or trivially short) → warn.
 
@@ -532,10 +532,10 @@ The main loop. Consumes: a queue of issue IDs (pre-sorted by `toposort.sh`). Per
 
 Fill in the `ralph-start` SKILL.md body with the workflow from Component 1:
 1. Read config.
-2. Invoke `preflight_scan.sh`; if failures, stop and ask Sean.
+2. Invoke `preflight_scan.sh`; if failures, stop and ask the user.
 3. Query `linear_list_approved_issues`, filter to strictly pickup-ready (no `ralph-failed`, all blockers ⊆ {Done, In Review}, no Canceled blockers).
 4. Invoke `toposort.sh` to order.
-5. Dry-run preview: print the queue with base-branch choices, prompt for Sean confirmation.
+5. Dry-run preview: print the queue with base-branch choices, prompt for the user confirmation.
 6. Invoke `orchestrator.sh` with the approved queue.
 
 - [ ] **Step 1:** Write the SKILL.md body inline.
@@ -563,7 +563,7 @@ Per-run audit trail as specified in Component 6. Orchestrator appends runs; each
 ### Task 12: Documentation sweep
 
 - [ ] **Step 1:** Update `agent-config/skills/` top-level README (if one exists) to reference the new skill.
-- [ ] **Step 2:** Add a short playbook at `agent-config/docs/playbooks/ralph-v2-usage.md` — two paragraphs on "how I use this" from Sean's seat: when to run `/ralph-start`, what to expect, how to triage `ralph-failed` issues on return.
+- [ ] **Step 2:** Add a short playbook at `agent-config/docs/playbooks/ralph-v2-usage.md` — two paragraphs on "how I use this" from the user's seat: when to run `/ralph-start`, what to expect, how to triage `ralph-failed` issues on return.
 - [ ] **Step 3:** Commit docs.
 - [ ] **Step 4:** Invoke `update-stale-docs` skill to catch anything else.
 
@@ -572,7 +572,7 @@ Per-run audit trail as specified in Component 6. Orchestrator appends runs; each
 - [ ] **Step 1:** Invoke `codex-review-gate` on the branch diff. Address blocking findings.
 - [ ] **Step 2:** Re-run end-to-end dogfood (Task 11) if code was changed during review.
 - [ ] **Step 3:** Invoke `/prepare-for-review` — eats the dogfood, posts the Linear comment, moves to In Review.
-- [ ] **Step 4:** Close via ENG-186's skill once it ships; or manually per Sean's rebase+ff-only preference if earlier.
+- [ ] **Step 4:** Close via ENG-186's skill once it ships; or manually per the user's rebase+ff-only preference if earlier.
 
 ---
 
@@ -580,13 +580,13 @@ Per-run audit trail as specified in Component 6. Orchestrator appends runs; each
 
 > **CANCELED 2026-04-19.** Replaced by **ENG-198** — "Add stale-parent check to close-feature-branch skill." The task plan below is preserved for historical context; do not execute it. The replacement does the same detection at merge-time (inside `close-feature-branch`) instead of commit-time (git hook). See ENG-185's cancellation comment on Linear for the full rationale.
 
-**Goal:** Git post-commit hook that, when Sean amends a branch which is a parent of any In-Review Linear issue, labels the child issue with `stale-parent` (and optionally comments with the new HEAD SHA).
+**Goal:** Git post-commit hook that, when the user amends a branch which is a parent of any In-Review Linear issue, labels the child issue with `stale-parent` (and optionally comments with the new HEAD SHA).
 
 **Design reference:** `2026-04-17-ralph-loop-v2-design.md` — Decision 7 (moved out of orchestrator); Follow-up #5.
 
 **Non-goals (per ticket):**
 - Not part of the ralph orchestrator — runs independently on every commit.
-- No auto-rebase of children. Sean decides at review time.
+- No auto-rebase of children. The user decides at review time.
 
 **Parallel track:** This ticket has no dependencies on ENG-182 or ENG-184. Can land any time.
 
@@ -597,7 +597,7 @@ Per-run audit trail as specified in Component 6. Orchestrator appends runs; each
 **Before coding — unknowns to resolve:**
 - [ ] How does chezmoi currently manage git hooks for this repo and for repos managed through it? Look at `chezmoi cat-config`, `run_*` scripts, and any existing `.git/hooks/` references. Do NOT invent a mechanism — verify.
 - [ ] Is there a `.githooks/` or `run_once_install-hooks.sh` already? If so, extend it.
-- [ ] Does Sean want this hook installed globally (via `git config --global core.hooksPath`) or per-repo? The design doc doesn't say. Default to per-repo (tied to chezmoi-managed repos) and surface the choice to Sean if it matters for the install mechanism.
+- [ ] Does the user want this hook installed globally (via `git config --global core.hooksPath`) or per-repo? The design doc doesn't say. Default to per-repo (tied to chezmoi-managed repos) and surface the choice to the user if it matters for the install mechanism.
 
 ### Task 1: Discover the install mechanism
 
@@ -608,7 +608,7 @@ fd -e sh hook /Users/seankao/.local/share/chezmoi
 ```
 
 - [ ] **Step 2:** Read any matches. Document the pattern in a scratch note to the session (or inline in the plan if you're updating this document).
-- [ ] **Step 3:** If no pattern exists, pause and ask Sean. Do NOT invent one.
+- [ ] **Step 3:** If no pattern exists, pause and ask the user. Do NOT invent one.
 
 ### Task 2: Write the detection logic
 
@@ -639,7 +639,7 @@ Logic:
 
 ## 4. ENG-186: Project-local `close-feature-branch` skill (chezmoi)
 
-**Goal:** A project-local skill `close-feature-branch` for the chezmoi/agent-config repo. Runs the merge-and-cleanup ritual AFTER Sean has reviewed and is ready to ship.
+**Goal:** A project-local skill `close-feature-branch` for the chezmoi/agent-config repo. Runs the merge-and-cleanup ritual AFTER the user has reviewed and is ready to ship.
 
 **Design reference:** `2026-04-17-ralph-loop-v2-design.md` — Decision 4 (project-local close skills replace the generic `finishing-a-development-branch` skill).
 
@@ -650,7 +650,7 @@ Logic:
 **Files:**
 - Create: `.claude/skills/close-feature-branch/SKILL.md` (project-local at chezmoi repo root, not `agent-config/skills/` — the latter is symlinked to `~/.claude/skills/` and would load globally).
 
-**Critical memory constraints from Sean:**
+**Critical memory constraints from the user:**
 - **Rebase + ff-only, no merge commits** (`feedback_rebase_merge.md`).
 - **Preserve untracked files** (including any untracked plan.md) before removing the worktree (`feedback_preserve_untracked_plans.md` — this is the ENG-176 lesson).
 
@@ -661,7 +661,7 @@ Logic:
 ```markdown
 ---
 name: close-feature-branch
-description: Project-local skill for chezmoi/agent-config. Use when Sean has finished reviewing a feature branch and is ready to merge it to main. Runs rebase, fast-forward merge, push, branch deletion, worktree removal, and the Linear Done transition. NOT for multi-branch cascades (dev/staging/main) — this repo is main-only.
+description: Project-local skill for chezmoi/agent-config. Use when the user has finished reviewing a feature branch and is ready to merge it to main. Runs rebase, fast-forward merge, push, branch deletion, worktree removal, and the Linear Done transition. NOT for multi-branch cascades (dev/staging/main) — this repo is main-only.
 model: sonnet
 allowed-tools: Bash, Read, Glob, Grep, Skill
 ---
@@ -680,9 +680,9 @@ allowed-tools: Bash, Read, Glob, Grep, Skill
 
 ### Pre-flight
 
-- Verify: the feature branch has been reviewed (Linear state = In Review, Sean has given the go-ahead).
+- Verify: the feature branch has been reviewed (Linear state = In Review, the user has given the go-ahead).
 - Verify: no uncommitted changes in the worktree (`git status` clean).
-- **Preserve untracked files.** If the worktree has any untracked files, list them and ask Sean whether to keep (copy them out before worktree removal) or discard. Never blindly discard. Reason: untracked plan.md files have been lost this way before.
+- **Preserve untracked files.** If the worktree has any untracked files, list them and ask the user whether to keep (copy them out before worktree removal) or discard. Never blindly discard. Reason: untracked plan.md files have been lost this way before.
 
 ### Step 1: Rebase onto latest main
 
@@ -693,9 +693,9 @@ git fetch origin main
 git rebase main
 ~~~
 
-Rebase onto **local** `main` (not `origin/main`) so that any unpushed commits Sean has made directly to local main are absorbed; otherwise Step 2's `git merge --ff-only` will fail when the feature branch and local main have diverged.
+Rebase onto **local** `main` (not `origin/main`) so that any unpushed commits the user has made directly to local main are absorbed; otherwise Step 2's `git merge --ff-only` will fail when the feature branch and local main have diverged.
 
-If conflicts arise, resolve them or abort (`git rebase --abort`) and escalate to Sean — do NOT auto-resolve silently.
+If conflicts arise, resolve them or abort (`git rebase --abort`) and escalate to the user — do NOT auto-resolve silently.
 
 ### Step 2: Fast-forward merge to main
 
@@ -748,7 +748,7 @@ Invoke `linear-workflow` skill for In Review → Done transition.
 ```markdown
 ## Red Flags / When to Stop
 
-- **Rebase introduces conflicts you're not confident about:** Abort and escalate. Sean would rather resolve a conflict himself than discover a bad rebase weeks later.
+- **Rebase introduces conflicts you're not confident about:** Abort and escalate. The user would rather resolve a conflict themselves than discover a bad rebase weeks later.
 - **`git worktree remove` fails:** Do NOT escalate to `--force`. Check for untracked files, uncommitted changes, open editors. The failure is telling you something.
 - **Main has moved during the ritual:** Re-do the rebase. Don't use a merge commit to bridge the gap — see global memory on rebase+ff-only.
 - **The issue's Linear state is not In Review:** This skill runs AFTER review, not before. If the issue is still In Progress or Todo, someone skipped a step.
@@ -849,7 +849,7 @@ Same pattern as ENG-177:
 - [ ] **Step 1:** Criteria:
   - Quality of resulting spec (contract coverage).
   - Time to reach Approved (wall clock).
-  - Fit with Sean's thinking style (subjective but important).
+  - Fit with the user's thinking style (subjective but important).
 - [ ] **Step 2:** Tabulate.
 
 ### Task 4: Write + file recommendation

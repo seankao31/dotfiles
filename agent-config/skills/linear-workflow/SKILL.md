@@ -109,7 +109,7 @@ When proposing a new issue, confirm these with the user:
 - **Project**: Assign to the correct project (see Workspace Context below)
 - **Priority**: Bugs → Urgent. Features → Medium.
 - **Labels**: `Bug` for bugs. Keep minimal otherwise.
-- **Assignee**: Never set. Sean assigns issues to himself manually when he's ready to pick them up.
+- **Assignee**: Never set. The user assigns issues to themselves manually when they're ready to pick them up.
 - **Status**: "Todo" if the work is actionable now — clear enough to implement and reasonably scoped. "Backlog" if it's large, vague, or not yet thought through. Never "Triage" — that's for external intake, not deliberate dev work.
 - **Dependencies**: If the new issue is blocked by another issue, set `blocked-by` at creation time via `linear issue relation add`. When creating multiple related issues in a batch, set dependencies between them immediately — don't leave it as a follow-up.
 - **Follow-ups**: When filing an issue that came out of work on another issue (discovered during implementation, review, testing, or scope-cut from a parent issue), link it to the originating issue at creation time via `linear issue relation add`. Pick the relation that reflects the actual relationship — `blocked-by`/`blocks` when there's a real sequencing dependency, `related` otherwise. The link makes provenance visible; future readers shouldn't have to reconstruct where a follow-up came from.
@@ -139,7 +139,7 @@ Some sessions run without a human in the loop — e.g., the spec-queue orchestra
 
 - **Entry Point 1 does not run.** The orchestrator pre-selects the issue, pre-creates the worktree, and pre-transitions state to `In Progress` before dispatch. The agent reads its issue ID from the prompt and begins implementation directly. There is no "starting work" step to execute.
 - **Entry Point 2 (filing follow-ups) proceeds without confirmation.** Use the defaults in "Creating Issues" below: project per workspace context, priority Urgent for bugs / Medium for features, status `Backlog` when scope is vague or `Todo` when actionable. Always link back to the originating issue via `linear issue relation add` so provenance is preserved for later human review.
-- **Entry Point 3 targets `In Review`, not `Done`.** Autonomous sessions hand off for human review. The `Done` transition is Sean's when he merges the branch.
+- **Entry Point 3 targets `In Review`, not `Done`.** Autonomous sessions hand off for human review. The `Done` transition is the user's when they merge the branch.
 - **Duplicate prevention resolves without human decision.** Exact duplicates: don't create. Partial overlaps: file the new issue anyway and post a comment on both linking them, so the human reviewer can merge or adjust later. Never block waiting on a "let the user decide" prompt.
 
 ## When This Does NOT Apply

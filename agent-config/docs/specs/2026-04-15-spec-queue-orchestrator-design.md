@@ -5,14 +5,14 @@
 
 ## Problem
 
-Each Claude Code session currently requires Sean to be present for brainstorming
+Each Claude Code session currently requires the user to be present for brainstorming
 and spec review, then again at the end to review completed work. The
 machine-dependent phase (implementation) is sandwiched between two
-human-dependent phases, meaning Claude can only work when Sean is at the desk.
+human-dependent phases, meaning Claude can only work when the user is at the desk.
 
 The goal is to decouple these phases: brainstorm and approve specs while at the
 desk, then let an orchestrator consume the queue of pre-approved specs
-autonomously while Sean is away. On return, Sean reviews completed work
+autonomously while the user is away. On return, the user reviews completed work
 interactively in each worktree — the same review flow he uses today.
 
 ## Research: Existing Solutions
@@ -91,7 +91,7 @@ API-driven (POST to `/fire` endpoint with text payload), and GitHub webhooks.
 
 **Assessment:** Routines could serve as the execution engine (replacing local
 `claude -p` invocations), but require: GitHub + Linear MCP connectors, cloud
-environment setup, daily run cap (amount unspecified). More importantly, Sean
+environment setup, daily run cap (amount unspecified). More importantly, the user
 prefers a local setup that could later move to a remote server he owns — not
 Anthropic's cloud. Routines are a strong v2/v3 option if the local orchestrator
 proves insufficient, but not the right foundation for v1.
@@ -151,10 +151,10 @@ work."
 
 ### 2. Local execution (not cloud Routines)
 
-The orchestrator runs locally (or on a remote server Sean owns), not on
+The orchestrator runs locally (or on a remote server the user owns), not on
 Anthropic's cloud.
 
-**Rationale:** Sean prefers local control with the option to move to his own
+**Rationale:** the user prefers local control with the option to move to their own
 server. Avoids cloud-specific constraints (daily run caps, MCP connector setup,
 no user-level CLAUDE.md). All local settings, plugins, and skills are available.
 
@@ -200,7 +200,7 @@ When a spec fails, the orchestrator stops processing the queue.
 
 **Rationale:** v1 simplicity. Avoids the complexity of dependency-aware failure
 propagation (if spec A fails, which downstream specs should be skipped vs.
-proceeded?). Sean reviews the failure interactively and decides how to proceed.
+proceeded?). The user reviews the failure interactively and decides how to proceed.
 The partial progress (completed specs) is already committed and available.
 
 ### 7. Plugin architecture with adapter pattern
@@ -216,9 +216,9 @@ only the Linear adapter ships.
 ### 8. No PR creation, no automated merging
 
 The orchestrator never creates PRs or merges branches. It leaves completed work
-in worktrees for Sean to review.
+in worktrees for the user to review.
 
-**Rationale:** Preserves Sean's existing review flow: open an interactive Claude
+**Rationale:** Preserves the user's existing review flow: open an interactive Claude
 Code session in the worktree, review the diff, suggest fixes, then merge via
 `finishing-a-development-branch`. The orchestrator handles the grunt work
 (implementation); the human handles the judgment (review and integration).
@@ -226,10 +226,10 @@ Code session in the worktree, review the diff, suggest fixes, then merge via
 ### 9. Resumable sessions
 
 Each spec's Claude Code session is persisted and named after the Linear issue.
-Sean can resume any session to see what Claude did and continue the conversation.
+The user can resume any session to see what Claude did and continue the conversation.
 
-**Rationale:** Critical for both success and failure cases. On success: Sean
-resumes to review with full conversation context. On failure: Sean resumes to
+**Rationale:** Critical for both success and failure cases. On success: the user
+resumes to review with full conversation context. On failure: the user resumes to
 see exactly where Claude got stuck and continue debugging from that point. The
 worktree has the partial work; the session has the reasoning.
 
@@ -296,7 +296,7 @@ spec-queue/
 
 #### 1. Skill entry point (`/run-queue`)
 
-A `disable-model-invocation: true` skill that Sean invokes manually before
+A `disable-model-invocation: true` skill that the user invokes manually before
 stepping away. It:
 1. Reads configuration (which project, what statuses, budget per spec)
 2. Runs the orchestrator in dry-run mode: shows the queue (ordered specs with
@@ -420,7 +420,7 @@ This ensures that even with `--dangerously-skip-permissions`:
 
 #### 7. Progress file (`progress.json`)
 
-Written after each spec completes or fails. Provides a summary for Sean on
+Written after each spec completes or fails. Provides a summary for the user on
 return:
 
 ```json
@@ -481,7 +481,7 @@ included in the issue description when the spec is written.
 
 ### Review flow (unchanged from today)
 
-When Sean returns, he sees:
+When the user returns, they see:
 - `progress.json` with a summary of what happened
 - N worktrees with completed/failed work
 - Linear issues in "Review" or "Failed" status
@@ -507,9 +507,9 @@ The orchestrator has no role in review or merging. It only does implementation.
   stagnation. Useful for long-running autonomous operation, but for v1
   stop-on-failure is simpler and matches the "review on return" model.
 - **PR creation:** Automatically create PRs for completed specs. Not needed —
-  Sean creates PRs as part of his interactive review.
+  the user creates PRs as part of their interactive review.
 - **Automated merging:** Merge completed specs to main in DAG order. Explicitly
-  excluded — Sean merges manually after review.
+  excluded — the user merges manually after review.
 - **Conflict detection:** File manifest comparison to detect specs that touch the
   same files. Not needed in sequential mode; becomes relevant with parallelism.
 - **Cloud execution (Routines):** Run specs on Anthropic's cloud instead of
@@ -525,7 +525,7 @@ The orchestrator has no role in review or merging. It only does implementation.
    directory selection logic needs verification. Does it respect the
    `.worktrees` directory convention from the `using-git-worktrees` skill, or
    does it use its own default location? This affects worktree cleanup and
-   Sean's ability to `cd` into them.
+   the user's ability to `cd` into them.
 
 2. **`--max-budget-usd` exit behavior:** When the budget is exhausted, does
    `claude -p` exit with a non-zero code? If it exits 0 with incomplete work,
