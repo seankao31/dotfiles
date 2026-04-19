@@ -70,7 +70,7 @@ grep -rn "ABOUTME" src/ tests/    # find all ABOUTME comments
 
 ### 2. Inline comments in the diff
 
-Read every comment visible in the diff (same scope as the `--stat` run above — working tree or `BASE..HEAD`). Do any describe old behavior, old callers, or old data flow? Fix them.
+Run the full hunk diff at the same scope (not `--stat`, which is a summary only) — `git diff` for the working-tree mode, or `git diff "$BASE" HEAD` when invoked with `--base <sha>`. Read every comment visible in the output. Do any describe old behavior, old callers, or old data flow? Fix them.
 
 ### 3. Decision docs
 
