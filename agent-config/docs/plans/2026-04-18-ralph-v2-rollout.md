@@ -74,7 +74,7 @@ Newest entry first. Each entry records: date, session summary, current state of 
 
 **Design decisions made this session:**
 1. **Sequence reordered from design doc:** Codex review gate runs AFTER docs/decisions updates (Steps 1-3 then Step 4), not before. This ensures the review sees the full final branch state in one pass.
-2. **`update-stale-docs` limitation:** It uses `git diff --stat` (working tree diff, empty on clean tree). Work around: provide `git diff "$BASE_SHA" HEAD --stat` as context. Filed as a known limitation — needs a follow-up ticket to make `update-stale-docs` accept a branch base SHA.
+2. **`update-stale-docs` limitation:** It uses `git diff --stat` (working tree diff, empty on clean tree). Work around: provide `git diff "$BASE_SHA" HEAD --stat` as context. Filed as a known limitation — **resolved by ENG-193**, which added `--base <sha>` support to the skill.
 3. **`.ralph-base-sha` file:** Orchestrator (ENG-184) must write this to the worktree before dispatch so `prepare-for-review` can scope its review/summary to just the task's commits, not all of main.
 4. **Linear CLI is required:** Removed false claim that `linear-workflow` is a fallback for CLI failures — it uses the same CLI binary. If Linear CLI is unavailable, the skill cannot complete.
 5. **SHA-based comment dedup** (not header-based): avoids duplicate posting on retry while allowing re-runs after feedback commits.
@@ -87,7 +87,7 @@ Newest entry first. Each entry records: date, session summary, current state of 
 - Open Q #2 (permission-prompt deadlock) remains contested — resolve empirically at the start of ENG-184 Task 8.
 - ENG-182 → ENG-184 dependency: ENG-184 orchestrator script must write `.ralph-base-sha` to each worktree at dispatch time (recording `git rev-parse HEAD` before the first commit). This contract is documented in prepare-for-review's SKILL.md and must be implemented in ENG-184's orchestrator.sh.
 - ENG-183 is Done but the linear-workflow SKILL.md's graphviz diagram already shows `prepare-for-review` as a handoff node — no updates needed there.
-- Consider filing a follow-up ticket to make `update-stale-docs` use branch diff (not working tree diff). Low priority but noted.
+- ~~Consider filing a follow-up ticket to make `update-stale-docs` use branch diff (not working tree diff).~~ Done — ENG-193 added `--base <sha>` support.
 
 ---
 
