@@ -441,7 +441,7 @@ Functions needed (derive from design doc Component 5):
 Functions needed:
 - `worktree_create_at_base <path> <branch> <base_branch>` — `git worktree add <path> -b <branch> <base>`
 - `worktree_create_with_integration <path> <branch> <parents[]>` — creates at `main`, then `git merge` each parent sequentially without aborting on conflict (let conflicts persist in the working tree for the agent to resolve)
-- `worktree_path_for_issue <issue_id>` — computes `$HOME/.claude/worktrees/<branch-slug>`
+- `worktree_path_for_issue <issue_id>` — computes `$REPO_ROOT/.worktrees/<branch-slug>` (chezmoi convention; matches `superpowers:using-git-worktrees` default)
 
 - [ ] **Step 1:** Write bats tests using a throwaway git repo fixture. Verify:
   - Clean base: worktree created, branch checked out, no unresolved conflicts.
@@ -512,7 +512,7 @@ The main loop. Consumes: a queue of issue IDs (pre-sorted by `toposort.sh`). Per
 2. Create worktree via `worktree_create_at_base` or `worktree_create_with_integration`.
 3. Move Linear state: Approved → In Progress via `linear_set_state`.
 4. Render prompt from `config.prompt_template` + substitutions.
-5. Invoke `claude -p` with `--worktree`, `--name`, **auto mode** flag (resolve Open Q #1), and the rendered prompt. Tee output to `$worktree/ralph-output.log`.
+5. Invoke `claude -p` with cwd = `$worktree` (via subshell `cd`, NOT `--worktree` — that flag is create-only and branches off HEAD), `--name`, **auto mode** flag (resolve Open Q #1), and the rendered prompt. Tee output to `$worktree/ralph-output.log`.
 6. Classify by exit code:
    - **0:** trust the session moved state to In Review via `/prepare-for-review`; record in `progress.json`.
    - **non-zero:** `linear_add_label $issue ralph-failed`; mark all transitive descendants as tainted (skip on subsequent iterations); record in `progress.json`.
