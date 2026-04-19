@@ -32,24 +32,26 @@ Newest entry first. Each entry records: date, session summary, current state of 
 - **Finding 1 — skill bug, fixed inline:** The skill rebased onto `origin/main`, which silently skipped Sean's unpushed local-main commits. Step 2's ff-merge then failed when local main was ahead of origin. Hit live: local main had `0910e0d` (the ENG-185 cancellation log entry) that the rebase ignored. Switched to `git rebase main`. Committed in the same close as part of ENG-197. The rollout plan's Step 1 sketch was updated for the same reason.
 - **Finding 2 — design doc misattribution at line 45:** The spec claims `~/.claude/worktrees/<branch>` is the "native `claude --worktree` convention." It isn't. The flag's actual native default is `<repo>/.claude/worktrees/<name>` (relative to repo, not in home). Our home-dir choice is defensible (worktrees outside the repo, accessible across multiple projects) but the justification is wrong. Worth a copy-edit on the design doc; not a behavior change. **Open question:** should we keep `~/.claude/worktrees/` (design's choice), switch to `<repo>/.claude/worktrees/` (so `claude --worktree` "just works"), or keep the existing `<repo>/.worktrees/` convention used in chezmoi today?
 - **Finding 3 — ENG-197's reorder is necessary but not sufficient.** ENG-197 protects against the *intentional* worktree-removal path destroying the Bash session mid-ritual. But today the worktree directory vanished *before* Step 7 ran (cause unknown — between the successful Linear update and the failed `git worktree remove` attempt, nothing in the session ran that should have touched it). The Bash tool died the moment the CWD was gone, regardless of cause. `dangerouslyDisableSandbox` did not bypass the path-exists check. ENG-197 still helped: branch delete and Linear transition both ran successfully because they came before the disappearance. But the residual gap matters: as long as the close session is pinned inside the worktree being closed, *any* external cause (manual rm, watcher process, hook) destroys the session.
-- **Proposed follow-up — file as new ticket (ENG-197.5-class):** Refactor `close-feature-branch` to run from main-checkout CWD using `git -C "$WORKTREE_PATH" …` for worktree-side operations. Skill takes the issue ID as an argument and resolves the worktree path via `git worktree list --porcelain`. Sean's review workflow stays the same (still cd into worktree to review), but the *close* step is invoked from a separate session started at the project root. Removes the CWD-pinning class of failure entirely.
+- **Filed as ENG-199:** Refactor `close-feature-branch` to run from main-checkout CWD using `git -C "$WORKTREE_PATH" …` for worktree-side operations. Skill takes the issue ID as an argument and resolves the worktree path via `git worktree list --porcelain`. Sean's review workflow stays the same (still cd into worktree to review), but the *close* step is invoked from a separate session started at the project root. Removes the CWD-pinning class of failure entirely. State: Todo; coordinate with ENG-184's worktree-path convention (see workflow finding below).
 - **Workflow finding for next-session worktree convention:** When ralph v2 (ENG-184) ships, the orchestrator will create worktrees at the design's chosen path. The location decision (above) and the close-skill refactor (above) should be coordinated with ENG-184's pre-creation step so that the close skill knows where to find worktrees. This is not a blocker — pick a convention, document it once, both ENG-184 and the close-skill refactor read from the same constant.
 
 **Ticket status snapshot (2026-04-19):**
 - ENG-182: **Done** ✓
 - ENG-186: **Done** ✓ (relocated to `.claude/skills/`)
-- ENG-197: **Approved, urgent** — NEW follow-up to ENG-186; ready for autonomous pickup.
+- ENG-197: **Done** ✓ (this session; merged as `808ab5c`).
 - ENG-184: **Todo**, unblocked. Critical-path: the orchestrator itself.
 - ENG-185: **Canceled** — replaced by ENG-198 (review-time check instead of commit-time hook).
 - ENG-198: **Backlog** — new follow-up; blocked-by ENG-184. Pick up after ralph v2 is live.
+- ENG-199: **Todo** — new follow-up to ENG-197; refactor `close-feature-branch` to run from main-checkout CWD. Coordinate worktree-path convention with ENG-184.
 - ENG-193, ENG-194: **Backlog** — lower priority, not blocking anything.
 - ENG-177, ENG-178: **Todo** — R&D experiments, need Sean's subjective evaluation.
 
 **Recommended priority for the next session:**
-1. ENG-197 (Approved + urgent; fixes something Sean already merged).
-2. ENG-184 — the big one.
-3. ENG-193, ENG-194 — backlog cleanup.
-4. ENG-177, ENG-178 — need Sean's involvement, not autonomous work.
+1. ~~ENG-197 (Approved + urgent; fixes something Sean already merged).~~ **Done this session.**
+2. ENG-184 — the big one. Coordinate with ENG-199 on worktree-path convention before coding the path.
+3. ENG-199 — follow-up to ENG-197; can land independently of ENG-184 once the worktree-path convention is decided.
+4. ENG-193, ENG-194 — backlog cleanup.
+5. ENG-177, ENG-178 — need Sean's involvement, not autonomous work.
 
 **Open design questions carried forward:**
 - ENG-184 open questions: Q2 (permission-prompt deadlock) remains contested; test empirically at Task 8.
