@@ -24,24 +24,26 @@ Newest entry first. Each entry records: date, session summary, current state of 
   - **ENG-193** — "update-stale-docs: accept explicit base SHA instead of relying on working-tree diff." State: Backlog. Resolves the known limitation flagged in yesterday's design decisions (item 2).
   - **ENG-194** — "prepare-for-review: paginate Linear comment list in dedup check." State: Backlog. Addresses the P3 pagination limitation documented in ENG-182's SKILL.md.
 
+**This session (ENG-185 design decision):**
+- Sean canceled ENG-185 (post-commit git hook for stale-parent detection) and replaced it with **ENG-198** — "Add stale-parent check to close-feature-branch skill." Same detection moves from commit-time (git hook) to review/merge-time (one-liner inside `close-feature-branch`: `git merge-base --is-ancestor $parent_head HEAD`). Rationale: no existing hook infrastructure in chezmoi, per-commit Linear API cost, and the incident hasn't occurred yet (ENG-184 isn't even built) — classic YAGNI. Full cancellation comment on ENG-185. ENG-198 is blocked-by ENG-184 and sits in Backlog; not actionable until ralph v2 has been running long enough to produce multi-level DAG dispatches in practice.
+
 **Ticket status snapshot (2026-04-19):**
 - ENG-182: **Done** ✓
 - ENG-186: **Done** ✓ (relocated to `.claude/skills/`)
 - ENG-197: **Approved, urgent** — NEW follow-up to ENG-186; ready for autonomous pickup.
 - ENG-184: **Todo**, unblocked. Critical-path: the orchestrator itself.
-- ENG-185: **Todo**, still stopped at discovery — awaits Sean's design decision on git hook install mechanism (see 2026-04-18 entry for findings).
+- ENG-185: **Canceled** — replaced by ENG-198 (review-time check instead of commit-time hook).
+- ENG-198: **Backlog** — new follow-up; blocked-by ENG-184. Pick up after ralph v2 is live.
 - ENG-193, ENG-194: **Backlog** — lower priority, not blocking anything.
 - ENG-177, ENG-178: **Todo** — R&D experiments, need Sean's subjective evaluation.
 
 **Recommended priority for the next session:**
 1. ENG-197 (Approved + urgent; fixes something Sean already merged).
-2. ENG-185 — once Sean picks the install mechanism.
-3. ENG-184 — the big one.
-4. ENG-193, ENG-194 — backlog cleanup.
-5. ENG-177, ENG-178 — need Sean's involvement, not autonomous work.
+2. ENG-184 — the big one.
+3. ENG-193, ENG-194 — backlog cleanup.
+4. ENG-177, ENG-178 — need Sean's involvement, not autonomous work.
 
 **Open design questions carried forward:**
-- ENG-185: global `core.hooksPath` via chezmoi `run_once_` vs. per-repo vs. other? Unanswered.
 - ENG-184 open questions: Q2 (permission-prompt deadlock) remains contested; test empirically at Task 8.
 
 ### 2026-04-18 (session: plan reconstruction + autonomous rollout start)
@@ -565,6 +567,8 @@ Per-run audit trail as specified in Component 6. Orchestrator appends runs; each
 ---
 
 ## 3. ENG-185: Post-commit hook for stale-parent detection
+
+> **CANCELED 2026-04-19.** Replaced by **ENG-198** — "Add stale-parent check to close-feature-branch skill." The task plan below is preserved for historical context; do not execute it. The replacement does the same detection at merge-time (inside `close-feature-branch`) instead of commit-time (git hook). See ENG-185's cancellation comment on Linear for the full rationale.
 
 **Goal:** Git post-commit hook that, when Sean amends a branch which is a parent of any In-Review Linear issue, labels the child issue with `stale-parent` (and optionally comments with the new HEAD SHA).
 
