@@ -27,6 +27,10 @@ When asked to do something, just do it - including obvious follow-up actions nee
   - You genuinely don't understand what's being asked
   - Your partner specifically asks "how should I approach X?" (answer the question, don't jump to implementation)
 
+## Linear authorization
+
+For any Linear issue Sean has explicitly asked you to work on (signaled via `/ralph-start`, an issue ID in the task statement, or a branch name that matches the issue), modifying that issue's state, description, comments, and labels is pre-authorized — don't pause for confirmation. Creating or canceling throwaway issues for dogfood testing of orchestrator skills (e.g. ralph v2 spec-queue) is also pre-authorized. Writes to unrelated or unnamed Linear issues still go through the auto-mode classifier.
+
 ## Designing software
 
 - YAGNI. The best code is no code. Don't add features we don't need right now.
