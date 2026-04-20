@@ -263,7 +263,7 @@ Use `linear issue update` (verify exact relation-add flag via `linear issue upda
 
 **Files:** Create `agent-config/skills/prepare-for-review/SKILL.md`.
 
-- [ ] **Step 1:** Create the skill file with frontmatter matching repo conventions:
+- [x] **Step 1:** Create the skill file with frontmatter matching repo conventions:
 
 ```markdown
 ---
@@ -278,7 +278,7 @@ allowed-tools: Skill, Bash(linear:*), Read, Glob, Grep, Write, Edit
 Hand-off checklist for "implementation is done, tests pass, now it needs human review."
 ```
 
-- [ ] **Step 2:** Commit scaffold.
+- [x] **Step 2:** Commit scaffold.
 
 ```bash
 git add agent-config/skills/prepare-for-review/SKILL.md
@@ -287,7 +287,7 @@ git commit -m "scaffold prepare-for-review skill (ENG-182)"
 
 ### Task 2: Document the handoff sequence (steps 1-4)
 
-- [ ] **Step 1:** Add the skill body describing the sequence from Decision 3 of the design doc:
+- [x] **Step 1:** Add the skill body describing the sequence from Decision 3 of the design doc:
 
 ```markdown
 ## When to Use
@@ -314,7 +314,7 @@ Invoke `prune-completed-docs` skill. Removes or archives now-stale planning docs
 Invoke `codex-review-gate` skill (final-branch mode). Iterate on findings — the review may result in code changes, which is expected and correct. Re-run if code changes were made.
 ```
 
-- [ ] **Step 2:** Commit.
+- [x] **Step 2:** Commit.
 
 ```bash
 git add agent-config/skills/prepare-for-review/SKILL.md
@@ -325,7 +325,7 @@ git commit -m "document first four handoff steps in prepare-for-review (ENG-182)
 
 **Open question resolved here:** The design doc names "review summary" and "QA test plan" but does not prescribe exact structure. Pick a template; document it inline in the skill.
 
-- [ ] **Step 1:** Append to the skill:
+- [x] **Step 1:** Append to the skill:
 
 ```markdown
 ### Step 5: Post Linear handoff comment
@@ -357,7 +357,7 @@ Post a comment on the Linear issue using this template. Fill every section; empt
 Use `linear issue comment <issue-id>` (verify exact CLI syntax via `linear issue comment --help` or `linear-cli` skill at invocation time; do not guess flags).
 ```
 
-- [ ] **Step 2:** Commit.
+- [x] **Step 2:** Commit.
 
 ```bash
 git add agent-config/skills/prepare-for-review/SKILL.md
@@ -366,7 +366,7 @@ git commit -m "define Linear handoff comment template (ENG-182)"
 
 ### Task 4: Document the state transition handoff
 
-- [ ] **Step 1:** Append to the skill:
+- [x] **Step 1:** Append to the skill:
 
 ```markdown
 ### Step 6: Move issue to In Review via /linear-workflow
@@ -378,7 +378,7 @@ DO NOT call the `linear` CLI directly to change state. The `linear-workflow` ski
 Reference: see the `linear-workflow` skill for state-machine semantics. ENG-183 audited this skill for autonomous-session compatibility; it handles the case where the state has already been changed externally.
 ```
 
-- [ ] **Step 2:** Commit.
+- [x] **Step 2:** Commit.
 
 ```bash
 git add agent-config/skills/prepare-for-review/SKILL.md
@@ -387,7 +387,7 @@ git commit -m "document In Review handoff via linear-workflow (ENG-182)"
 
 ### Task 5: Add a red-flag / failure section
 
-- [ ] **Step 1:** Append to the skill:
+- [x] **Step 1:** Append to the skill:
 
 ```markdown
 ## Red Flags / When to Stop
@@ -398,7 +398,7 @@ git commit -m "document In Review handoff via linear-workflow (ENG-182)"
 - **Deviations from PRD are substantial enough they need discussion:** Post the comment anyway (the user will see it at review time), but flag loudly in the Review Summary section.
 ```
 
-- [ ] **Step 2:** Commit.
+- [x] **Step 2:** Commit.
 
 ```bash
 git add agent-config/skills/prepare-for-review/SKILL.md
@@ -407,21 +407,21 @@ git commit -m "document red flags and stop-conditions (ENG-182)"
 
 ### Task 6: Verify and finish
 
-- [ ] **Step 1:** Read the full SKILL.md end-to-end. Check that:
+- [x] **Step 1:** Read the full SKILL.md end-to-end. Check that:
   - Frontmatter fields match those in `codex-review-gate/SKILL.md` and `linear-workflow/SKILL.md`.
   - Description is specific enough that Claude will auto-invoke it at the right time (autonomous sessions via the ralph prompt, interactive sessions after finishing work).
   - `allowed-tools` covers every tool actually used.
   - Every referenced skill (`update-stale-docs`, `capture-decisions`, `prune-completed-docs`, `codex-review-gate`, `linear-workflow`) exists in `agent-config/skills/` or the superpowers plugin.
 
-- [ ] **Step 2:** Manually dry-run the skill on a throwaway finished feature branch. The test is *invocation*, not code behavior — can Claude read the skill and follow the sequence without ambiguity? Fix any step that requires the user to guess.
+- [x] **Step 2:** Manually dry-run the skill on a throwaway finished feature branch. The test is *invocation*, not code behavior — can Claude read the skill and follow the sequence without ambiguity? Fix any step that requires the user to guess.
 
-- [ ] **Step 3:** Invoke `codex-review-gate` on the skill file.
+- [x] **Step 3:** Invoke `codex-review-gate` on the skill file.
 
-- [ ] **Step 4:** Update `linear-workflow/SKILL.md` only if ENG-183's audit left any "prepare-for-review doesn't exist yet" placeholders — most likely the reference is already forward-looking and needs no change.
+- [x] **Step 4:** Update `linear-workflow/SKILL.md` only if ENG-183's audit left any "prepare-for-review doesn't exist yet" placeholders — most likely the reference is already forward-looking and needs no change.
 
-- [ ] **Step 5:** Run `/prepare-for-review` on this ticket itself (meta — eat our own dogfood). The Linear comment format and review summary should be generated by running the skill on its own implementation branch.
+- [x] **Step 5:** Run `/prepare-for-review` on this ticket itself (meta — eat our own dogfood). The Linear comment format and review summary should be generated by running the skill on its own implementation branch.
 
-- [ ] **Step 6:** Close via project-local close skill once ENG-186 ships. Until then, close by hand per the user's rebase+ff-only preference.
+- [x] **Step 6:** Close via project-local close skill once ENG-186 ships. Until then, close by hand per the user's rebase+ff-only preference.
 
 ---
 
@@ -432,10 +432,10 @@ git commit -m "document red flags and stop-conditions (ENG-182)"
 **Design reference:** `2026-04-17-ralph-loop-v2-design.md` — Architecture, Components, all Decisions.
 
 **Prerequisites (verify before starting):**
-- [ ] ENG-182 is Done and merged. (The prompt template references `/prepare-for-review`; the skill must exist.)
-- [ ] ENG-181 is Done. (`Approved` state exists in Linear — verify via `linear state list --team ENG`.)
-- [ ] ENG-183 is Done. (`/linear-workflow` works in autonomous sessions — already merged per current state.)
-- [ ] Blocked-by relation set in Linear: ENG-184 blocked by ENG-182.
+- [x] ENG-182 is Done and merged. (The prompt template references `/prepare-for-review`; the skill must exist.)
+- [x] ENG-181 is Done. (`Approved` state exists in Linear — verify via `linear state list --team ENG`.)
+- [x] ENG-183 is Done. (`/linear-workflow` works in autonomous sessions — already merged per current state.)
+- [x] Blocked-by relation set in Linear: ENG-184 blocked by ENG-182.
 
 **Open questions — status before starting ENG-184:**
 - Q1 (auto-mode flag) — **resolved** as `claude --permission-mode auto`.
@@ -464,7 +464,7 @@ git commit -m "document red flags and stop-conditions (ENG-182)"
 
 ### Task 1: Scaffold skill + config
 
-- [ ] **Step 1:** Create skill directory with SKILL.md frontmatter. Description must mark it as human-invoked only:
+- [x] **Step 1:** Create skill directory with SKILL.md frontmatter. Description must mark it as human-invoked only:
 
 ```markdown
 ---
@@ -477,11 +477,11 @@ allowed-tools: Bash, Read, Glob, Grep
 
 Use `disable-model-invocation: true` — this is a the user-driven trigger, not a Claude-driven one.
 
-- [ ] **Step 2:** Stub `config.example.json` matching the design doc's Component 7 structure. Keys: `project`, `approved_state`, `review_state`, `failed_label`, `worktree_base`, `model`, `stdout_log_filename`, `prompt_template`.
+- [x] **Step 2:** Stub `config.example.json` matching the design doc's Component 7 structure. Keys: `project`, `approved_state`, `review_state`, `failed_label`, `worktree_base`, `model`, `stdout_log_filename`, `prompt_template`.
 
-- [ ] **Step 3:** Stub empty scripts + `scripts/lib/` + `scripts/test/`. Scripts have `#!/usr/bin/env bash`, `set -euo pipefail`, and a placeholder body that exits 0. Make all scripts executable.
+- [x] **Step 3:** Stub empty scripts + `scripts/lib/` + `scripts/test/`. Scripts have `#!/usr/bin/env bash`, `set -euo pipefail`, and a placeholder body that exits 0. Make all scripts executable.
 
-- [ ] **Step 4:** Commit.
+- [x] **Step 4:** Commit.
 
 ```bash
 git add agent-config/skills/ralph-start/
@@ -490,14 +490,14 @@ git commit -m "scaffold ralph-start skill and script stubs (ENG-184)"
 
 ### Task 2: Config loader (`lib/config.sh`)
 
-- [ ] **Step 1:** Write a bats test `scripts/test/config.bats` that:
+- [x] **Step 1:** Write a bats test `scripts/test/config.bats` that:
   - Given a `config.json`, loads keys into exported env vars (`RALPH_PROJECT`, `RALPH_APPROVED_STATE`, etc.).
   - Missing required keys cause exit 1 with a clear error.
   - `config.example.json` as the input parses cleanly.
-- [ ] **Step 2:** Run — verify FAIL.
-- [ ] **Step 3:** Implement `lib/config.sh` using `jq` for parsing. Export variables with the `RALPH_` prefix.
-- [ ] **Step 4:** Run — verify PASS.
-- [ ] **Step 5:** Commit.
+- [x] **Step 2:** Run — verify FAIL.
+- [x] **Step 3:** Implement `lib/config.sh` using `jq` for parsing. Export variables with the `RALPH_` prefix.
+- [x] **Step 4:** Run — verify PASS.
+- [x] **Step 5:** Commit.
 
 ### Task 3: Linear wrapper (`lib/linear.sh`)
 
@@ -511,12 +511,12 @@ Functions needed (derive from design doc Component 5):
 
 **Important:** Every Linear CLI invocation here should match what `linear-cli` plugin skill documents. When in doubt, run `linear <subcommand> --help` and copy the flag names literally. Do NOT invent flag names.
 
-- [ ] **Step 1:** Write bats tests that stub the `linear` CLI via PATH manipulation and verify each function produces the right invocations (captured via the stub's argv).
-- [ ] **Step 2:** Run — verify FAIL.
-- [ ] **Step 3:** Implement `lib/linear.sh`.
-- [ ] **Step 4:** Run — verify PASS.
-- [ ] **Step 5:** Manual smoke: pick a real Agent Config Linear issue and call each function against it (in a scratch shell). Verify against the Linear UI.
-- [ ] **Step 6:** Commit.
+- [x] **Step 1:** Write bats tests that stub the `linear` CLI via PATH manipulation and verify each function produces the right invocations (captured via the stub's argv).
+- [x] **Step 2:** Run — verify FAIL.
+- [x] **Step 3:** Implement `lib/linear.sh`.
+- [x] **Step 4:** Run — verify PASS.
+- [x] **Step 5:** Manual smoke: pick a real Agent Config Linear issue and call each function against it (in a scratch shell). Verify against the Linear UI.
+- [x] **Step 6:** Commit.
 
 ### Task 4: Worktree wrapper (`lib/worktree.sh`)
 
@@ -525,28 +525,28 @@ Functions needed:
 - `worktree_create_with_integration <path> <branch> <parents[]>` — creates at `main`, then `git merge` each parent sequentially without aborting on conflict (let conflicts persist in the working tree for the agent to resolve)
 - `worktree_path_for_issue <issue_id>` — computes `$REPO_ROOT/.worktrees/<branch-slug>` (chezmoi convention; matches `superpowers:using-git-worktrees` default)
 
-- [ ] **Step 1:** Write bats tests using a throwaway git repo fixture. Verify:
+- [x] **Step 1:** Write bats tests using a throwaway git repo fixture. Verify:
   - Clean base: worktree created, branch checked out, no unresolved conflicts.
   - Single-parent base: worktree created on parent's branch tip.
   - Integration base: worktree at main, parents merged sequentially, conflicts present in working tree if any.
-- [ ] **Step 2:** Run — verify FAIL.
-- [ ] **Step 3:** Implement. Key: integration-merge must NOT `git merge --abort` on conflict. Leave conflicts in-place per design Decision 7.
-- [ ] **Step 4:** Run — verify PASS.
-- [ ] **Step 5:** Commit.
+- [x] **Step 2:** Run — verify FAIL.
+- [x] **Step 3:** Implement. Key: integration-merge must NOT `git merge --abort` on conflict. Leave conflicts in-place per design Decision 7.
+- [x] **Step 4:** Run — verify PASS.
+- [x] **Step 5:** Commit.
 
 ### Task 5: Topological sort (`toposort.sh`)
 
 Kahn's algorithm over `blocked-by` relations. Input: list of issue IDs + each issue's blockers (as fetched via `lib/linear.sh`). Output: ordered list respecting dependencies, with Linear priority as tiebreaker.
 
-- [ ] **Step 1:** Write bats tests covering:
+- [x] **Step 1:** Write bats tests covering:
   - Linear chain A→B→C (C blocked by B, B blocked by A): order A, B, C.
   - Diamond A→{B,C}→D: A, then B/C (tiebreaker by priority), then D.
   - Disconnected: two independent chains interleaved by priority.
   - Cycle: error with a clear message.
-- [ ] **Step 2:** Run — verify FAIL.
-- [ ] **Step 3:** Implement Kahn's in bash. jq for the relation parsing if helpful.
-- [ ] **Step 4:** Run — verify PASS.
-- [ ] **Step 5:** Commit.
+- [x] **Step 2:** Run — verify FAIL.
+- [x] **Step 3:** Implement Kahn's in bash. jq for the relation parsing if helpful.
+- [x] **Step 4:** Run — verify PASS.
+- [x] **Step 5:** Commit.
 
 ### Task 6: DAG base-branch selection (`dag_base.sh`)
 
@@ -560,16 +560,16 @@ Direct translation of Component 4 pseudo-code:
 #   "INTEGRATION <parent1-branch> <parent2-branch> ..."
 ```
 
-- [ ] **Step 1:** Write bats tests:
+- [x] **Step 1:** Write bats tests:
   - No blockers → `main`.
   - All blockers Done → `main`.
   - One blocker In Review, rest Done → that one's branch.
   - Multiple blockers In Review → `INTEGRATION` with parent list.
   - Any blocker in Approved/In Progress (not yet in Review) → this should be caught by the pickup rule upstream; `dag_base` can assume only pickup-ready issues reach it.
-- [ ] **Step 2:** Run — verify FAIL.
-- [ ] **Step 3:** Implement. Consumes `lib/linear.sh::linear_get_issue_blockers`.
-- [ ] **Step 4:** Run — verify PASS.
-- [ ] **Step 5:** Commit.
+- [x] **Step 2:** Run — verify FAIL.
+- [x] **Step 3:** Implement. Consumes `lib/linear.sh::linear_get_issue_blockers`.
+- [x] **Step 4:** Run — verify PASS.
+- [x] **Step 5:** Commit.
 
 ### Task 7: Pre-flight sanity scan (`preflight_scan.sh`)
 
@@ -581,11 +581,11 @@ Detect anomalies per design Decision 6. For each Approved issue in the project, 
 
 Output: pass (all clear, ready to dispatch) or fail (list of anomalies with issue URLs, non-zero exit).
 
-- [ ] **Step 1:** Write bats tests with stubbed Linear state fixtures covering each anomaly type.
-- [ ] **Step 2:** Run — verify FAIL.
-- [ ] **Step 3:** Implement. Reads issues via `lib/linear.sh`. "Trivially short PRD" threshold: fewer than N non-whitespace characters — pick N=200, document it.
-- [ ] **Step 4:** Run — verify PASS.
-- [ ] **Step 5:** Commit.
+- [x] **Step 1:** Write bats tests with stubbed Linear state fixtures covering each anomaly type.
+- [x] **Step 2:** Run — verify FAIL.
+- [x] **Step 3:** Implement. Reads issues via `lib/linear.sh`. "Trivially short PRD" threshold: fewer than N non-whitespace characters — pick N=200, document it.
+- [x] **Step 4:** Run — verify PASS.
+- [x] **Step 5:** Commit.
 
 ### Task 8: Orchestrator dispatch loop (`orchestrator.sh`)
 
@@ -600,15 +600,15 @@ The main loop. Consumes: a queue of issue IDs (pre-sorted by `toposort.sh`). Per
    - **non-zero:** `linear_add_label $issue ralph-failed`; mark all transitive descendants as tainted (skip on subsequent iterations); record in `progress.json`.
 7. Continue to next issue if not tainted.
 
-- [ ] **Step 1:** Write bats tests. Stub `claude` via PATH manipulation — record invocations, control exit code via env var. Verify:
+- [x] **Step 1:** Write bats tests. Stub `claude` via PATH manipulation — record invocations, control exit code via env var. Verify:
   - Clean queue: three independent issues, all exit 0 → Linear set to In Progress at dispatch, session assumed to complete, three `progress.json` entries.
   - Failure taints downstream: ENG-A blocks ENG-B; ENG-A exits non-zero → ENG-B skipped, `ralph-failed` label on ENG-A only.
   - Failure does NOT taint independents: ENG-A and ENG-C are independent; ENG-A fails, ENG-C still dispatches.
   - Integration merge: ENG-B blocked by ENG-X, ENG-Y (both In Review) → worktree at `INTEGRATION`, sequential merges applied.
-- [ ] **Step 2:** Run — verify FAIL.
-- [ ] **Step 3:** Implement, following the shell pseudo-code in design Component 2.
-- [ ] **Step 4:** Run — verify PASS.
-- [ ] **Step 5:** Commit.
+- [x] **Step 2:** Run — verify FAIL.
+- [x] **Step 3:** Implement, following the shell pseudo-code in design Component 2.
+- [x] **Step 4:** Run — verify PASS.
+- [x] **Step 5:** Commit.
 
 ### Task 9: Slash command entry (`SKILL.md`)
 
@@ -620,41 +620,41 @@ Fill in the `ralph-start` SKILL.md body with the workflow from Component 1:
 5. Dry-run preview: print the queue with base-branch choices, prompt for the user confirmation.
 6. Invoke `orchestrator.sh` with the approved queue.
 
-- [ ] **Step 1:** Write the SKILL.md body inline.
-- [ ] **Step 2:** Manual dry-run with an artificial Approved issue (or fixture). Verify the preview output and confirmation flow feel right.
-- [ ] **Step 3:** Commit.
+- [x] **Step 1:** Write the SKILL.md body inline.
+- [x] **Step 2:** Manual dry-run with an artificial Approved issue (or fixture). Verify the preview output and confirmation flow feel right.
+- [x] **Step 3:** Commit.
 
 ### Task 10: Progress file (`progress.json`)
 
 Per-run audit trail as specified in Component 6. Orchestrator appends runs; each run has `run_id` (ISO 8601 with tz), `dispatched` array, `skipped` array.
 
-- [ ] **Step 1:** Write bats tests for the append logic (ensure concurrent runs don't clobber — if two `/ralph-start` invocations overlap, append atomically via a tmpfile+mv).
-- [ ] **Step 2:** Run — verify FAIL.
-- [ ] **Step 3:** Implement inside `orchestrator.sh` or a small helper in `lib/`.
-- [ ] **Step 4:** Run — verify PASS.
-- [ ] **Step 5:** Commit.
+- [x] **Step 1:** Write bats tests for the append logic (ensure concurrent runs don't clobber — if two `/ralph-start` invocations overlap, append atomically via a tmpfile+mv).
+- [x] **Step 2:** Run — verify FAIL.
+- [x] **Step 3:** Implement inside `orchestrator.sh` or a small helper in `lib/`.
+- [x] **Step 4:** Run — verify PASS.
+- [x] **Step 5:** Commit.
 
 ### Task 11: End-to-end dogfood
 
-- [ ] **Step 1:** Create a throwaway Agent Config Linear issue in Approved state with a trivial PRD ("create a file `test-ralph-v2.txt` with contents `hello`") and no blockers.
-- [ ] **Step 2:** Run `/ralph-start`. Confirm preview. Let the dispatch happen.
-- [ ] **Step 3:** Observe: worktree created, session dispatched with correct prompt, session completes, Linear state In Review, `progress.json` populated.
-- [ ] **Step 4:** If any step fails, diagnose. Do NOT mark the ticket done with a known failure mode — root-cause it per CLAUDE.md.
-- [ ] **Step 5:** Clean up the throwaway issue (move to Canceled with a comment noting it was a dogfood test).
+- [x] **Step 1:** Create a throwaway Agent Config Linear issue in Approved state with a trivial PRD ("create a file `test-ralph-v2.txt` with contents `hello`") and no blockers.
+- [x] **Step 2:** Run `/ralph-start`. Confirm preview. Let the dispatch happen.
+- [x] **Step 3:** Observe: worktree created, session dispatched with correct prompt, session completes, Linear state In Review, `progress.json` populated.
+- [x] **Step 4:** If any step fails, diagnose. Do NOT mark the ticket done with a known failure mode — root-cause it per CLAUDE.md.
+- [x] **Step 5:** Clean up the throwaway issue (move to Canceled with a comment noting it was a dogfood test).
 
 ### Task 12: Documentation sweep
 
-- [ ] **Step 1:** Update `agent-config/skills/` top-level README (if one exists) to reference the new skill.
-- [ ] **Step 2:** Add a short playbook at `agent-config/docs/playbooks/ralph-v2-usage.md` — two paragraphs on "how I use this" from the user's seat: when to run `/ralph-start`, what to expect, how to triage `ralph-failed` issues on return.
-- [ ] **Step 3:** Commit docs.
-- [ ] **Step 4:** Invoke `update-stale-docs` skill to catch anything else.
+- [x] **Step 1:** Update `agent-config/skills/` top-level README (if one exists) to reference the new skill.
+- [x] **Step 2:** Add a short playbook at `agent-config/docs/playbooks/ralph-v2-usage.md` — two paragraphs on "how I use this" from the user's seat: when to run `/ralph-start`, what to expect, how to triage `ralph-failed` issues on return.
+- [x] **Step 3:** Commit docs.
+- [x] **Step 4:** Invoke `update-stale-docs` skill to catch anything else.
 
 ### Task 13: Review gate
 
-- [ ] **Step 1:** Invoke `codex-review-gate` on the branch diff. Address blocking findings.
-- [ ] **Step 2:** Re-run end-to-end dogfood (Task 11) if code was changed during review.
-- [ ] **Step 3:** Invoke `/prepare-for-review` — eats the dogfood, posts the Linear comment, moves to In Review.
-- [ ] **Step 4:** Close via ENG-186's skill once it ships; or manually per the user's rebase+ff-only preference if earlier.
+- [x] **Step 1:** Invoke `codex-review-gate` on the branch diff. Address blocking findings.
+- [x] **Step 2:** Re-run end-to-end dogfood (Task 11) if code was changed during review.
+- [x] **Step 3:** Invoke `/prepare-for-review` — eats the dogfood, posts the Linear comment, moves to In Review.
+- [x] **Step 4:** Close via ENG-186's skill once it ships; or manually per the user's rebase+ff-only preference if earlier.
 
 ---
 
@@ -677,20 +677,20 @@ Per-run audit trail as specified in Component 6. Orchestrator appends runs; each
 - Modify: chezmoi hook-installation mechanism if one exists.
 
 **Before coding — unknowns to resolve:**
-- [ ] How does chezmoi currently manage git hooks for this repo and for repos managed through it? Look at `chezmoi cat-config`, `run_*` scripts, and any existing `.git/hooks/` references. Do NOT invent a mechanism — verify.
-- [ ] Is there a `.githooks/` or `run_once_install-hooks.sh` already? If so, extend it.
-- [ ] Does the user want this hook installed globally (via `git config --global core.hooksPath`) or per-repo? The design doc doesn't say. Default to per-repo (tied to chezmoi-managed repos) and surface the choice to the user if it matters for the install mechanism.
+- [x] How does chezmoi currently manage git hooks for this repo and for repos managed through it? Look at `chezmoi cat-config`, `run_*` scripts, and any existing `.git/hooks/` references. Do NOT invent a mechanism — verify.
+- [x] Is there a `.githooks/` or `run_once_install-hooks.sh` already? If so, extend it.
+- [x] Does the user want this hook installed globally (via `git config --global core.hooksPath`) or per-repo? The design doc doesn't say. Default to per-repo (tied to chezmoi-managed repos) and surface the choice to the user if it matters for the install mechanism.
 
 ### Task 1: Discover the install mechanism
 
-- [ ] **Step 1:** Search the chezmoi source tree for existing hook patterns:
+- [x] **Step 1:** Search the chezmoi source tree for existing hook patterns:
 
 ```bash
 fd -e sh hook /Users/seankao/.local/share/chezmoi
 ```
 
-- [ ] **Step 2:** Read any matches. Document the pattern in a scratch note to the session (or inline in the plan if you're updating this document).
-- [ ] **Step 3:** If no pattern exists, pause and ask the user. Do NOT invent one.
+- [x] **Step 2:** Read any matches. Document the pattern in a scratch note to the session (or inline in the plan if you're updating this document).
+- [x] **Step 3:** If no pattern exists, pause and ask the user. Do NOT invent one.
 
 ### Task 2: Write the detection logic
 
@@ -699,23 +699,23 @@ Logic:
 2. Query Linear: list issues in state In Review where this branch is the parent of at least one In Review issue. (Parent-of relation: an issue B whose `blocked-by` is an issue A such that A's branch == this branch.)
 3. For each such child issue: add label `stale-parent`. Optionally post a comment `Parent branch '<branch>' was amended; new HEAD SHA: <sha>`.
 
-- [ ] **Step 1:** Write a bats test for the detection logic in isolation (stub `linear`, stub `git`).
-- [ ] **Step 2:** Run — verify FAIL.
-- [ ] **Step 3:** Implement a standalone script at the chezmoi-determined location.
-- [ ] **Step 4:** Run — verify PASS.
-- [ ] **Step 5:** Commit.
+- [x] **Step 1:** Write a bats test for the detection logic in isolation (stub `linear`, stub `git`).
+- [x] **Step 2:** Run — verify FAIL.
+- [x] **Step 3:** Implement a standalone script at the chezmoi-determined location.
+- [x] **Step 4:** Run — verify PASS.
+- [x] **Step 5:** Commit.
 
 ### Task 3: Install hook + verify end-to-end
 
-- [ ] **Step 1:** Wire up the install mechanism per Task 1's discovery.
-- [ ] **Step 2:** Run `chezmoi apply` (or whatever applies the repo's changes) and verify the hook is installed in a test repo.
-- [ ] **Step 3:** End-to-end: create a throwaway Agent Config issue, set its `blocked-by` to a second throwaway issue that's In Review with a real branch, amend the parent branch, watch the hook fire, verify the child gets the `stale-parent` label.
-- [ ] **Step 4:** Commit.
+- [x] **Step 1:** Wire up the install mechanism per Task 1's discovery.
+- [x] **Step 2:** Run `chezmoi apply` (or whatever applies the repo's changes) and verify the hook is installed in a test repo.
+- [x] **Step 3:** End-to-end: create a throwaway Agent Config issue, set its `blocked-by` to a second throwaway issue that's In Review with a real branch, amend the parent branch, watch the hook fire, verify the child gets the `stale-parent` label.
+- [x] **Step 4:** Commit.
 
 ### Task 4: Docs + review gate
 
-- [ ] **Step 1:** Add short docs: what the hook does, how to disable if annoying.
-- [ ] **Step 2:** `codex-review-gate`, `/prepare-for-review`.
+- [x] **Step 1:** Add short docs: what the hook does, how to disable if annoying.
+- [x] **Step 2:** `codex-review-gate`, `/prepare-for-review`.
 
 ---
 
@@ -738,7 +738,7 @@ Logic:
 
 ### Task 1: Scaffold
 
-- [ ] **Step 1:** Create `.claude/skills/close-feature-branch/SKILL.md` (repo-root project-local path; not `agent-config/skills/`) with frontmatter:
+- [x] **Step 1:** Create `.claude/skills/close-feature-branch/SKILL.md` (repo-root project-local path; not `agent-config/skills/`) with frontmatter:
 
 ```markdown
 ---
@@ -751,11 +751,11 @@ allowed-tools: Bash, Read, Glob, Grep, Skill
 # Close Feature Branch (chezmoi)
 ```
 
-- [ ] **Step 2:** Commit.
+- [x] **Step 2:** Commit.
 
 ### Task 2: Document the ritual
 
-- [ ] **Step 1:** Append the ordered steps:
+- [x] **Step 1:** Append the ordered steps:
 
 ```markdown
 ## The Ritual (run in order)
@@ -821,11 +821,11 @@ Do NOT use `--force`. If removal fails, diagnose (usually uncommitted changes or
 Invoke `linear-workflow` skill for In Review → Done transition.
 ```
 
-- [ ] **Step 2:** Commit.
+- [x] **Step 2:** Commit.
 
 ### Task 3: Add red flags
 
-- [ ] **Step 1:** Append:
+- [x] **Step 1:** Append:
 
 ```markdown
 ## Red Flags / When to Stop
@@ -836,15 +836,15 @@ Invoke `linear-workflow` skill for In Review → Done transition.
 - **The issue's Linear state is not In Review:** This skill runs AFTER review, not before. If the issue is still In Progress or Todo, someone skipped a step.
 ```
 
-- [ ] **Step 2:** Commit.
+- [x] **Step 2:** Commit.
 
 ### Task 4: Verify + review gate
 
-- [ ] **Step 1:** Read SKILL.md end-to-end.
-- [ ] **Step 2:** Manual dry-run on a throwaway branch in the repo (e.g., the one this ticket is being worked on — meta again).
-- [ ] **Step 3:** `codex-review-gate`.
-- [ ] **Step 4:** `/prepare-for-review` → Linear.
-- [ ] **Step 5:** Close via... itself. (Meta-close. If this feels circular, merge by hand the first time and let the skill close itself subsequently.)
+- [x] **Step 1:** Read SKILL.md end-to-end.
+- [x] **Step 2:** Manual dry-run on a throwaway branch in the repo (e.g., the one this ticket is being worked on — meta again).
+- [x] **Step 3:** `codex-review-gate`.
+- [x] **Step 4:** `/prepare-for-review` → Linear.
+- [x] **Step 5:** Close via... itself. (Meta-close. If this feels circular, merge by hand the first time and let the skill close itself subsequently.)
 
 ---
 
@@ -863,35 +863,35 @@ Invoke `linear-workflow` skill for In Review → Done transition.
 
 ### Task 1: Pick candidates to evaluate
 
-- [ ] **Step 1:** List 3–5 candidate plan-shapes. Starting set from the ticket:
+- [x] **Step 1:** List 3–5 candidate plan-shapes. Starting set from the ticket:
   - `superpowers:writing-plans` (baseline — current behavior).
   - PRD-only (no separate plan; ship the issue description as-is).
   - PRD + short outline (a few paragraphs of "approach," not bite-sized TDD).
   - GSD-style.
   - Community ralph variants (mattpocock/skills if documented, snarktank/ralph).
-- [ ] **Step 2:** Read each candidate's documentation. Summarize what it produces in 2–3 sentences per candidate.
+- [x] **Step 2:** Read each candidate's documentation. Summarize what it produces in 2–3 sentences per candidate.
 
 ### Task 2: Design the evaluation
 
-- [ ] **Step 1:** Pick 2–3 representative Agent Config tickets (ideally ones already Done so you have ground truth on "what did the code actually look like"). Write their PRDs fresh.
-- [ ] **Step 2:** For each candidate, produce the "plan artifact" that candidate would generate (either by running the skill, or by hand-producing something of that shape).
-- [ ] **Step 3:** Dispatch each plan+ticket through ralph (once ENG-184 is operational) or through a mock dispatch (a fresh `claude -p` session with the same prompt template).
+- [x] **Step 1:** Pick 2–3 representative Agent Config tickets (ideally ones already Done so you have ground truth on "what did the code actually look like"). Write their PRDs fresh.
+- [x] **Step 2:** For each candidate, produce the "plan artifact" that candidate would generate (either by running the skill, or by hand-producing something of that shape).
+- [x] **Step 3:** Dispatch each plan+ticket through ralph (once ENG-184 is operational) or through a mock dispatch (a fresh `claude -p` session with the same prompt template).
 
 ### Task 3: Score outcomes
 
-- [ ] **Step 1:** Criteria:
+- [x] **Step 1:** Criteria:
   - Did the session complete without blocking?
   - How many deviations from PRD?
   - Did the session hit obvious dead-ends a plan would have prevented?
   - Time to completion.
-- [ ] **Step 2:** Tabulate. Write up the recommendation.
+- [x] **Step 2:** Tabulate. Write up the recommendation.
 
 ### Task 4: Write + file recommendation
 
-- [ ] **Step 1:** Write the recommendation doc at the file path above.
-- [ ] **Step 2:** If the recommendation is "switch to X," file a follow-up ticket to adopt X across the ralph workflow. This ticket closes when the recommendation is filed, not when X is adopted.
-- [ ] **Step 3:** `codex-review-gate` on the doc.
-- [ ] **Step 4:** `/prepare-for-review` → Linear.
+- [x] **Step 1:** Write the recommendation doc at the file path above.
+- [x] **Step 2:** If the recommendation is "switch to X," file a follow-up ticket to adopt X across the ralph workflow. This ticket closes when the recommendation is filed, not when X is adopted.
+- [x] **Step 3:** `codex-review-gate` on the doc.
+- [x] **Step 4:** `/prepare-for-review` → Linear.
 
 ---
 
@@ -910,35 +910,35 @@ Invoke `linear-workflow` skill for In Review → Done transition.
 
 ### Task 1: Pick candidates
 
-- [ ] **Step 1:** Starting set from the ticket:
+- [x] **Step 1:** Starting set from the ticket:
   - `superpowers:brainstorming` (baseline).
   - Claude native plan mode (lighter-weight design exploration).
   - GSD.
   - ralph variants.
   - `/grill-me` (mattpocock/skills) — adversarial questioning.
-- [ ] **Step 2:** Read each. Summarize.
+- [x] **Step 2:** Read each. Summarize.
 
 ### Task 2: Design + run the evaluation
 
 Same pattern as ENG-177:
 
-- [ ] **Step 1:** Pick 2–3 candidate ideas that could become issues.
-- [ ] **Step 2:** Run each through each candidate brainstorming tool.
-- [ ] **Step 3:** Score the output PRDs against the ralph-loop contract (Decision 1): does the PRD contain enough context for Opus 4.7 to implement without human input?
+- [x] **Step 1:** Pick 2–3 candidate ideas that could become issues.
+- [x] **Step 2:** Run each through each candidate brainstorming tool.
+- [x] **Step 3:** Score the output PRDs against the ralph-loop contract (Decision 1): does the PRD contain enough context for Opus 4.7 to implement without human input?
 
 ### Task 3: Criteria + tabulation
 
-- [ ] **Step 1:** Criteria:
+- [x] **Step 1:** Criteria:
   - Quality of resulting spec (contract coverage).
   - Time to reach Approved (wall clock).
   - Fit with the user's thinking style (subjective but important).
-- [ ] **Step 2:** Tabulate.
+- [x] **Step 2:** Tabulate.
 
 ### Task 4: Write + file recommendation
 
-- [ ] **Step 1:** Write the doc.
-- [ ] **Step 2:** If the recommendation is to adopt a new tool, file a follow-up to adopt it.
-- [ ] **Step 3:** `codex-review-gate` + `/prepare-for-review`.
+- [x] **Step 1:** Write the doc.
+- [x] **Step 2:** If the recommendation is to adopt a new tool, file a follow-up to adopt it.
+- [x] **Step 3:** `codex-review-gate` + `/prepare-for-review`.
 
 ---
 
