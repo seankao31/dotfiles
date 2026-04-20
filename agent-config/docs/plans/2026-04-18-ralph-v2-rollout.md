@@ -695,7 +695,7 @@ git rebase main
 
 Rebase onto **local** `main` (not `origin/main`) so that any unpushed commits the user has made directly to local main are absorbed; otherwise Step 2's `git merge --ff-only` will fail when the feature branch and local main have diverged.
 
-If conflicts arise, resolve them or abort (`git rebase --abort`) and escalate to the user — do NOT auto-resolve silently.
+If conflicts arise, resolve them when the right answer is mechanical (unrelated adjacent edits, duplicated logic where one side already landed on main, both sides appending to the same list/changelog/docs section) — then `git add` and `git rebase --continue`. Abort (`git rebase --abort`) and escalate only when both sides make substantive contradicting changes, a file is deleted on one side and modified on the other, or you genuinely can't tell what the right answer is without user context.
 
 ### Step 2: Fast-forward merge to main
 
@@ -748,7 +748,7 @@ Invoke `linear-workflow` skill for In Review → Done transition.
 ```markdown
 ## Red Flags / When to Stop
 
-- **Rebase introduces conflicts you're not confident about:** Abort and escalate. The user would rather resolve a conflict themselves than discover a bad rebase weeks later.
+- **Rebase introduces conflicts that need user context:** Abort and escalate. Mechanical conflicts (unrelated adjacent edits, duplicated logic, additive merges) are resolved in Step 1 without escalation — only ambiguous/contradicting ones stop here.
 - **`git worktree remove` fails:** Do NOT escalate to `--force`. Check for untracked files, uncommitted changes, open editors. The failure is telling you something.
 - **Main has moved during the ritual:** Re-do the rebase. Don't use a merge commit to bridge the gap — see global memory on rebase+ff-only.
 - **The issue's Linear state is not In Review:** This skill runs AFTER review, not before. If the issue is still In Progress or Todo, someone skipped a step.

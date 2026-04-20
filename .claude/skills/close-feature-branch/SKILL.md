@@ -77,7 +77,21 @@ git rebase main
 
 Rebase onto **local** `main`, not `origin/main`. The user sometimes commits directly to local main (progress logs, plan tweaks) without pushing immediately; rebasing onto local main absorbs those commits so Step 2's `git merge --ff-only` succeeds. The `git fetch` is still useful — Step 2's `git pull --ff-only origin main` catches any movement on the remote before the merge.
 
-**If rebase fails with conflicts:** run `git rebase --abort` and escalate to the user. Do NOT auto-resolve silently. Reason: the user prefers to resolve conflicts themselves rather than discover a bad rebase weeks later.
+**If rebase fails with conflicts:** resolve them yourself when the right answer is mechanical, then `git add <files>` and `git rebase --continue`. The skill's goal is minimal human intervention *when the decision is mechanical* — the user would rather have the skill make an obvious call than be interrupted for it.
+
+Mechanical resolutions (resolve, don't escalate):
+
+- Unrelated edits in adjacent regions (formatting, nearby lines, imports) — keep both.
+- Same logical change landed on both sides — drop the feature-branch duplicate; take main's version.
+- Both sides appended different items to the same list, changelog, or docs section — merge the content.
+
+Abort (`git rebase --abort`) and escalate only when:
+
+- Both sides made substantive, contradicting changes to the same logic.
+- A file was deleted on one side and modified on the other.
+- You genuinely can't tell what the right answer is without user context.
+
+Silently picking a side on ambiguous logic is worse than stopping to ask — the "minimal intervention" principle applies only when the decision is obvious.
 
 ### Step 2: Fast-forward merge to main
 
@@ -171,7 +185,7 @@ git worktree remove "$WORKTREE_PATH"
 ## Red Flags / When to Stop
 
 - **Issue state is not In Review.** See Pre-flight §1 for the disposition map.
-- **Rebase introduces conflicts.** Abort and escalate. Do not auto-resolve.
+- **Rebase introduces conflicts that need user context.** Abort and escalate. Mechanical conflicts are resolved in Step 1 without escalation; only ambiguous/contradicting ones stop here.
 - **`git worktree remove` fails.** Do NOT use `--force`. Diagnose the underlying cause.
 - **Main has moved during the ritual.** Re-rebase and re-merge. Do NOT bridge with a merge commit — this repo's convention is rebase + ff-only.
 - **`-d` refuses to delete the branch.** The branch isn't merged despite the preceding ff-only merge. Investigate rather than escalating to `-D`.
