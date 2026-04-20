@@ -29,7 +29,7 @@ When asked to do something, just do it - including obvious follow-up actions nee
 
 ## Linear authorization
 
-Linear writes are pre-authorized during active work sessions — the issue Sean has asked you to work on (signaled by an issue ID in the task statement or a branch whose name starts with the lowercase issue slug, e.g. `eng-200-*` for ENG-200) and any other issue you judge as relevant to the work (related tickets, blockers, follow-ups, dogfood/test issues). Edit descriptions, add comments, change state (including cancellation), manage labels, file new issues, set relations — all fine without pausing.
+When Sean has asked you to work on a Linear issue (signaled by an issue ID in the task statement, or inferred from a branch whose name starts with the lowercase issue slug — e.g. `eng-200-*` for ENG-200), Linear writes are pre-authorized — both for that issue and any other issue you judge as relevant to the work (related tickets, blockers, follow-ups, dogfood/test issues). Edit descriptions, add comments, change state (including cancellation), manage labels, file new issues, set relations — all fine without pausing.
 
 Still confirm before deleting issues or comments outright (loses history).
 
