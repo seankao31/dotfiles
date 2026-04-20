@@ -14,6 +14,36 @@
 
 Newest entry first. Each entry records: date, session summary, current state of each ticket, any blockers/decisions for the next session to pick up.
 
+### 2026-04-20 (session: ENG-184 review-feedback round — codex P1/P2 + Sean asks)
+
+**What happened this session:**
+
+After posting the initial In Review handoff comment, Sean came back with five questions and asks. Three turned into code changes; two were research questions answered in chat.
+
+**Code changes (all in one commit, `dab6c0f`):**
+
+1. **State-name configurability for plugin release.** Added required config keys `in_progress_state` and `done_state`. Replaced hardcoded `"In Progress"` in `orchestrator.sh::linear_set_state` and `"Done"` in `preflight_scan.sh::_blocker_is_resolved` with new `RALPH_IN_PROGRESS_STATE` and `RALPH_DONE_STATE` env vars. Workspaces that rename their started/completed states now configure them in `config.json`. Addresses codex P1/P2 deferred from prior session.
+
+2. **`linear_get_issue_blockers` rewritten in GraphQL.** Replaced the brittle text-parser for `linear issue relation list` (CLI v2.0.0 has no `--json` flag) with a single `linear api` GraphQL query against `issue.inverseRelations` filtered to `type=="blocks"` via jq. One API call instead of N+1 (no per-blocker `view` loop). The linear-cli plugin documents `linear api` as the GraphQL escape hatch — that's the workaround for the CLI's missing flags.
+
+3. **Absorb config sourcing into entry-point scripts.** `orchestrator.sh`, `preflight_scan.sh`, `dag_base.sh`, and the new `build_queue.sh` auto-source `lib/config.sh` internally if `RALPH_PROJECT` is not already exported. The user no longer needs to invoke from a bash shell — each script's bash shebang ensures bash semantics inside. Set `RALPH_CONFIG=<path>` to override the default. Added `build_queue.sh` to wrap the previous "Step 3-4" user-glue (filter pickup-ready Approved issues, toposort by priority) so the workflow is now `preflight → build_queue → preview → orchestrator` with no inline shell required. Default `config.json` shipped so `/ralph-start` works out of the box.
+
+**Test fix:** discovered while writing the new state-name assertions that bats only fails the test on the LAST command's exit status — series of bare `[[ ]]` assertions silently pass if only the final one is true. Restructured `config.bats` to loop over expected substrings with explicit `return 1`. (This fix did not retroactively expose any previously-broken assertions in other tests, but applying the same pattern to other suites is a candidate follow-up.)
+
+**Linear admin completed this session:**
+- ENG-202 filed (related ENG-184): "ralph orchestrator: resolve true repo root via git-common-dir, not show-toplevel" — captures the dogfood-found nested-worktree limitation as a discrete follow-up.
+
+**Research questions answered to Sean (no code change):**
+- Linear-cli plugin documents `linear api` as the GraphQL escape hatch for unsupported CLI operations. Used in finding (2) above.
+- `lib/config.sh` could be made portable to zsh, but zsh's 1-indexed-by-default array semantics make it awkward. Sean preferred absorbing the source step into the scripts (finding 3) over rewriting config.sh — same end result with smaller surface area.
+
+**Ticket status snapshot (2026-04-20, end-of-second-session):**
+- ENG-184: **In Review** — Tasks 1-13 complete. Awaiting Sean's review/merge.
+- ENG-202: **Backlog** — new follow-up for nested-worktree fix.
+- All other tickets unchanged from prior entry.
+
+**Handoff:** none — branch is in In Review state with a fresh handoff comment posted on Linear. Sean reviews and merges via `/close-feature-branch`.
+
 ### 2026-04-20 (session: ENG-184 Tasks 11-12, dogfood + docs sweep)
 
 **What happened this session:**
