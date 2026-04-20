@@ -14,6 +14,68 @@
 
 Newest entry first. Each entry records: date, session summary, current state of each ticket, any blockers/decisions for the next session to pick up.
 
+### 2026-04-20 (session: ENG-184 library + orchestrator, Tasks 1-10 complete)
+
+**What happened this session:**
+
+Executed ENG-184 Tasks 1-10 via `superpowers:subagent-driven-development` in a worktree at `.worktrees/eng-184-implement-ralph-loop-v2-orchestrator-skill`. All library and orchestrator code is written and tested. 72+ bats tests passing. 21 commits on branch. Tasks 11 (end-to-end dogfood), 12 (docs sweep), 13 (review gate + `/prepare-for-review`) remain.
+
+**Design decisions made or empirically resolved this session:**
+1. **Worktree location = `<repo>/.worktrees/<branch>`** (chezmoi's existing convention; matches `superpowers:using-git-worktrees` default). Design doc at line 45 previously claimed `~/.claude/worktrees/` was the native `claude --worktree` convention — verified false. Design doc + plan corrected.
+2. **Orchestrator does NOT use `claude --worktree`.** That flag is create-only (branches off HEAD into `<repo>/.claude/worktrees/<name>`) and has no DAG/integration-merge awareness. Orchestrator calls `git worktree add` itself, then `(cd $worktree && claude -p ...)` via subshell. Design doc pseudo-code updated.
+3. **Q2 resolution (permission-prompt deadlock):** empirical probe with `git push origin main` under `--permission-mode auto` showed the sub-agent **refuses and continues** — exit 0, no hang, no non-zero. Denials surface as tool results; agent reports and exits cleanly. This means exit-code alone does NOT imply success. Orchestrator now classifies by exit code AND post-dispatch Linear state transition:
+   - exit=0 AND state==`$RALPH_REVIEW_STATE` → `in_review`
+   - exit=0 AND state!=`$RALPH_REVIEW_STATE` → `exit_clean_no_review` (labeled `ralph-failed`, downstream tainted)
+   - exit!=0 → `failed` (labeled `ralph-failed`, downstream tainted)
+4. **Linear CLI limitations (verified empirically):**
+   - `linear issue view --json` does NOT include relations (only `identifier`, `branchName`, `state`, etc.)
+   - `linear issue relation list` does NOT support `--json`
+   - `linear issue update --state` takes a state *type* (unstarted/started/etc.), NOT a state name — `--state unstarted` filters too broadly, so the orchestrator omits `--state` and filters by `state.name` in jq
+   - `linear issue update --label` REPLACES all labels; `lib/linear.sh::linear_add_label` implements fetch-then-update to preserve existing labels
+   - Default query limit is 50 issues (`--limit 0` for unlimited)
+5. **`.ralph-base-sha` for INTEGRATION bases records main's SHA (pre-merge), not post-merge HEAD.** This keeps `prepare-for-review`'s review-diff scope correct when parent merges conflict.
+6. **Per-issue fault isolation in orchestrator.** Setup failures (branch lookup, dag_base errors, worktree creation, base-sha write, Linear state transition, etc.) record `outcome: "setup_failed"` with a `failed_step` identifier, clean up worktree state IF this invocation created it (never touches pre-existing directories/branches), taint descendants, and continue to the next issue. Phase-1 blocker-fetch failures also isolated. Post-dispatch state/label-add failures tolerated.
+7. **Progress.json schema**: flat array of per-issue records; each record carries `run_id` (ISO 8601 UTC timestamp captured once at orchestrator start). Consumers can group by `run_id`. Did NOT adopt design doc Component 6's nested `{"runs": [{...}]}` schema — YAGNI, easy to post-process if needed.
+
+**Admin items completed this session:**
+- ENG-184 Linear ticket description updated (`/run-queue` → `/ralph-start`, `agent-config/skills/run-queue/` → `agent-config/skills/ralph-start/`).
+- ENG-177 and ENG-178 set to `blocked-by ENG-184` in Linear (rollout plan line 141 requirement).
+
+**Known limitations / conscious trade-offs:**
+- `lib/linear.sh::linear_get_issue_blockers` parses text output of `linear issue relation list` (the CLI has no JSON option for relations in v2.0.0). Brittle to CLI format changes. Documented inline with the expected format.
+- `run_id` is second-resolution. Concurrent `/ralph-start` invocations within the same second could collide — explicitly unsupported (single-invocation-at-a-time by design).
+- progress.json uses tmpfile+mv, atomic for single-writer but does not prevent lost updates in concurrent writers (no `flock`). Acceptable given single-invocation design.
+- Task 8 codex iterations were cut off after ~7 rounds when findings transitioned from "critical correctness" to "extreme edge cases." Task 13's final review gate (codex via `/prepare-for-review`) is the safety net.
+
+**Ticket status snapshot (2026-04-20):**
+- ENG-182, ENG-186, ENG-197: **Done** ✓
+- ENG-184: **In Progress** (this session; Tasks 1-10 of 13 complete; branch `eng-184-implement-ralph-loop-v2-orchestrator-skill`; 21 commits)
+- ENG-185: **Canceled** — replaced by ENG-198
+- ENG-198: **Backlog** — blocked-by ENG-184
+- ENG-199: **Todo** — follow-up to ENG-197; worktree-path convention is now fixed at `.worktrees/<branch>`, so ENG-199 can proceed independently
+- ENG-193, ENG-194: **Backlog** — lower priority
+- ENG-177, ENG-178: **Todo** — now blocked-by ENG-184 (relations set this session); R&D experiments, need Sean's subjective evaluation
+
+**Handoff for next session (Tasks 11-13 of ENG-184):**
+
+Required work to finish ENG-184:
+
+1. **Task 11 — end-to-end dogfood.** Start a fresh session (the current one spawned many subagents + is ~40%+ context). In the ENG-184 worktree:
+   - Create `config.json` from `config.example.json` (`cd agent-config/skills/ralph-start && cp config.example.json config.json`). Defaults should work as-is.
+   - Create a throwaway Linear issue in Agent Config project, state=Approved, trivial PRD (≥200 non-whitespace chars required by preflight). E.g., "Create `test-ralph-v2.txt` containing the text `hello`. This is a dogfood test of the ralph v2 orchestrator. The implementation should consist of a single-file commit. Commits must be small. Test plan: verify the file exists at repo root with expected contents."
+   - Invoke the skill (NOT as `/ralph-start` since the skill file isn't symlinked yet — instead run the scripts directly from the skill directory). Sequence: `source scripts/lib/config.sh config.json` → `scripts/preflight_scan.sh` → build queue via `linear_list_approved_issues` + filter → `scripts/toposort.sh` → show preview → `scripts/orchestrator.sh ordered_queue.txt`.
+   - Observe: worktree created, session dispatched, Linear state In Review, `progress.json` populated, `.ralph-base-sha` in the worktree.
+   - Root-cause any failures per CLAUDE.md. Do NOT mark the task done with known failure modes.
+   - Cancel the throwaway issue when done, with a comment noting it was a dogfood test.
+
+2. **Task 12 — docs sweep.** Invoke `update-stale-docs` skill. Write a short playbook at `agent-config/docs/playbooks/ralph-v2-usage.md` (two paragraphs on "how I use this" from Sean's seat: when to run, what to expect, how to triage `ralph-failed` issues).
+
+3. **Task 13 — review gate.** Invoke `codex-review-gate` on the branch diff (base SHA for the branch: `5c4ce7b` — the scaffold commit on main). Address blocking findings. Re-run Task 11 dogfood if code changed during review. Invoke `/prepare-for-review` to post the Linear handoff comment and move ENG-184 to In Review.
+
+4. **Close via ENG-199 (if merged first) or `close-feature-branch` or manual rebase+ff-only.**
+
+**Open design questions carried forward:** None from ENG-184 — all Q1-Q4 are resolved.
+
 ### 2026-04-19 (session: handoff to a new session after ENG-182/186 merged)
 
 **What happened between sessions:**
