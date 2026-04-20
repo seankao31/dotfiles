@@ -14,6 +14,26 @@
 
 Newest entry first. Each entry records: date, session summary, current state of each ticket, any blockers/decisions for the next session to pick up.
 
+### 2026-04-20 (session: ENG-184 Tasks 11-12, dogfood + docs sweep)
+
+**What happened this session:**
+
+Resumed after the prior session's Tasks 1-10 handoff. Rebased the branch onto current main (clean — 30 commits replayed without conflicts; new branch base is `76d3218`). Re-ran the bats suite from the rebased tree: 81 tests passing (was 72+ before — the rebase pulled in additional test cases from prior commits).
+
+**Task 11 — end-to-end dogfood: PASS.** Created throwaway issue ENG-201 (Approved, PRD 692 non-whitespace chars). Sourced config, ran preflight (`all clear`), built queue (1 issue, priority 4, base `main`), toposorted, dispatched orchestrator. Orchestrator created the worktree, wrote `.ralph-base-sha=76d3218…` matching `git rev-parse main` exactly, transitioned ENG-201 Approved → In Progress, dispatched `claude -p --permission-mode auto --model opus`, sub-agent created `test-ralph-v2.txt` with `hello\n` + a `.chezmoiignore` entry (Codex review caught the chezmoi-deploy-as-dotfile risk), committed twice, posted Linear handoff comment with QA test plan, transitioned to In Review. Orchestrator exit 0, classified `outcome=in_review`, `duration_seconds=361`, `progress.json` populated correctly with all schema fields including `run_id` (single ISO 8601 timestamp shared across the record). Dogfood worktree + branch removed; ENG-201 canceled with explanatory comment.
+
+**Findings from dogfood (worth flagging, not blocking):**
+1. **`source config.sh` is bash-only.** Default zsh on macOS errors with `_config_load:48: bad substitution` because `${!arr[@]}` and `local -a` array semantics differ. Documented in SKILL.md's Prerequisites section in this session.
+2. **`worktree_path_for_issue` is CWD-relative, not repo-root-relative.** It resolves the path via `git rev-parse --show-toplevel`, which from inside a linked worktree returns that worktree's own root — the dogfood landed at `<eng-184-wt>/.worktrees/eng-201-…` instead of the documented `<repo>/.worktrees/eng-201-…`. Functionally fine (downstream tools key off `git worktree list`), but violates the convention. Fix would be `git rev-parse --path-format=absolute --git-common-dir` then `dirname`. Documented in SKILL.md's Prerequisites ("invoke from main checkout root"); leaving the code as-is and deferring to follow-up if Sean wants the stricter behavior.
+
+**Task 12 — docs sweep: complete.** Branch diff is pure additions (3,495 insertions across 17 new files under `agent-config/skills/ralph-start/`; no existing files modified). Walked the 8 update-stale-docs surfaces against `--base 76d3218`: ABOUTMEs (no consumer files changed), inline comments (additions only), decision docs (none reference ralph), specs/plans (this entry; design spec stays as historical record), CLAUDE.md (project-root and agent-config — no tech-stack/structure additions worth surfacing), MEMORY.md + memory files (`project_ralph_v2_supersedes_finishing_branch.md` is still accurate), README (mentions playbooks dir but doesn't enumerate playbooks; left alone), related source files (refs in `prepare-for-review/SKILL.md`, `linear-workflow/SKILL.md`, `close-feature-branch/SKILL.md` are all consistent with the implemented orchestrator behavior). Wrote `agent-config/docs/playbooks/ralph-v2-usage.md` (two paragraphs: when to run + morning triage).
+
+**Ticket status snapshot (2026-04-20, end-of-session):**
+- ENG-184: **In Progress** — Tasks 1-12 complete; Task 13 (codex review gate + `/prepare-for-review`) remains. Branch `eng-184-implement-ralph-loop-v2-orchestrator-skill` rebased onto `76d3218`.
+- All other tickets unchanged from prior entry.
+
+**Handoff for Task 13:** Run `codex-review-gate` against base SHA `76d3218` (post-rebase base; the original `5c4ce7b` scaffold-commit base no longer applies). Address blocking findings; if any code changes, re-run the dogfood. Then `/prepare-for-review` to post the Linear handoff and move ENG-184 to In Review.
+
 ### 2026-04-20 (session: ENG-184 library + orchestrator, Tasks 1-10 complete)
 
 **What happened this session:**
