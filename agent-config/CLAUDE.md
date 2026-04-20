@@ -29,7 +29,7 @@ When asked to do something, just do it - including obvious follow-up actions nee
 
 ## Linear authorization
 
-For any Linear issue Sean has explicitly asked you to work on (signaled via `/ralph-start`, an issue ID in the task statement, or a branch name that matches the issue), modifying that issue's state, description, comments, and labels is pre-authorized — don't pause for confirmation. Creating or canceling throwaway issues for dogfood testing of orchestrator skills (e.g. ralph v2 spec-queue) is also pre-authorized. Writes to unrelated or unnamed Linear issues still go through the auto-mode classifier.
+For any Linear issue Sean has explicitly asked you to work on (signaled via `/ralph-start`, an issue ID in the task statement, or a branch whose name starts with the lowercase issue slug, e.g. `eng-200-*` for ENG-200), modifying that issue's state, description, comments, and labels is pre-authorized — don't pause for confirmation. Creating or canceling throwaway issues for dogfood testing of orchestrator skills (e.g. ralph v2 spec-queue) is also pre-authorized. Writes to unrelated or unnamed Linear issues still go through the auto-mode classifier.
 
 ## Designing software
 
