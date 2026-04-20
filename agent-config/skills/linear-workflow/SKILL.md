@@ -13,7 +13,7 @@ Every non-trivial feature or bug fix should have a corresponding Linear issue be
 
 **Prefer the `linear` CLI over MCP tools.** The CLI provides filtering, JSON output, batch operations, relation management, and git-aware commands that the MCP wrappers don't expose. It also avoids permission fatigue (one binary approval vs per-request prompts).
 
-For CLI command reference and usage, see the **linear-cli** plugin skill. This skill focuses on *when* and *why* to interact with Linear, not *how*.
+For CLI command reference and usage, see the **linear-cli** plugin skill. This skill focuses on *when* and *why* to interact with Linear, not *how*. **If you need to perform an operation not covered here** (cycles, attachments, custom views, unusual filters, etc.), consult the **linear-cli** plugin skill for the full command surface before falling back to MCP.
 
 **When MCP tools are acceptable:**
 - `linear` CLI is not installed (`linear --version` fails)
