@@ -29,7 +29,9 @@ When asked to do something, just do it - including obvious follow-up actions nee
 
 ## Linear authorization
 
-For any Linear issue Sean has explicitly asked you to work on (signaled via `/ralph-start`, an issue ID in the task statement, or a branch whose name starts with the lowercase issue slug, e.g. `eng-200-*` for ENG-200), modifying that issue's state, description, comments, and labels is pre-authorized — don't pause for confirmation. Creating or canceling throwaway issues for dogfood testing of orchestrator skills (e.g. ralph v2 spec-queue) is also pre-authorized. Writes to unrelated or unnamed Linear issues still go through the auto-mode classifier.
+Linear writes are pre-authorized during active work sessions — the issue Sean has asked you to work on (signaled by an issue ID in the task statement or a branch whose name starts with the lowercase issue slug, e.g. `eng-200-*` for ENG-200) and any other issue you judge as relevant to the work (related tickets, blockers, follow-ups, dogfood/test issues). Edit descriptions, add comments, change state (including cancellation), manage labels, file new issues, set relations — all fine without pausing.
+
+Still confirm before deleting issues or comments outright (loses history).
 
 ## Designing software
 
