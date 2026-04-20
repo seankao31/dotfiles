@@ -14,6 +14,31 @@
 
 Newest entry first. Each entry records: date, session summary, current state of each ticket, any blockers/decisions for the next session to pick up.
 
+### 2026-04-20 (session: post-ENG-184 drift audit + doc alignment)
+
+After closing the ENG-184 worktree, did a real drift check against the design spec. Findings:
+
+**Three drifts captured durably:**
+1. **Multi-parent integration merge aborts on conflict** (diverges from spec's "leave conflicts for agent" philosophy — forced by git's MERGING state). Captured in new decision doc `docs/decisions/2026-04-20-ralph-v2-multi-parent-integration-abort.md`. Spec Decision 7 now cross-references the doc.
+2. **Outcome model grew from 2 to 6** (`in_review`, `exit_clean_no_review`, `failed`, `setup_failed`, `local_residue`, `unknown_post_state`). Spec Component 2 was still showing the original two-outcome pseudo-code. Updated with the full six-outcome model + classification table + cross-reference to the ambiguous-outcome-handling decision doc.
+3. **`worktree_path_for_issue` uses `--show-toplevel`**, which nests new worktrees when invoked from a linked worktree. Already captured as ENG-202; no new doc work needed.
+
+**Three non-drift spec clarifications:**
+- 200-char PRD threshold annotation added to Decision 6 (was in code only).
+- Cross-project blocker relations explicitly noted as v2 scope limit in Contract Summary; filed **ENG-203** to support multi-project initiatives (v2.1).
+- Playbook (`docs/playbooks/ralph-v2-usage.md`) fixed: clarified that the "project" key is configurable (Agent Config is just the default), with a warning about the cross-project scope limit. (Fix was done before the audit — noted here for completeness.)
+
+**Plan-doc bookkeeping fix:** ENG-177 and ENG-178 had all their tasks mass-marked `[x]` despite the work not happening (no `experiments/` directory; Linear states still Todo). Reverted every step in §§ 5–6 back to `[ ]`. A future session opening the plan should see the real state, not the corrupted one.
+
+**Ticket status snapshot (2026-04-20, end-of-session):**
+- ENG-184: **Done** (merged earlier today; worktree closed).
+- ENG-202: **Backlog** — orchestrator true-repo-root fix.
+- ENG-203: **New, Backlog** — cross-project blocker support (v2.1).
+- ENG-177, ENG-178: **Todo** — R&D experiments, still open; checkboxes now reflect reality.
+- All other ralph v2 tickets unchanged.
+
+**Handoff:** none. Next session picks up whichever ticket matches the moment — ENG-199 (close-feature-branch main-CWD refactor), ENG-202 (orchestrator repo-root fix), ENG-203 (multi-project), ENG-198 (stale-parent check), or the R&D experiments.
+
 ### 2026-04-20 (session: ENG-184 review-feedback round — codex P1/P2 + Sean asks)
 
 **What happened this session:**
@@ -895,35 +920,35 @@ Invoke `linear-workflow` skill for In Review → Done transition.
 
 ### Task 1: Pick candidates to evaluate
 
-- [x] **Step 1:** List 3–5 candidate plan-shapes. Starting set from the ticket:
+- [ ] **Step 1:** List 3–5 candidate plan-shapes. Starting set from the ticket:
   - `superpowers:writing-plans` (baseline — current behavior).
   - PRD-only (no separate plan; ship the issue description as-is).
   - PRD + short outline (a few paragraphs of "approach," not bite-sized TDD).
   - GSD-style.
   - Community ralph variants (mattpocock/skills if documented, snarktank/ralph).
-- [x] **Step 2:** Read each candidate's documentation. Summarize what it produces in 2–3 sentences per candidate.
+- [ ] **Step 2:** Read each candidate's documentation. Summarize what it produces in 2–3 sentences per candidate.
 
 ### Task 2: Design the evaluation
 
-- [x] **Step 1:** Pick 2–3 representative Agent Config tickets (ideally ones already Done so you have ground truth on "what did the code actually look like"). Write their PRDs fresh.
-- [x] **Step 2:** For each candidate, produce the "plan artifact" that candidate would generate (either by running the skill, or by hand-producing something of that shape).
-- [x] **Step 3:** Dispatch each plan+ticket through ralph (once ENG-184 is operational) or through a mock dispatch (a fresh `claude -p` session with the same prompt template).
+- [ ] **Step 1:** Pick 2–3 representative Agent Config tickets (ideally ones already Done so you have ground truth on "what did the code actually look like"). Write their PRDs fresh.
+- [ ] **Step 2:** For each candidate, produce the "plan artifact" that candidate would generate (either by running the skill, or by hand-producing something of that shape).
+- [ ] **Step 3:** Dispatch each plan+ticket through ralph (once ENG-184 is operational) or through a mock dispatch (a fresh `claude -p` session with the same prompt template).
 
 ### Task 3: Score outcomes
 
-- [x] **Step 1:** Criteria:
+- [ ] **Step 1:** Criteria:
   - Did the session complete without blocking?
   - How many deviations from PRD?
   - Did the session hit obvious dead-ends a plan would have prevented?
   - Time to completion.
-- [x] **Step 2:** Tabulate. Write up the recommendation.
+- [ ] **Step 2:** Tabulate. Write up the recommendation.
 
 ### Task 4: Write + file recommendation
 
-- [x] **Step 1:** Write the recommendation doc at the file path above.
-- [x] **Step 2:** If the recommendation is "switch to X," file a follow-up ticket to adopt X across the ralph workflow. This ticket closes when the recommendation is filed, not when X is adopted.
-- [x] **Step 3:** `codex-review-gate` on the doc.
-- [x] **Step 4:** `/prepare-for-review` → Linear.
+- [ ] **Step 1:** Write the recommendation doc at the file path above.
+- [ ] **Step 2:** If the recommendation is "switch to X," file a follow-up ticket to adopt X across the ralph workflow. This ticket closes when the recommendation is filed, not when X is adopted.
+- [ ] **Step 3:** `codex-review-gate` on the doc.
+- [ ] **Step 4:** `/prepare-for-review` → Linear.
 
 ---
 
@@ -942,35 +967,35 @@ Invoke `linear-workflow` skill for In Review → Done transition.
 
 ### Task 1: Pick candidates
 
-- [x] **Step 1:** Starting set from the ticket:
+- [ ] **Step 1:** Starting set from the ticket:
   - `superpowers:brainstorming` (baseline).
   - Claude native plan mode (lighter-weight design exploration).
   - GSD.
   - ralph variants.
   - `/grill-me` (mattpocock/skills) — adversarial questioning.
-- [x] **Step 2:** Read each. Summarize.
+- [ ] **Step 2:** Read each. Summarize.
 
 ### Task 2: Design + run the evaluation
 
 Same pattern as ENG-177:
 
-- [x] **Step 1:** Pick 2–3 candidate ideas that could become issues.
-- [x] **Step 2:** Run each through each candidate brainstorming tool.
-- [x] **Step 3:** Score the output PRDs against the ralph-loop contract (Decision 1): does the PRD contain enough context for Opus 4.7 to implement without human input?
+- [ ] **Step 1:** Pick 2–3 candidate ideas that could become issues.
+- [ ] **Step 2:** Run each through each candidate brainstorming tool.
+- [ ] **Step 3:** Score the output PRDs against the ralph-loop contract (Decision 1): does the PRD contain enough context for Opus 4.7 to implement without human input?
 
 ### Task 3: Criteria + tabulation
 
-- [x] **Step 1:** Criteria:
+- [ ] **Step 1:** Criteria:
   - Quality of resulting spec (contract coverage).
   - Time to reach Approved (wall clock).
   - Fit with the user's thinking style (subjective but important).
-- [x] **Step 2:** Tabulate.
+- [ ] **Step 2:** Tabulate.
 
 ### Task 4: Write + file recommendation
 
-- [x] **Step 1:** Write the doc.
-- [x] **Step 2:** If the recommendation is to adopt a new tool, file a follow-up to adopt it.
-- [x] **Step 3:** `codex-review-gate` + `/prepare-for-review`.
+- [ ] **Step 1:** Write the doc.
+- [ ] **Step 2:** If the recommendation is to adopt a new tool, file a follow-up to adopt it.
+- [ ] **Step 3:** `codex-review-gate` + `/prepare-for-review`.
 
 ---
 
