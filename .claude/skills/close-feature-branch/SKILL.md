@@ -1,6 +1,7 @@
 ---
 name: close-feature-branch
 description: Project-local skill for chezmoi/agent-config. Use when the user has finished reviewing a feature branch and is ready to ship — runs rebase, fast-forward merge to main, push, branch deletion, Linear Done transition, and worktree removal. Invoke from the main-checkout CWD with the Linear issue ID as an argument (e.g. `/close-feature-branch ENG-197`). NOT for multi-branch cascades (dev/staging/main) — this repo is main-only. NOT a replacement for prepare-for-review; that skill runs earlier to produce the review artifacts.
+argument-hint: <issue-id>
 model: sonnet
 allowed-tools: Skill, Bash, Read, Glob, Grep
 ---
