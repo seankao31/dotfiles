@@ -92,17 +92,34 @@ Expected: `In Review`.
 - **Done** — nothing to do; the branch was already closed. Investigate whether this worktree is leftover and can be removed.
 - **Any other state** — stop and surface to the user. The dispatch lifecycle is off.
 
-### 2. Verify no uncommitted tracked-file changes in the worktree
+### 2. Verify all `blocked-by` parents are Done
+
+```bash
+source "$MAIN_REPO/agent-config/skills/ralph-start/scripts/lib/linear.sh"
+
+linear_get_issue_blockers "$ISSUE_ID" | jq -r '
+  .[] | select(.state != "Done") | "\(.id)\t\(.state)"
+'
+```
+
+- **No output** — no unresolved blockers; proceed.
+- **Any output** — each line is `<blocker-id>\t<state>`. STOP. Print the list and refuse to close. Tell the user: `Canceled` blockers are NOT treated as resolved (per ralph v2 Decision 6 in `agent-config/docs/specs/2026-04-17-ralph-loop-v2-design.md`); the supported way to declare "this is no longer a blocker" is to remove the relation in Linear via `linear issue relation delete "$ISSUE_ID" blocked-by <blocker-id>` and re-run. No `--force` escape hatch.
+
+Why this belongs in pre-flight: ralph v2 dispatches child branches before their parents are Done. If the child closes first, the child's branch still carries the parent's un-reviewed commits — Step 1's `git rebase main` reconciles content but doesn't know which commits belong to which issue, and Step 2's fast-forward merge then lands the parent's work on `main` as a side effect of closing the child. Guarding at the child's close time keeps the "nothing merges to main until it's been reviewed" invariant intact.
+
+`linear_get_issue_blockers` is sourced from the ralph-start skill's library. It uses `linear api` (GraphQL) rather than text-parsing `linear issue relation list` output — see the function's docstring for rationale and pagination behavior.
+
+### 3. Verify no uncommitted tracked-file changes in the worktree
 
 ```bash
 git -C "$WORKTREE_PATH" status --short
 ```
 
 - **Any line NOT starting with `??`** — uncommitted changes to tracked files (includes ` M`, `MM`, `UU`, `T`, `A`, `D`, `R`, etc.). STOP. Commit or discard them before proceeding. `git worktree remove` will refuse to clean up a dirty worktree, and `--force` has destroyed work before — never reach for it.
-- **Lines starting with `??`** — untracked files. Proceed to §3, which handles them explicitly.
+- **Lines starting with `??`** — untracked files. Proceed to §4, which handles them explicitly.
 - **No output** — clean; proceed.
 
-### 3. Preserve untracked files
+### 4. Preserve untracked files
 
 ```bash
 git -C "$WORKTREE_PATH" ls-files --others --exclude-standard
@@ -226,6 +243,7 @@ git worktree remove "$WORKTREE_PATH"
 ## Red Flags / When to Stop
 
 - **Issue state is not In Review.** See Pre-flight §1 for the disposition map.
+- **A `blocked-by` parent is not Done.** See Pre-flight §2. No `--force` override — the supported fix is to remove the Linear relation if the dependency has been resolved externally.
 - **Rebase introduces conflicts that need user context.** Abort and escalate. Mechanical conflicts are resolved in Step 1 without escalation; only ambiguous/contradicting ones stop here.
 - **`git worktree remove` fails.** Do NOT use `--force`. Diagnose the underlying cause.
 - **Main has moved during the ritual.** Re-rebase and re-merge. Do NOT bridge with a merge commit — this repo's convention is rebase + ff-only.
