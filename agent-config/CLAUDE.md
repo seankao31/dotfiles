@@ -33,12 +33,6 @@ When Sean has asked you to work on a Linear issue (signaled by an issue ID in th
 
 Still confirm before deleting issues or comments outright (loses history).
 
-## Designing software
-
-- YAGNI. The best code is no code. Don't add features we don't need right now.
-
-
-
 ## Writing code
 
 - FOR EVERY NEW FEATURE OR BUGFIX, YOU MUST follow Test Driven Development. See the test-driven-development skill.
