@@ -19,7 +19,7 @@
 **Files:**
 - Create: `agent-config/skills/ralph-implement/SKILL.md`
 
-- [ ] **Step 1: Create the skill directory and file**
+- [x] **Step 1: Create the skill directory and file**
 
 ```bash
 mkdir -p agent-config/skills/ralph-implement
@@ -91,7 +91,7 @@ Stop the session WITHOUT invoking `/prepare-for-review` if:
 Never invoke `/prepare-for-review` to "complete" a session that didn't actually succeed. The skill itself guards against this, but act on the red flags here first — the `exit_clean_no_review` outcome is the correct signal.
 ````
 
-- [ ] **Step 2: Verify the skill file exists**
+- [x] **Step 2: Verify the skill file exists**
 
 ```bash
 test -f agent-config/skills/ralph-implement/SKILL.md && echo OK
@@ -99,7 +99,7 @@ test -f agent-config/skills/ralph-implement/SKILL.md && echo OK
 
 Expected output: `OK`
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add agent-config/skills/ralph-implement/SKILL.md
@@ -114,7 +114,7 @@ git commit -m "ralph-implement: add dispatched-skill workflow (ENG-206)"
 - Test: `agent-config/skills/ralph-start/scripts/test/orchestrator.bats`
 - Modify: `agent-config/skills/ralph-start/scripts/orchestrator.sh:16-18,449-452`
 
-- [ ] **Step 1: Add a failing test for the new dispatch shape**
+- [x] **Step 1: Add a failing test for the new dispatch shape**
 
 Open `agent-config/skills/ralph-start/scripts/test/orchestrator.bats`. Find the test `"single issue success: outcome=in_review, .ralph-base-sha present, Linear set to In Progress"` (starts at line 219). Inside that test, after the existing assertion `[[ "$sha" =~ ^[0-9a-f]{40}$ ]]` and before `# progress.json has exactly one in_review record`, add:
 
@@ -123,7 +123,7 @@ Open `agent-config/skills/ralph-start/scripts/test/orchestrator.bats`. Find the 
   grep -qF "/ralph-implement ENG-10" "$STUB_CLAUDE_ARGS_FILE"
 ```
 
-- [ ] **Step 2: Run the test — verify it FAILS**
+- [x] **Step 2: Run the test — verify it FAILS**
 
 ```bash
 cd agent-config/skills/ralph-start/scripts/test && bats orchestrator.bats -f "single issue success"
@@ -131,7 +131,7 @@ cd agent-config/skills/ralph-start/scripts/test && bats orchestrator.bats -f "si
 
 Expected: FAIL, with the `grep -qF "/ralph-implement ENG-10"` assertion failing because the orchestrator currently renders the old template, which does not contain `/ralph-implement`.
 
-- [ ] **Step 3: Update orchestrator.sh dispatch**
+- [x] **Step 3: Update orchestrator.sh dispatch**
 
 In `agent-config/skills/ralph-start/scripts/orchestrator.sh`, replace lines 448-452 (the template-render block):
 
@@ -152,7 +152,7 @@ with:
   local prompt="/ralph-implement $issue_id"
 ```
 
-- [ ] **Step 4: Update orchestrator.sh header comment**
+- [x] **Step 4: Update orchestrator.sh header comment**
 
 In `agent-config/skills/ralph-start/scripts/orchestrator.sh`, find the header block at lines 16-18:
 
@@ -169,7 +169,7 @@ Replace with:
 #               RALPH_WORKTREE_BASE, RALPH_MODEL, RALPH_STDOUT_LOG.
 ```
 
-- [ ] **Step 5: Drop the obsolete env var export in the test setup**
+- [x] **Step 5: Drop the obsolete env var export in the test setup**
 
 In `agent-config/skills/ralph-start/scripts/test/orchestrator.bats`, delete line 35:
 
@@ -177,7 +177,7 @@ In `agent-config/skills/ralph-start/scripts/test/orchestrator.bats`, delete line
   export RALPH_PROMPT_TEMPLATE='Issue: $ISSUE_ID Title: $ISSUE_TITLE Branch: $BRANCH_NAME Path: $WORKTREE_PATH'
 ```
 
-- [ ] **Step 6: Run the test — verify it PASSES**
+- [x] **Step 6: Run the test — verify it PASSES**
 
 ```bash
 cd agent-config/skills/ralph-start/scripts/test && bats orchestrator.bats -f "single issue success"
@@ -185,7 +185,7 @@ cd agent-config/skills/ralph-start/scripts/test && bats orchestrator.bats -f "si
 
 Expected: PASS.
 
-- [ ] **Step 7: Run the full orchestrator.bats suite to check for regressions**
+- [x] **Step 7: Run the full orchestrator.bats suite to check for regressions**
 
 ```bash
 cd agent-config/skills/ralph-start/scripts/test && bats orchestrator.bats
@@ -193,7 +193,7 @@ cd agent-config/skills/ralph-start/scripts/test && bats orchestrator.bats
 
 Expected: all tests pass.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add agent-config/skills/ralph-start/scripts/orchestrator.sh \
@@ -211,7 +211,7 @@ git commit -m "orchestrator: dispatch /ralph-implement instead of rendered templ
 - Modify: `agent-config/skills/ralph-start/config.example.json`
 - Modify: `agent-config/skills/ralph-start/scripts/lib/config.sh:14-17,33`
 
-- [ ] **Step 1: Rewrite the "exports all RALPH_* vars" test**
+- [x] **Step 1: Rewrite the "exports all RALPH_* vars" test**
 
 In `agent-config/skills/ralph-start/scripts/test/config.bats`, find the test starting at line 22. Replace the two `prompt` lines (48-50):
 
@@ -229,7 +229,7 @@ with:
   [[ "$output" != *"RALPH_PROMPT_TEMPLATE="* ]]
 ```
 
-- [ ] **Step 2: Update the missing-key fixture**
+- [x] **Step 2: Update the missing-key fixture**
 
 In `agent-config/skills/ralph-start/scripts/test/config.bats` at lines 62-72, the fixture includes `"prompt_template": "some prompt"` at line 70. Remove that line so the fixture reflects the new required-keys set:
 
@@ -259,7 +259,7 @@ The final fixture (delete the `,` after `"ralph-output.log"` because it's now th
 }
 ```
 
-- [ ] **Step 3: Run config.bats — verify it FAILS**
+- [x] **Step 3: Run config.bats — verify it FAILS**
 
 ```bash
 cd agent-config/skills/ralph-start/scripts/test && bats config.bats
@@ -267,7 +267,7 @@ cd agent-config/skills/ralph-start/scripts/test && bats config.bats
 
 Expected: the "valid config exports all RALPH_* vars" test FAILS because `RALPH_PROMPT_TEMPLATE` is still in the env output (config.sh still exports it).
 
-- [ ] **Step 4: Drop `prompt_template` from both config.json files**
+- [x] **Step 4: Drop `prompt_template` from both config.json files**
 
 In `agent-config/skills/ralph-start/config.json`, delete line 11 (the `prompt_template` line). After this, the file should be:
 
@@ -289,7 +289,7 @@ Note the comma removed from line 10 — `"stdout_log_filename": "ralph-output.lo
 
 Apply the identical change to `agent-config/skills/ralph-start/config.example.json`.
 
-- [ ] **Step 5: Drop the key entry from the config loader**
+- [x] **Step 5: Drop the key entry from the config loader**
 
 In `agent-config/skills/ralph-start/scripts/lib/config.sh`, delete line 33:
 
@@ -315,7 +315,7 @@ Replace with:
 #   RALPH_WORKTREE_BASE, RALPH_MODEL, RALPH_STDOUT_LOG
 ```
 
-- [ ] **Step 6: Run config.bats — verify it PASSES**
+- [x] **Step 6: Run config.bats — verify it PASSES**
 
 ```bash
 cd agent-config/skills/ralph-start/scripts/test && bats config.bats
@@ -323,7 +323,7 @@ cd agent-config/skills/ralph-start/scripts/test && bats config.bats
 
 Expected: all tests pass.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add agent-config/skills/ralph-start/config.json \
@@ -343,7 +343,7 @@ git commit -m "config: drop prompt_template (workflow moved to ralph-implement s
 - Modify: `agent-config/skills/prepare-for-review/SKILL.md:14,21`
 - Modify: `agent-config/docs/specs/2026-04-17-ralph-loop-v2-design.md:28`
 
-- [ ] **Step 1: Update ralph-start prereqs list**
+- [x] **Step 1: Update ralph-start prereqs list**
 
 In `agent-config/skills/ralph-start/SKILL.md` line 18, replace:
 
@@ -357,7 +357,7 @@ with:
 - `config.json` present in the skill directory (copy from `config.example.json` and customize, or rely on the committed default). Required keys: `project`, `approved_state`, `in_progress_state`, `review_state`, `done_state`, `failed_label`, `worktree_base`, `model`, `stdout_log_filename`. The four state-name keys must match the actual workflow state names in your Linear workspace.
 ```
 
-- [ ] **Step 2: Update `lib/worktree.sh` comment**
+- [x] **Step 2: Update `lib/worktree.sh` comment**
 
 In `agent-config/skills/ralph-start/scripts/lib/worktree.sh` line 36, replace:
 
@@ -371,7 +371,7 @@ with:
 #     them. The `ralph-implement` skill tells it to handle conflicts before
 ```
 
-- [ ] **Step 3: Update `prepare-for-review/SKILL.md` lines 14 and 21**
+- [x] **Step 3: Update `prepare-for-review/SKILL.md` lines 14 and 21**
 
 In `agent-config/skills/prepare-for-review/SKILL.md`, replace line 14:
 
@@ -397,7 +397,7 @@ with:
 In ralph-loop sessions, the agent receives the issue ID as the `/ralph-implement` invocation argument and exposes it as `$ISSUE_ID`. In interactive sessions, derive it from the branch name:
 ```
 
-- [ ] **Step 4: Annotate ralph v2 spec Decision 2 as superseded**
+- [x] **Step 4: Annotate ralph v2 spec Decision 2 as superseded**
 
 In `agent-config/docs/specs/2026-04-17-ralph-loop-v2-design.md`, find line 28:
 
@@ -415,7 +415,7 @@ Immediately after it (before line 30 which begins "The prompt template given..."
 
 (Add a blank line before `>` and after the `>` paragraph so the block-quote renders standalone.)
 
-- [ ] **Step 5: Verify no remaining stale references**
+- [x] **Step 5: Verify no remaining stale references**
 
 ```bash
 grep -rn "prompt_template\|prompt template" agent-config/ \
@@ -429,7 +429,7 @@ grep -rn "prompt_template\|prompt template" agent-config/ \
 
 Expected: empty output (the excluded files are the new spec, superseded historical specs, the completed v2 rollout plan, and the unrelated subagent-driven-development skill override).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add agent-config/skills/ralph-start/SKILL.md \
@@ -446,7 +446,7 @@ git commit -m "docs: align prose with ralph-implement skill (ENG-206)"
 **Files:**
 - None (test run only).
 
-- [ ] **Step 1: Run the full bats suite**
+- [x] **Step 1: Run the full bats suite**
 
 ```bash
 cd agent-config/skills/ralph-start/scripts/test && bats .
@@ -454,7 +454,7 @@ cd agent-config/skills/ralph-start/scripts/test && bats .
 
 Expected: all `.bats` files pass. If any fail unrelated to this change, stop and investigate — do not proceed with handoff with pre-existing failures.
 
-- [ ] **Step 2: Spot-check rendered config loading end-to-end**
+- [x] **Step 2: Spot-check rendered config loading end-to-end**
 
 ```bash
 cd /tmp && bash -c '
@@ -481,7 +481,7 @@ RALPH_WORKTREE_BASE=.worktrees
 
 No `RALPH_PROMPT_TEMPLATE` line.
 
-- [ ] **Step 3: Final commit of any cleanup discovered during verification**
+- [x] **Step 3: Final commit of any cleanup discovered during verification**
 
 If Steps 1-2 surfaced any residual issues (stale doc references, missed `RALPH_PROMPT_TEMPLATE` mentions), fix them inline and commit:
 
