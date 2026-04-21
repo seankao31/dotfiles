@@ -100,13 +100,20 @@ source "$MAIN_REPO/agent-config/skills/ralph-start/scripts/lib/linear.sh"
 blockers_json=$(linear_get_issue_blockers "$ISSUE_ID") || exit 1
 
 printf '%s\n' "$blockers_json" | jq -r '
-  .[] | select(.state != "Done") | "\(.id)\t\(.state)"
+  if type == "array" and all(.[]; has("id") and has("state")) then
+    .[] | select(.state != "Done") | "\(.id)\t\(.state)"
+  else
+    error("linear_get_issue_blockers returned unexpected JSON shape")
+  end
 '
 ```
 
-Capture the helper's JSON to a variable so a Linear lookup failure surfaces as a non-zero exit (via `|| exit 1`) rather than piping empty stdin into `jq` and masquerading as "no blockers, proceed." Pipelined directly, the helper's failure would fail the check *open* — exactly wrong for a safety guardrail.
+Two fail-closed hinges, both required to keep "no output means proceed" trustworthy:
 
-- **Non-zero exit** — the helper failed (Linear API, auth, or pagination overflow); the helper already wrote a diagnostic to stderr. STOP and surface to the user; the blocker set is unknown and proceeding is unsafe.
+1. **Capture then filter, not pipe.** `blockers_json=$(...) || exit 1` surfaces helper failures (Linear API, auth, pagination overflow) as a non-zero exit. A direct pipe would feed empty stdin to `jq` on helper failure, which produces empty output and exit 0 — masquerading as "no blockers, proceed."
+2. **Validate shape in jq.** The `type == "array" and all(...; has("id") and has("state"))` guard ensures an unexpected return shape (wrapper object, `null`, `{}`, schema drift) errors out instead of iterating to empty output. Without this, a helper contract drift to `{}` would silently pass the check.
+
+- **Non-zero exit** — either the helper failed or its JSON didn't match the expected shape; a diagnostic is on stderr. STOP and surface to the user; the blocker set is unknown and proceeding is unsafe.
 - **No output from `jq`** — no unresolved blockers; proceed.
 - **Any output from `jq`** — each line is `<blocker-id>\t<state>`. STOP. Print the list and refuse to close. Tell the user: `Canceled` blockers are NOT treated as resolved (per ralph v2 Decision 6 in `agent-config/docs/specs/2026-04-17-ralph-loop-v2-design.md`); the supported way to declare "this is no longer a blocker" is to remove the relation in Linear via `linear issue relation delete "$ISSUE_ID" blocked-by <blocker-id>` and re-run. No `--force` escape hatch.
 
