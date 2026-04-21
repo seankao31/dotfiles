@@ -43,22 +43,27 @@ Parse the JSON output and present findings ordered by severity.
 ```dot
 digraph adversarial_decision {
     "Standard review complete" [shape=doublecircle];
-    "Specific risk you can articulate?" [shape=diamond];
-    "Write 1-2 sentence focus text" [shape=box];
+    "Warrants adversarial review?" [shape=diamond];
+    "Write focus text" [shape=box];
     "Run adversarial review" [shape=box];
     "Skip adversarial review" [shape=box];
     "Present all findings" [shape=doublecircle];
 
-    "Standard review complete" -> "Specific risk you can articulate?";
-    "Specific risk you can articulate?" -> "Write 1-2 sentence focus text" [label="yes"];
-    "Specific risk you can articulate?" -> "Skip adversarial review" [label="no"];
-    "Write 1-2 sentence focus text" -> "Run adversarial review";
+    "Standard review complete" -> "Warrants adversarial review?";
+    "Warrants adversarial review?" -> "Write focus text" [label="yes"];
+    "Warrants adversarial review?" -> "Skip adversarial review" [label="no"];
+    "Write focus text" -> "Run adversarial review";
     "Run adversarial review" -> "Present all findings";
     "Skip adversarial review" -> "Present all findings";
 }
 ```
 
-Run adversarial review **only** when you can articulate a specific concern. Examples:
+Two reasons to run adversarial review:
+
+1. **Targeted risk** — you can name a specific technical concern (concurrency, auth, data integrity, an integration edge case).
+2. **Approach validation** — the work involved non-trivial design decisions worth a second opinion, even without a specific failure mode in mind. Useful for new abstractions, new patterns, or approaches where simpler alternatives might exist. The useful framing varies case by case.
+
+Skip when the change is mechanical or routine — no design decision to evaluate and no specific risk to probe.
 
 | Warrants adversarial review | Does NOT warrant it |
 |----------------------------|---------------------|
@@ -66,7 +71,8 @@ Run adversarial review **only** when you can articulate a specific concern. Exam
 | Auth/input validation/data access | Adding a new UI view |
 | Non-obvious design tradeoffs | Straightforward CRUD |
 | Integration boundaries between components | Updating dependencies |
-| Error handling paths hard to test | Clean standard review |
+| Error handling paths hard to test | Mechanical refactor with no design choices |
+| New abstraction or pattern worth a second opinion | Clean standard review on routine work |
 
 ```bash
 cd <project-root> && node <script-path> adversarial-review --json "<focus text>"
@@ -74,11 +80,21 @@ cd <project-root> && node <script-path> adversarial-review --json "<focus text>"
 
 ### Writing Good Focus Text
 
-The focus text is what makes adversarial review valuable. Be specific.
+The focus text is what makes adversarial review valuable. It must direct Codex at something — either a specific failure mode to stress-test, or a specific design decision to evaluate. Undirected prompts waste the call.
+
+**Targeted-risk prompts** name the mechanism and the failure mode:
 
 - Good: "Check whether the cache invalidation logic handles concurrent writes correctly when two workers update the same key"
 - Bad: "Look for bugs"
 - Bad: "Check for race conditions" (too vague — which race conditions? between what?)
+
+**Approach-validation prompts** describe the problem, the approach taken, and what aspect you want evaluated (fit with conventions? over-engineering? simpler alternative?):
+
+- Good: "This branch introduces a new X-style abstraction in module Y to solve Z. Evaluate whether this fits the codebase's existing conventions, or whether a simpler approach (e.g., passing config through directly) would be better."
+- Good: "We chose to move reconciliation into the worker rather than the coordinator. Is this cleaner than the alternative, or does it create split-brain scenarios we haven't considered?"
+- Bad: "Is the code good?" (undirected — nothing for Codex to push on)
+
+Multiple targeted runs on different concerns are fine. One undirected run is not.
 
 ## Step 4: Handle Results
 
@@ -96,7 +112,7 @@ Follow the `codex:codex-result-handling` skill patterns:
 If you catch yourself thinking any of these, STOP:
 
 - "I'll just apply this fix myself during the final review" — Final review has no implementer. Ask the user. Always.
-- "I'll just run a broad adversarial review for everything" — Focus text must name specific mechanisms. Multiple targeted runs are fine; vague ones are not.
+- "I'll just ask Codex to look at everything" — Each run needs directed focus text: either a specific mechanism/failure mode, or a specific design decision to evaluate. Multiple directed runs are fine; undirected ones are not.
 - "I'll skip the review since the changes are small" — The workflow requires it. Run it.
 - "I'll skip the `--base` flag, the full diff is fine" — Per-task reviews must be scoped to the task's commits only.
 
@@ -107,7 +123,7 @@ If you catch yourself thinking any of these, STOP:
 | Auto-fixing issues during final review | STOP and ask user which to fix |
 | Skipping fix loop during per-task review | Per-task findings go through implementer fix → re-review loop |
 | Running per-task review without `--base` | Pass the task base SHA to scope the review |
-| Vague broad adversarial review | Each run needs specific focus text naming mechanisms and failure modes |
-| Vague adversarial focus text | Name the specific mechanism and failure mode |
+| Undirected adversarial review | Each run needs focus text that directs Codex — either a specific mechanism/failure mode, or a specific design decision to evaluate |
+| Vague adversarial focus text | Name the mechanism and failure mode, or describe the approach and what aspect to evaluate |
 | Hardcoding the script path | Always use the `find` command in Step 1 |
 | Skipping review for "trivial" changes | Workflow requires it — run it |
