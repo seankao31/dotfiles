@@ -1,6 +1,6 @@
 ---
 name: clean-branch-history
-description: Use when a development branch has messy commits (fixups, experiments, feedback-driven changes) that need reorganizing into clean logical units before merging to main. Invoked by finishing-a-development-branch before the documentation sweep.
+description: Use when a development branch has messy commits (fixups, experiments, feedback-driven changes) that need reorganizing into clean logical units before merging to main. Invoked by /prepare-for-review between the doc commit and the codex review gate, so the reviewer sees coherent history.
 ---
 
 # Clean Branch History
@@ -193,6 +193,7 @@ Display the cleaned history so the user can spot anything glaring.
 ## Integration
 
 **Called by:**
-- **finishing-a-development-branch** (Step 1c) — after tests pass, before documentation sweep
+- **/prepare-for-review** (Step 4) — between the doc-changes commit (Step 3.5) and the codex review gate (Step 5). Cleaning here means codex and the human reviewer see logical commits rather than noise, and re-runs after review-feedback commits fold those fixes into their corresponding commits.
+- **finishing-a-development-branch** (Step 1b) — legacy superpowers override path, superseded by ralph v2. Still wired up for any manual invocation of that skill.
 
-**Not called by anything else.** This is a targeted skill for the pre-merge cleanup step.
+This is a targeted skill for the pre-review / pre-merge cleanup step.

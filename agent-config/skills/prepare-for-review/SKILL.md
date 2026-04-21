@@ -38,8 +38,8 @@ If the CLI fails (exits non-zero or returns empty output), the Linear API is unr
 
 Expected states:
 
-- **In Review** — proceed with the sequence, but skip Step 6 (the issue is already in the right state). The SHA-based dedup in Step 5 handles avoiding duplicate comments for the same HEAD. This allows re-running the skill after new commits are pushed to a branch that's still In Review.
-- **In Progress** — proceed with the full sequence including Step 6.
+- **In Review** — proceed with the sequence, but skip Step 7 (the issue is already in the right state). The SHA-based dedup in Step 6 handles avoiding duplicate comments for the same HEAD. This allows re-running the skill after new commits are pushed to a branch that's still In Review.
+- **In Progress** — proceed with the full sequence including Step 7.
 - **Any other state** — stop and surface to the reviewer. Something is off with the dispatch lifecycle.
 
 ## Pre-flight: verify clean working tree
@@ -63,7 +63,7 @@ Once the working tree is clean (with only the `.ralph-base-sha` exception), any 
 
 ## Compute base SHA (do this before Step 1)
 
-The base SHA is used in Steps 1, 4, and 5. Compute it once now so all steps stay consistent:
+The base SHA is used in Steps 1, 5, and 6. Compute it once now so all steps stay consistent:
 
 1. If `.ralph-base-sha` exists in the worktree root, read it:
    ```bash
@@ -113,7 +113,7 @@ Invoke the `prune-completed-docs` skill. Removes or archives now-stale planning 
 
 ### Step 3.5: Commit doc/decisions changes
 
-Steps 1–3 may have modified or created files. Commit them so the codex review in Step 4 sees the complete branch (including docs):
+Steps 1–3 may have modified or created files. Commit them so the history cleanup in Step 4 and codex review in Step 5 see the complete branch (including docs):
 
 ```bash
 git status --short          # confirm only expected new files from Steps 1-3
@@ -125,13 +125,19 @@ git diff --cached --quiet || git commit -m "docs: update stale docs and capture 
 
 The pre-flight required a clean working tree, so all untracked files staged here were created by the skill steps (Steps 1–3). The `--quiet` guard skips the commit if nothing changed.
 
-### Step 4: Codex review gate
+### Step 4: Clean branch history
 
-Invoke the `codex-review-gate` skill in **per-task mode** (not final-branch mode), passing `--base "$BASE_SHA"` (computed above). The review covers code commits + the doc commit from Step 3.5. Per-task mode supports the implementer fix loop: iterate on findings, fix, commit, re-run the gate until clean.
+Invoke the `clean-branch-history` skill to fold feedback-driven fixups, "try X + revert X" pairs, and review-feedback commits into clean logical units. Codex (next step) then reviews coherent history, and the commit list posted in the Linear comment (Step 6) reads clearly for the human reviewer.
+
+`clean-branch-history` computes its own merge-base (`git merge-base HEAD main`), creates and verifies its own safety ref, checks tree-hash integrity, and has a single-commit early-exit — the invocation is unconditional and self-contained. On re-runs of `/prepare-for-review` (e.g., after review-feedback commits land on a branch that's still In Review), this step folds the new fixes into their corresponding commits so each handoff snapshot stays clean.
+
+### Step 5: Codex review gate
+
+Invoke the `codex-review-gate` skill in **per-task mode** (not final-branch mode), passing `--base "$BASE_SHA"` (computed above). The review covers the full branch after history cleanup (code + docs). Per-task mode supports the implementer fix loop: iterate on findings, fix, commit, re-run the gate until clean.
 
 **Known limitation:** If the codex fix loop results in behavioral code changes, the doc/decision captures from Steps 1–3 may be slightly stale. For minor fixes (style, error handling) this is acceptable. For behavioral changes, re-run `/prepare-for-review` from the top on the updated branch.
 
-### Step 5: Post Linear handoff comment
+### Step 6: Post Linear handoff comment
 
 First check whether a handoff comment for this specific revision was already posted (handles retries after partial failures, without suppressing re-runs after feedback commits):
 
@@ -146,7 +152,7 @@ ALREADY_POSTED=$(linear api 'query($issueId: String!, $marker: String!) { issue(
 
 The `<!-- review-sha: ... -->` marker is unique per HEAD, so the server-side `body.contains` filter returns at most one match regardless of how many comments the issue has. `linear issue comment list` isn't suitable here — it returns only the first ~50 comments with no cursor flag exposed, so a prior handoff comment on a long-running issue could sit on a later page and go undetected.
 
-If `ALREADY_POSTED` is `true`, skip to Step 6.
+If `ALREADY_POSTED` is `true`, skip to Step 7.
 
 **If the `linear` CLI is unavailable:** Stop immediately — the handoff cannot complete without the CLI. The comment posting in the next step also requires it, so there's no point continuing.
 
@@ -189,7 +195,7 @@ Verify the exact CLI syntax against `linear issue comment add --help` at invocat
 
 **If the `linear` CLI fails:** The `linear-workflow` skill also uses the same CLI binary, so it is not a fallback. If Linear is unreachable, this skill cannot complete the handoff — surface the error and stop.
 
-### Step 6: Move issue to In Review via linear-workflow
+### Step 7: Move issue to In Review via linear-workflow
 
 Invoke the `linear-workflow` skill and request the `In Progress → In Review` transition.
 
