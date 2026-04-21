@@ -404,7 +404,7 @@ Direct translation of Component 4 pseudo-code:
   - All blockers Done → `main`.
   - One blocker In Review, rest Done → that one's branch.
   - Multiple blockers In Review → `INTEGRATION` with parent list.
-  - Any blocker in Approved/In Progress (not yet in Review) → this should be caught by the pickup rule upstream; `dag_base` can assume only pickup-ready issues reach it.
+  - Any blocker in In Progress/Todo/Backlog (not dispatchable) → caught by the pickup rule upstream; `dag_base` can assume only pickup-ready issues reach it. Approved blockers in the same run's queue are pickup-ready (Decision 6 rule 3b) and dispatch first via toposort, reaching In Review before the child dispatches — `dag_base` sees them as In Review.
 - [x] **Step 2:** Run — verify FAIL.
 - [x] **Step 3:** Implement. Consumes `lib/linear.sh::linear_get_issue_blockers`.
 - [x] **Step 4:** Run — verify PASS.
@@ -454,7 +454,7 @@ The main loop. Consumes: a queue of issue IDs (pre-sorted by `toposort.sh`). Per
 Fill in the `ralph-start` SKILL.md body with the workflow from Component 1:
 1. Read config.
 2. Invoke `preflight_scan.sh`; if failures, stop and ask the user.
-3. Query `linear_list_approved_issues`, filter to strictly pickup-ready (no `ralph-failed`, all blockers ⊆ {Done, In Review}, no Canceled blockers).
+3. Query `linear_list_approved_issues`, filter to strictly pickup-ready (no `ralph-failed`, every blocker in Done/In Review/same-run-Approved, no Canceled blockers — see Decision 6 rule 3b).
 4. Invoke `toposort.sh` to order.
 5. Dry-run preview: print the queue with base-branch choices, prompt for the user confirmation.
 6. Invoke `orchestrator.sh` with the approved queue.
