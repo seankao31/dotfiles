@@ -65,13 +65,13 @@ cross-project parents appear stuck in preflight. Multi-project dispatch is desig
 sed -n '469p' agent-config/docs/specs/2026-04-17-ralph-loop-v2-design.md
 ```
 
-Expected: the updated paragraph contains `ENG-205`, `docs/specs/2026-04-21-ralph-scope-model-design.md`, `ENG-215`, `.ralph.json`, and does NOT contain `v2.1 extension` or the stale `tracked as ENG-203` phrase.
+Expected: the updated paragraph contains `ENG-205`, `2026-04-21-ralph-scope-model-design.md`, `ENG-215`, `.ralph.json`, and does NOT contain `v2.1 extension` or the stale `tracked as ENG-203` phrase.
 
 ```bash
-grep -n "ENG-203" agent-config/docs/specs/2026-04-17-ralph-loop-v2-design.md
+grep -n "tracked as ENG-203" agent-config/docs/specs/2026-04-17-ralph-loop-v2-design.md
 ```
 
-Expected: no matches (ENG-203 has been fully removed from the v2 spec).
+Expected: no matches (the stale "tracked as ENG-203 for a v2.1 extension" phrase has been removed; "ENG-203 was canceled as subsumed" is the intentional retained mention).
 
 - [ ] **Step 4: Commit**
 
