@@ -11,14 +11,14 @@ Hand-off checklist for "implementation is done, tests pass, now it needs human r
 
 ## When to Use
 
-- **At the end of an autonomous ralph-loop session** — the orchestrator prompt template names `/prepare-for-review` as the session's closing step.
+- **At the end of an autonomous ralph-loop session** — the `ralph-implement` skill's terminal step invokes `/prepare-for-review`.
 - **At the end of an interactive implementation session** — when the user finishes a feature and wants the handoff polish done consistently.
 
 Do NOT use this skill to cover up an incomplete implementation. If tests fail or the work isn't done, fix that first.
 
 ## Determine the Linear issue ID
 
-In ralph-loop sessions, the issue ID is in the prompt template. In interactive sessions, derive it from the branch name:
+In ralph-loop sessions, the agent receives the issue ID as the `/ralph-implement` invocation argument and exposes it as `$ISSUE_ID`. In interactive sessions, derive it from the branch name:
 
 ```bash
 ISSUE_ID=$(git rev-parse --abbrev-ref HEAD | grep -oiE '[A-Z]+-[0-9]+' | head -1)
