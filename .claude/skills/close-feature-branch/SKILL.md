@@ -97,13 +97,18 @@ Expected: `In Review`.
 ```bash
 source "$MAIN_REPO/agent-config/skills/ralph-start/scripts/lib/linear.sh"
 
-linear_get_issue_blockers "$ISSUE_ID" | jq -r '
+blockers_json=$(linear_get_issue_blockers "$ISSUE_ID") || exit 1
+
+printf '%s\n' "$blockers_json" | jq -r '
   .[] | select(.state != "Done") | "\(.id)\t\(.state)"
 '
 ```
 
-- **No output** — no unresolved blockers; proceed.
-- **Any output** — each line is `<blocker-id>\t<state>`. STOP. Print the list and refuse to close. Tell the user: `Canceled` blockers are NOT treated as resolved (per ralph v2 Decision 6 in `agent-config/docs/specs/2026-04-17-ralph-loop-v2-design.md`); the supported way to declare "this is no longer a blocker" is to remove the relation in Linear via `linear issue relation delete "$ISSUE_ID" blocked-by <blocker-id>` and re-run. No `--force` escape hatch.
+Capture the helper's JSON to a variable so a Linear lookup failure surfaces as a non-zero exit (via `|| exit 1`) rather than piping empty stdin into `jq` and masquerading as "no blockers, proceed." Pipelined directly, the helper's failure would fail the check *open* — exactly wrong for a safety guardrail.
+
+- **Non-zero exit** — the helper failed (Linear API, auth, or pagination overflow); the helper already wrote a diagnostic to stderr. STOP and surface to the user; the blocker set is unknown and proceeding is unsafe.
+- **No output from `jq`** — no unresolved blockers; proceed.
+- **Any output from `jq`** — each line is `<blocker-id>\t<state>`. STOP. Print the list and refuse to close. Tell the user: `Canceled` blockers are NOT treated as resolved (per ralph v2 Decision 6 in `agent-config/docs/specs/2026-04-17-ralph-loop-v2-design.md`); the supported way to declare "this is no longer a blocker" is to remove the relation in Linear via `linear issue relation delete "$ISSUE_ID" blocked-by <blocker-id>` and re-run. No `--force` escape hatch.
 
 Why this belongs in pre-flight: ralph v2 dispatches child branches before their parents are Done. If the child closes first, the child's branch still carries the parent's un-reviewed commits — Step 1's `git rebase main` reconciles content but doesn't know which commits belong to which issue, and Step 2's fast-forward merge then lands the parent's work on `main` as a side effect of closing the child. Guarding at the child's close time keeps the "nothing merges to main until it's been reviewed" invariant intact.
 
