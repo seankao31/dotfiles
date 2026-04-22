@@ -2,7 +2,7 @@
 
 Session-by-session narrative for the ralph v2 rollout. Newest entry first. Each entry records: date, session summary, current state of each ticket, any blockers/decisions for the next session to pick up.
 
-Pairs with the plan at `../plans/2026-04-18-ralph-v2-rollout.md` (task-list state) and the design spec at `../specs/2026-04-17-ralph-loop-v2-design.md` (source of truth).
+Design spec (source of truth): `../specs/2026-04-17-ralph-loop-v2-design.md`. The rollout plan (`../plans/2026-04-18-ralph-v2-rollout.md`) was deleted after all tickets completed.
 
 ---
 
