@@ -299,3 +299,5 @@ codex review" per task.
 **Invokes:**
 - **codex-review-gate** - Cross-model code review after each task's code quality review passes, and again after final Claude review before finishing branch
 ```
+
+**Final-review findings handling (ENG-220):** Add an "If final codex review finds issues:" prose block (parallel to "If reviewer finds issues:") in the Red Flags section. Content: STOP, present findings, ask user which to fix, do NOT auto-apply, re-run until clean, then proceed to finishing-a-development-branch. The direct diagram edge (codex-review-gate → finishing-a-development-branch) is safe because this prose now carries the gate. Previously `codex-review-gate`'s SKILL.md carried this instruction; ENG-220 made the primitive caller-agnostic and removed it, so each caller that relied on it must now carry the policy explicitly.

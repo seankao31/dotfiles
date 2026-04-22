@@ -295,6 +295,12 @@ Codex review: No critical issues. One minor suggestion about naming.
 - Dispatch fix subagent with specific instructions
 - Don't try to fix manually (context pollution)
 
+**If final codex review finds issues:**
+- STOP. Present the findings to the user.
+- Ask the user which issues to fix. Do NOT auto-apply. There is no implementer subagent in scope for the final review.
+- After the user directs fixes, apply them and re-run the final codex review.
+- Only proceed to `superpowers:finishing-a-development-branch` once the review is clean.
+
 ## Integration
 
 **Required workflow skills:**
