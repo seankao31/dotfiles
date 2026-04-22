@@ -41,23 +41,27 @@ if [ -f "$MAIN_REPO/.git" ]; then
   exit 1
 fi
 
-# 2. Resolve the feature branch from the issue ID via local branch listing.
+# 2. Resolve the feature branch from the issue ID via the shared ancestry helper.
 #    Linear's branch-name convention is lowercase `<issue-id>-<slug>`.
-ISSUE_SLUG=$(echo "$ISSUE_ID" | tr '[:upper:]' '[:lower:]')
-FEATURE_BRANCH=$(git branch --list "${ISSUE_SLUG}-*" --format='%(refname:short)')
-match_count=$(printf '%s\n' "$FEATURE_BRANCH" | grep -c . || true)
+source "$MAIN_REPO/agent-config/skills/ralph-start/scripts/lib/branch_ancestry.sh"
 
-if [ "$match_count" -gt 1 ]; then
-  echo "Error: multiple branches match '${ISSUE_SLUG}-*':" >&2
-  printf '%s\n' "$FEATURE_BRANCH" >&2
+resolve_rc=0
+FEATURE_BRANCH=$(resolve_branch_for_issue "$ISSUE_ID") || resolve_rc=$?
+
+if [ "$resolve_rc" -eq 2 ]; then
+  # Multiple matches — genuinely ambiguous. The helper has already printed
+  # the candidate branches to stderr. Stop rather than silently picking one.
   exit 1
 fi
 
-if [ "$match_count" -eq 0 ]; then
-  # Fallback: ask Linear for the canonical branchName in case the local branch
-  # uses a non-standard prefix (rename, historic naming, etc.).
+if [ "$resolve_rc" -eq 1 ] || [ -z "$FEATURE_BRANCH" ]; then
+  # Zero matches — fall back to Linear's canonical branchName in case the
+  # local branch uses a non-standard prefix (rename, historic naming). The
+  # fallback stays inline; it's a one-shot safety net for the main issue
+  # being closed, not generic to every child lookup.
   FEATURE_BRANCH=$(linear issue view "$ISSUE_ID" --json 2>/dev/null | jq -r '.branchName // empty')
   if [ -z "$FEATURE_BRANCH" ] || ! git show-ref --verify --quiet "refs/heads/$FEATURE_BRANCH"; then
+    ISSUE_SLUG=$(echo "$ISSUE_ID" | tr '[:upper:]' '[:lower:]')
     echo "Error: no local branch matches '${ISSUE_SLUG}-*', and Linear's branchName for $ISSUE_ID was not found locally." >&2
     exit 1
   fi
@@ -95,7 +99,12 @@ Expected: `In Review`.
 ### 2. Verify all `blocked-by` parents are Done
 
 ```bash
-source "$MAIN_REPO/agent-config/skills/ralph-start/scripts/lib/linear.sh"
+# config.sh exports RALPH_* workflow vars (including RALPH_STALE_PARENT_LABEL
+# for Step 3.5). It also sources lib/linear.sh transitively, so the blocker
+# helper below is available with no separate source. Source this before any
+# RALPH_* read — config.sh's `_config_load` is idempotent across re-sources.
+source "$MAIN_REPO/agent-config/skills/ralph-start/scripts/lib/config.sh" \
+  "${RALPH_CONFIG:-$MAIN_REPO/agent-config/skills/ralph-start/config.json}"
 
 blockers_json=$(linear_get_issue_blockers "$ISSUE_ID") || exit 1
 
@@ -211,6 +220,107 @@ git push origin main
 
 Alternatively, escalate to the user if you're unsure — losing an ff-merge state is recoverable, but making it worse is harder to undo.
 
+### Step 3.5: Label In-Review children that built on pre-amendment content
+
+Ralph v2 dispatches multi-level DAGs: parent `A` may still be In Review when child `B` (whose `blocked-by` is `A`) is already being built. If `A` gets amended during review and then lands via this ritual, any In-Review child `B` that was dispatched before the amendments is structurally stale — the reviewer signed off on `B` against a base that no longer exists.
+
+This step detects that at `A`'s close time (when amendments have canonically landed) and labels each stale child with `$RALPH_STALE_PARENT_LABEL` plus a Linear comment explaining the divergence. Non-fatal: any failure is recorded in a warning array printed at the end of the ritual — the push has already landed, so the labeling is observational, not a merge-safety gate. The ordering guardrail in Pre-flight §2 (ENG-207) prevents child branches from landing un-reviewed on main; this step surfaces the review-integrity gap that guardrail cannot address.
+
+Numbered 3.5 rather than renumbering 4–7 to keep the diff small and preserve existing operator muscle-memory.
+
+```bash
+source "$MAIN_REPO/agent-config/skills/ralph-start/scripts/lib/branch_ancestry.sh"
+# config.sh + linear.sh already sourced in Pre-flight §2.
+
+A_SHA=$(git rev-parse HEAD)
+A_SHORT=$(git rev-parse --short HEAD)
+# Warnings accumulate here. Printed as a banner at the very end of the ritual
+# (see Step 7), so the operator sees every post-close note in one place
+# regardless of which step logged it.
+WARN=()
+
+blocks_json=$(linear_get_issue_blocks "$ISSUE_ID") || {
+  WARN+=("could not query outgoing blocks relations for $ISSUE_ID; skipping stale-parent check")
+  blocks_json='[]'
+}
+
+# Walk In-Review children. `blocked-by` descendants further down the chain
+# (C → B → A) are not examined here — C will be evaluated at B's close. One
+# level per close event keeps the propagation aligned with actual close events.
+children=$(printf '%s' "$blocks_json" \
+  | jq -r '.[] | select(.state == "In Review") | .id')
+
+stale_label_and_comment() {
+  local child_id="$1" child_branch="$2" parent_id="$3" parent_sha="$4" parent_short="$5"
+  local commits count truncated body
+  commits=$(list_commits_ahead "$parent_sha" "refs/heads/$child_branch") \
+    || { printf 'list_commits_ahead failed for %s\n' "$child_id" >&2; return 1; }
+  count=$(printf '%s\n' "$commits" | grep -c . || true)
+  truncated=""
+  if [ "$count" -gt 50 ]; then
+    commits=$(printf '%s\n' "$commits" | head -50)
+    truncated=$(printf '\n(%d more)' "$((count - 50))")
+  fi
+
+  # Heredoc with concrete values. `main` is hard-coded — this skill is
+  # project-local and knows its base branch. After the ENG-213 split, the
+  # global portion would parameterize it from the project-local piece.
+  body=$(cat <<COMMENT
+**Stale-parent check** — parent \`${parent_id}\` closed at \`${parent_short}\`.
+
+This branch (\`${child_branch}\`) was dispatched before \`${parent_id}\`'s review amendments landed. The parent's final HEAD is not an ancestor of this branch, so the review signed off on pre-amendment content.
+
+Commits on the parent not present on this branch:
+
+\`\`\`
+${commits}${truncated}
+\`\`\`
+
+Recommended: rebase this branch onto \`main\` before final review. If the divergence is a pure rebase (content identical, SHAs differ), dismiss the label manually. If this branch has its own In-Progress/In-Review descendants, rebasing here cascades to them.
+COMMENT
+)
+
+  linear_add_label "$child_id" "$RALPH_STALE_PARENT_LABEL" || return 1
+  linear_comment "$child_id" "$body" || return 1
+}
+
+stale_count=0
+while IFS= read -r child_id; do
+  [ -z "$child_id" ] && continue
+
+  resolve_rc=0
+  child_branch=$(resolve_branch_for_issue "$child_id" 2>/dev/null) || resolve_rc=$?
+  if [ "$resolve_rc" -ne 0 ]; then
+    child_slug=$(printf '%s' "$child_id" | tr '[:upper:]' '[:lower:]')
+    case "$resolve_rc" in
+      1) WARN+=("$child_id: no local branch matching ${child_slug}-* — cannot verify freshness (skipped)") ;;
+      2) WARN+=("$child_id: multiple local branches match ${child_slug}-* — ambiguous, cannot verify freshness (skipped)") ;;
+    esac
+    continue
+  fi
+
+  # `|| rc=$?` captures the rc without triggering errexit in callers that
+  # have it on — same pattern as preflight_labels.sh.
+  rc=0
+  is_branch_fresh_vs_sha "$A_SHA" "refs/heads/$child_branch" || rc=$?
+  case "$rc" in
+    0) ;;
+    1) if stale_label_and_comment "$child_id" "$child_branch" "$ISSUE_ID" "$A_SHA" "$A_SHORT"; then
+         stale_count=$((stale_count + 1))
+       else
+         WARN+=("$child_id: ancestry check said stale, but label+comment failed")
+       fi
+       ;;
+    2) WARN+=("$child_id ($child_branch): ancestry lookup failed")
+       ;;
+  esac
+done <<< "$children"
+
+[ "$stale_count" -gt 0 ] && WARN+=("applied $RALPH_STALE_PARENT_LABEL label to $stale_count child(ren)")
+```
+
+**Known limitations.** SHA-ancestry flags a child as stale even if the parent's amendment was a pure rebase with content unchanged — the operator dismisses the label manually. No auto-rebase of stale children; the operator decides whether to rebase and re-review, accept the review gap, or reopen review.
+
 ### Step 4: Detach HEAD in the worktree
 
 `git branch -d` refuses to delete a branch that is checked out in any worktree. Detach HEAD in the worktree before deleting the branch:
@@ -288,6 +398,14 @@ else
 fi
 
 git worktree remove "$WORKTREE_PATH"
+
+# Post-close notes. Any non-fatal warnings accumulated during Step 3.5 (and
+# any future step that appends to `WARN`) print here, after worktree removal,
+# so the operator sees them in one place at the very end of the ritual.
+if [ "${#WARN[@]}" -gt 0 ]; then
+  printf '\n⚠️  Post-close notes:\n'
+  printf '  - %s\n' "${WARN[@]}"
+fi
 ```
 
 **If removal fails:** Do NOT use `--force`. Check for:
@@ -315,3 +433,5 @@ Per the design doc (Decision 4 + Follow-up #6) and ENG-186 ticket:
 - **Tags, release notes** — N/A for this dotfiles repo.
 - **Multi-branch cascades** (dev → staging → main) — N/A; this repo is main-only.
 - **Undoing a close** — if the wrong branch was closed, use git reflog to recover rather than asking this skill to "uncloseˮ.
+- **Auto-rebasing stale children** (Step 3.5) — the skill labels and comments but does not rewrite the child's branch. The operator decides between rebase-and-re-review, dismiss-as-pure-rebase, or accept the gap.
+- **Recursive DAG walk** (Step 3.5) — only direct `blocks` children are examined. Grandchildren propagate through the close-ritual chain as each child is itself closed.
