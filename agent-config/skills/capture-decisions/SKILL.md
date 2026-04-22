@@ -88,7 +88,7 @@ Before writing anything, show the user:
 - The resetCardIds() call in startGame — covered by existing comment
 ```
 
-Wait for approval before writing.
+Wait for approval before writing. (In autonomous sessions, skip this gate — see § Autonomous sessions.)
 
 ### Step 4: Execute
 
@@ -131,6 +131,12 @@ Concrete examples:
 git add docs/decisions/ src/ engine-rs/
 git commit -m 'docs: capture session decisions and add explanatory comments'
 ```
+
+## Autonomous sessions
+
+In autonomous sessions (`claude -p` dispatched by `/ralph-start`), there is no human to approve the proposal. Skip Step 3's approval gate and proceed immediately to Step 4 (Execute) after forming the proposal. The reviewer sees the resulting decisions in `/prepare-for-review`'s handoff comment under **Documentation changes** — that's the review surface, not a per-skill approval.
+
+See `agent-config/docs/playbooks/ralph-v2-usage.md` § Autonomous mode overrides for the general autonomous-mode behavior model (this is the skill-specific application).
 
 ## What Not to Do
 

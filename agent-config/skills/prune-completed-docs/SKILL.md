@@ -92,7 +92,7 @@ Present your findings as:
 - docs/decisions/2026-03-05-engine-implementation-decisions.md — deep rationale not in MEMORY.md
 ```
 
-Wait for explicit approval before executing.
+Wait for explicit approval before executing. (In autonomous sessions, skip this gate — see § Autonomous sessions.)
 
 ## Execution
 
@@ -109,6 +109,12 @@ After approval, execute changes in this order:
 - Any doc with open `- [ ]` tasks — may still be needed
 - Decision records that explain non-obvious architectural choices with no MEMORY.md equivalent
 - Anything the user says to keep
+
+## Autonomous sessions
+
+In autonomous sessions (`claude -p` dispatched by `/ralph-start`), there is no human to approve the proposal. Skip the "Wait for explicit approval before executing" gate in the Proposed Changes Protocol and proceed immediately to the Execution phase after forming the proposal. The reviewer sees the resulting pruned docs in `/prepare-for-review`'s handoff comment under **Documentation changes** — that's the review surface, not a per-skill approval.
+
+See `agent-config/docs/playbooks/ralph-v2-usage.md` § Autonomous mode overrides for the general autonomous-mode behavior model (this is the skill-specific application).
 
 ## Common Mistakes
 

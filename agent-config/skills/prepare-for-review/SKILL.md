@@ -101,15 +101,11 @@ Invoke the `update-stale-docs` skill with `--base "$BASE_SHA"` so it scopes to c
 
 Invoke the `capture-decisions` skill. Records any non-obvious implementation choices made during the session — the *why*, not the *what*.
 
-**In autonomous sessions (ralph loop):** `capture-decisions` presents a proposal and says "wait for approval before writing." With no human present, treat this as a self-approval — propose, then execute immediately. The user will review the decisions at review time.
-
 **Note on commits:** `capture-decisions` ends with its own `git commit`. This means this workflow may produce two separate doc commits (one from Step 2, one from Step 3.5 covering prune changes). Both will be in the `$BASE_SHA..HEAD` codex review scope — no action needed.
 
 ### Step 3: Prune completed docs
 
 Invoke the `prune-completed-docs` skill. Removes or archives now-stale planning docs, decision scratch, superseded specs, etc.
-
-**In autonomous sessions (ralph loop):** Same as Step 2 — `prune-completed-docs` also has an approval gate. Self-approve in autonomous mode; proceed immediately after presenting the proposal.
 
 ### Step 3.5: Commit doc/decisions changes
 
@@ -178,6 +174,10 @@ cat > "$COMMENT_FILE" <<COMMENT
 **Deviations from the PRD:** <bulleted list of anything that differs from the issue description; "None" if identical>
 
 **Surprises during implementation:** <bulleted list of things the PRD didn't anticipate; "None" if clean>
+
+**Documentation changes:** <bulleted list of decisions captured and docs pruned this session; "None" if nothing>
+- Decision: <file:line or path> — <one-sentence summary>
+- Pruned: <path> — <one-sentence reason>
 
 ## QA Test Plan
 
