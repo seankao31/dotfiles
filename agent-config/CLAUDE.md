@@ -63,7 +63,7 @@ YOU MUST write comments explaining WHAT and WHY, never temporal context or what 
 - When starting work without a clear branch for the current task, YOU MUST create a WIP branch.
 - YOU MUST TRACK All non-trivial changes in git.
 - YOU MUST commit frequently throughout the development process, even if your high-level tasks are not yet done. Commit your journal entries.
-- NEVER commit implementation plans or other ephemeral working documents (e.g. plan.md files created by the writing-plans skill). These are temporary scaffolding, not deliverables.
+- Commit implementation plans (plan.md from writing-plans, ralph specs, etc.) — they're load-bearing context that's easily lost to worktree cleanup if untracked.
 - NEVER SKIP, EVADE OR DISABLE A PRE-COMMIT HOOK
 - NEVER use `git add -A` unless you've just done a `git status` - Don't add random test files to the repo.
 
@@ -82,7 +82,7 @@ IMPORTANT: When changing code behavior, proactively find and update all related 
 
 ## Reviewing code
 
-Use Codex only for reviews, never for task execution or rescue.
-Code review via `codex-review-gate` is mandatory before any work is declared complete - this is enforced in `finishing-a-development-branch` Step 1c.
+Use Codex for reviews and rescue, not for primary task execution.
+Code review via `codex-review-gate` is mandatory before any work is declared complete — enforced in `/prepare-for-review`'s codex gate step.
 Always assess whether adversarial review is warranted in addition to standard review.
 
