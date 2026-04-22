@@ -81,6 +81,11 @@ is_branch_fresh_vs_sha <parent_sha> <branch_ref>
   → exit 1 if parent_sha is NOT an ancestor (stale)
   → exit 2 on lookup failure (invalid sha, missing ref)
 
+  Implementation: wraps `git merge-base --is-ancestor "$parent_sha" "$branch_ref"`,
+  which exits 0 (is-ancestor) or 1 (not-ancestor) on valid inputs, 128 or other
+  nonzero on bad inputs. The helper normalizes any non-{0,1} exit to 2 and writes
+  a diagnostic to stderr.
+
 list_commits_ahead <parent_sha> <branch_ref>
   → stdout: `git log --oneline <branch_ref>..<parent_sha>` (commits reachable from parent but not from branch)
   → exit 0 on success, non-zero on lookup failure
@@ -108,23 +113,26 @@ blocks_json=$(linear_get_issue_blocks "$ISSUE_ID") || {
   blocks_json='[]'
 }
 
-# Emit "<child-id>\t<linear-branch-hint>" per In-Review child.
+# Emit one child id per In-Review child. We resolve each branch locally via
+# resolve_branch_for_issue rather than trusting Linear's branchName, to match
+# how the pre-flight resolves the main issue's branch.
 children=$(printf '%s' "$blocks_json" \
-  | jq -r '.[] | select(.state == "In Review") | "\(.id)\t\(.branch)"')
+  | jq -r '.[] | select(.state == "In Review") | .id')
 
 stale_count=0
-while IFS=$'\t' read -r child_id linear_branch_hint; do
+while IFS= read -r child_id; do
   [ -z "$child_id" ] && continue
 
   if ! child_branch=$(resolve_branch_for_issue "$child_id"); then
-    WARN+=("$child_id: no local branch matching ${child_id,,}-* — cannot verify freshness (skipped)")
+    child_slug=$(printf '%s' "$child_id" | tr '[:upper:]' '[:lower:]')
+    WARN+=("$child_id: no local branch matching ${child_slug}-* — cannot verify freshness (skipped)")
     continue
   fi
 
   is_branch_fresh_vs_sha "$A_SHA" "refs/heads/$child_branch"
   case $? in
     0) ;;  # fresh
-    1) if stale_label_and_comment "$child_id" "$child_branch" "$A_SHA" "$A_SHORT"; then
+    1) if stale_label_and_comment "$child_id" "$child_branch" "$ISSUE_ID" "$A_SHA" "$A_SHORT"; then
          stale_count=$((stale_count + 1))
        else
          WARN+=("$child_id: ancestry check said stale, but label+comment failed")
@@ -141,19 +149,42 @@ done <<< "$children"
 `stale_label_and_comment` is a small in-skill function (not a lib helper — it's orchestration-specific):
 
 ```
-stale_label_and_comment <child_id> <child_branch> <parent_sha> <parent_short>:
-  commits=$(list_commits_ahead "$parent_sha" "refs/heads/$child_branch")
+stale_label_and_comment <child_id> <child_branch> <parent_id> <parent_sha> <parent_short>:
+  commits=$(list_commits_ahead "$parent_sha" "refs/heads/$child_branch") \
+    || { printf 'list_commits_ahead failed for %s\n' "$child_id" >&2; return 1; }
   count=$(printf '%s\n' "$commits" | grep -c . || true)
   truncated=""
   if [ "$count" -gt 50 ]; then
-    commits=$(printf '%s' "$commits" | head -50)
-    truncated=$(printf '\n(%d more)\n' "$((count - 50))")
+    commits=$(printf '%s\n' "$commits" | head -50)
+    truncated=$(printf '\n(%d more)' "$((count - 50))")
   fi
+
+  # Heredoc builds the comment body with concrete values substituted in.
+  # $ISSUE_ID here is the parent being closed — passed explicitly as
+  # $parent_id to avoid relying on caller-scope globals.
+  body=$(cat <<COMMENT
+**Stale-parent check** — parent \`${parent_id}\` closed at \`${parent_short}\`.
+
+This branch (\`${child_branch}\`) was dispatched before \`${parent_id}\`'s review amendments landed. The parent's final HEAD is not an ancestor of this branch, so the review signed off on pre-amendment content.
+
+Commits on the parent not present on this branch:
+
+\`\`\`
+${commits}${truncated}
+\`\`\`
+
+Recommended: rebase this branch onto \`main\` before final review. If the divergence is a pure rebase (content identical, SHAs differ), dismiss the label manually. If this branch has its own In-Progress/In-Review descendants, rebasing here cascades to them.
+COMMENT
+)
+
   linear_add_label "$child_id" "stale-parent" || return 1
-  linear_comment "$child_id" "$(stale_comment_body "$child_branch" ...)" || return 1
+  # linear_comment takes the body as its second arg; if the body contains
+  # markdown backticks or special chars, pass via --body-file per linear.sh
+  # patterns elsewhere. For v1 the backticks are fine through --body.
+  linear_comment "$child_id" "$body" || return 1
 ```
 
-The warning banner is printed at the very end of the ritual, after Step 7 (worktree removal), so the operator sees it without it being buried.
+The warning banner is printed at the very end of the ritual, after Step 7 (worktree removal), regardless of whether earlier non-fatal steps logged failures — so the operator sees every warning without having to scroll.
 
 ## Output formats
 
