@@ -236,11 +236,57 @@ Use `-d` (safe delete), not `-D` (force delete). If `-d` refuses because the bra
 
 Invoke the `linear-workflow` skill with the explicit issue ID (`$ISSUE_ID`), requesting the `In Review → Done` transition. Passing the ID explicitly is required — by this point, the feature branch is gone, so `linear-workflow` cannot infer the target issue from the current branch context. Do NOT call the `linear` CLI directly.
 
-### Step 7: Remove the worktree
+### Step 7: Reap the worktree's codex broker, then remove the worktree
 
 Last step. CWD is the main checkout, so worktree removal no longer threatens the session. Keeping it last means that if removal fails (dirty worktree, process holding files), the high-value state transitions — ff-merge, push, branch delete, Linear Done — have already been applied cleanly.
 
+**Reap first, then remove.** The codex plugin spawns an `app-server-broker.mjs` daemon per Claude Code session, scoped to that session's CWD. The broker only shuts down when `SessionEnd` fires cleanly — crashes, force-closes, or SIGKILL'd sessions leave it orphaned. `git worktree remove` doesn't notify the broker and the broker has no watchdog, so these leak until reaped. The upstream fix is an idle timeout / cwd watchdog in the plugin (tracked at <https://github.com/openai/codex-plugin-cc/issues/163?issue=openai%7Ccodex-plugin-cc%7C193>); delete this reap block once that ships.
+
+Safety filter, three layers:
+
+1. **`--cwd` exact match** (canonicalized via `pwd -P`) — only brokers rooted in this worktree.
+2. **No live non-broker process rooted in the worktree** — catches any separate Claude Code session still active there (another terminal, IDE extension).
+3. **SIGTERM, not SIGKILL** — lets the broker run its shutdown handler and cascade-stop its children.
+
 ```bash
+# Canonicalize for reliable comparison (handles symlinks, trailing slashes).
+WORKTREE_REAL=$(cd "$WORKTREE_PATH" && pwd -P)
+
+# Layer 2 gate: any non-broker process whose cwd is at or below the worktree?
+live_holders=$(
+  lsof -a -d cwd -Fpn 2>/dev/null | awk -v w="$WORKTREE_REAL" '
+    /^p/ { pid = substr($0, 2) }
+    /^n/ { path = substr($0, 2); if (path == w || index(path, w"/") == 1) print pid }
+  ' | sort -u | while read -r pid; do
+    cmd=$(ps -p "$pid" -o command= 2>/dev/null)
+    # Leading-paren patterns dodge the bash 3.2 parser bug with `case` in $(...).
+    # The broker trio (broker.mjs + node codex wrapper + native codex binary)
+    # all inherit the broker's cwd, so all three are reap targets, not blockers.
+    case "$cmd" in
+      (*app-server-broker.mjs*) ;;
+      (*codex\ app-server*) ;;
+      ('') ;;                       # process vanished between lsof and ps
+      (*) printf '  %s %s\n' "$pid" "$cmd" ;;
+    esac
+  done
+)
+
+if [ -n "$live_holders" ]; then
+  echo "WARNING: live processes rooted in $WORKTREE_REAL — skipping codex broker reap" >&2
+  printf '%s\n' "$live_holders" >&2
+else
+  # Layer 1: brokers whose --cwd canonicalizes to our worktree.
+  ps ax -o pid=,command= | grep 'app-server-broker\.mjs' | grep -v grep | \
+    while read -r pid rest; do
+      cwd=$(printf '%s\n' "$rest" | sed -n 's/.*--cwd \([^ ]*\).*/\1/p')
+      [ -z "$cwd" ] && continue
+      cwd_real=$(cd "$cwd" 2>/dev/null && pwd -P) || continue
+      [ "$cwd_real" = "$WORKTREE_REAL" ] || continue
+      echo "reaping codex broker $pid (cwd: $cwd_real)"
+      kill -TERM "$pid" 2>/dev/null || true
+    done
+fi
+
 git worktree remove "$WORKTREE_PATH"
 ```
 
