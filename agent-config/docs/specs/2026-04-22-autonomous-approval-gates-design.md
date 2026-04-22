@@ -101,7 +101,7 @@ Preserve the adjacent "Note on commits" paragraph in Step 2 — it's about commi
 
 ### Content: `Documentation changes` section in the Review Summary template
 
-Placement: inside the Step 6 heredoc template, between `**Known gaps / deferred:**` and `## Commits in this branch`. This puts it after everything reviewer-facing about the code, before the commit log.
+Placement: inside the Step 6 heredoc template, under the `## Review Summary` heading, between `**Surprises during implementation:**` and the `## QA Test Plan` heading. This keeps summary items grouped together (what shipped, deviations, surprises, documentation changes) before the reviewer transitions to the QA steps. "Known gaps / deferred" stays where it is under QA Test Plan — it's about verification, not about summary.
 
 Template block added verbatim (including the trailing blank line for separation):
 
@@ -187,7 +187,7 @@ Execute in order. Each step is a verifiable unit; commit after each step (or as 
 3. **Edit `agent-config/skills/prepare-for-review/SKILL.md`:**
    a. Delete the Step 2 paragraph `**In autonomous sessions (ralph loop):** …review the decisions at review time.`
    b. Delete the Step 3 paragraph `**In autonomous sessions (ralph loop):** Same as Step 2…proceed immediately after presenting the proposal.`
-   c. Inside the Step 6 `cat > "$COMMENT_FILE" <<COMMENT` heredoc, add the `**Documentation changes:**` block between `**Known gaps / deferred:**` and `## Commits in this branch`. Content per the design.
+   c. Inside the Step 6 `cat > "$COMMENT_FILE" <<COMMENT` heredoc, add the `**Documentation changes:**` block under the `## Review Summary` heading, between `**Surprises during implementation:**` and the `## QA Test Plan` heading. Content per the design.
 
 4. **Run verification (the seven structural checks from the Testing section).** All must pass.
 
