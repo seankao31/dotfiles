@@ -137,8 +137,8 @@ Invoke the `codex-review-gate` skill, passing `--base "$BASE_SHA"` (computed abo
 
 **Handle findings here, not by escalating to the user mid-flow:**
 
-- **Actionable findings** (clear defect, missing edge case, anything you can address with confidence) — fix them, commit, and re-run the gate until it reports no issues.
-- **Ambiguous findings** (need human judgment — design tradeoff, deferred scope question, anything where the right call isn't obvious) — do NOT ask mid-flow. Capture them in Step 6's `## Review Summary` (under "Surprises during implementation" or "Known gaps / deferred" as fits) so the human reviewer sees them with full context.
+- **Actionable findings** (clear defect, missing edge case, anything you can address with confidence) — fix them, commit, and re-run the gate. Repeat until no actionable findings remain.
+- **Ambiguous findings** (need human judgment — design tradeoff, deferred scope question, anything where the right call isn't obvious) — do NOT ask mid-flow and do NOT block the loop on them. Capture them in Step 6's `## Review Summary` (under "Surprises during implementation" or "Known gaps / deferred" as fits) so the human reviewer sees them with full context. The loop exits once no actionable findings remain; ambiguous ones are expected to persist until Step 6.
 
 **Known limitation:** If the codex fix loop results in behavioral code changes, the doc/decision captures from Steps 1–3 may be slightly stale. For minor fixes (style, error handling) this is acceptable. For behavioral changes, re-run `/prepare-for-review` from the top on the updated branch.
 
