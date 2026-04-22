@@ -689,6 +689,8 @@ Invoke `linear-workflow` skill for In Review → Done transition.
 
 ## 5. ENG-177: Spec-to-plan experiments
 
+> **SUBSUMED 2026-04-22.** Consolidated into rescoped **ENG-178** (Ralph v2 workflow evaluation: idea → PRD → plan → code) as Phase 2. ENG-177 is canceled; ENG-218 (plan-to-code) was also canceled in the same consolidation. Do not execute tasks below — see `agent-config/docs/specs/2026-04-22-ralph-v2-workflow-evaluation-design.md` instead.
+
 **Goal:** Evaluate how much plan-writing scaffolding Opus 4.7 actually needs in a fresh-context autonomous run. Produce a recommendation for what the "plan" phase should look like — keep `superpowers:writing-plans`, switch to PRD-only, skip plan entirely, or something in between.
 
 **Design reference:** ENG-177 ticket body. The contract to satisfy: `2026-04-17-ralph-loop-v2-design.md` — Contract summary.
@@ -735,6 +737,8 @@ Invoke `linear-workflow` skill for In Review → Done transition.
 ---
 
 ## 6. ENG-178: Issue-to-spec brainstorming experiments
+
+> **RESCOPED 2026-04-22.** ENG-178 now covers the full three-phase workflow evaluation (idea → PRD → plan → code), consolidating ENG-177 and ENG-218. The original brainstorming scope is Phase 1 of the consolidated investigation. Do not execute the tasks below in isolation — see `agent-config/docs/specs/2026-04-22-ralph-v2-workflow-evaluation-design.md` instead.
 
 **Goal:** Evaluate how to get from "I have a vague idea" to "an Approved issue with a usable PRD." Produce a recommendation for the brainstorming phase.
 

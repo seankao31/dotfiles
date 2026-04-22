@@ -6,6 +6,29 @@ Pairs with the plan at `../plans/2026-04-18-ralph-v2-rollout.md` (task-list stat
 
 ---
 
+## 2026-04-22 (session: ENG-178 rescope + workflow evaluation consolidation)
+
+**What happened:**
+
+ENG-177 (spec-to-plan experiments) and ENG-218 (plan-to-code experiments, filed same day) were consolidated into a rescoped ENG-178: "Ralph v2 workflow evaluation: idea → PRD → plan → code." The three experiments share evaluation machinery (task selection, programmatic grading, cost logging, reference methodology) and form a strict pipeline where later phases' inputs are fixed by earlier phases, so splitting them into independent tickets fragmented shared infrastructure and implied parallelism that doesn't exist.
+
+New design doc: `agent-config/docs/specs/2026-04-22-ralph-v2-workflow-evaluation-design.md`. Key additions over the original per-ticket descriptions:
+
+- Reference methodology from a web research pass: Aider leaderboard tabulation, METR time-horizon framing, Terminal-Bench programmatic grading, CodeContests `n@k` metric, LLM-as-judge mitigation stack.
+- Meta-harness (Stanford IRIS, arXiv:2603.28052) as a reference point and potential Phase 3 arm F. Their converged TB 2.0 harness artifact is public and worth reading before finalizing Phase 3 arms.
+- Contamination caveats from the SWE-bench Illusion paper (arXiv:2506.12286).
+- Terminal-Bench 2.0 context: 89 tasks, harbor-native, programmatic grading. Same-model harness spreads of ~10 points on TB 2.0 confirm the signal exists.
+
+**Ticket status snapshot (2026-04-22):**
+- ENG-177: **Canceled** — subsumed by ENG-178 rescope.
+- ENG-178: **In Progress** — rescoped to three-phase workflow evaluation; design doc committed.
+- ENG-218: **Canceled** — subsumed by ENG-178 rescope.
+- All other tickets unchanged.
+
+**Handoff:** ENG-178 is in In Progress; branch `eng-178-ralph-v2-workflow-evaluation` has the spec committed. Review and merge when ready, then pick up Phase 1 of the evaluation (build shared evaluation machinery + run brainstorming-shape experiments).
+
+---
+
 ## 2026-04-20 (session: post-ENG-184 drift audit + doc alignment)
 
 After closing the ENG-184 worktree, did a real drift check against the design spec. Findings:
