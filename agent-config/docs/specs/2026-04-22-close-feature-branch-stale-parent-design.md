@@ -32,7 +32,7 @@ This one-level-at-a-time model keeps the check simple and keeps the labeling syn
 
 ## Prerequisites
 
-- The `stale-parent` label exists at workspace level in Linear. Already created (workspace-scoped, color `#F2994A`, grouped under `Workflow`).
+- The Linear label named by `stale_parent_label` in `agent-config/skills/ralph-start/config.json` (default: `stale-parent`) exists at workspace level. The default label has already been created (workspace-scoped, color `#F2994A`, grouped under `Workflow`).
   - If missing on first run, the `linear_add_label` call will surface a diagnostic; the spec documents this as setup, not a code concern.
 - Linear `blocked-by` relations: **ENG-184** (Done) is preserved as a historical blocker — it was the "ralph v2 live" pickup gate, now satisfied. No unresolved prerequisites remain. ENG-207 (companion ordering-guardrail) is already Done; ENG-213 (skill split) is deliberately not a blocker — ENG-208 lands on the current single-skill and its helpers relocate cleanly when ENG-213 picks up.
 
@@ -48,6 +48,18 @@ Why between 3 and 4:
 - Before Step 4/5, A's local branch ref and worktree still exist (not strictly needed because we use `$A_SHA` directly, but keeps the check before anything destructive happens).
 
 The step is **non-fatal**. Any failure (Linear API, missing local branch, label rejection) is logged to a warning array. The close itself continues — the push has already landed and the labeling is observational, not a merge-safety gate. At the end of the ritual, if the warning array is non-empty, a `⚠️ Post-close notes:` banner prints each warning.
+
+### Configurable label name
+
+The label name is parameterized via `agent-config/skills/ralph-start/config.json`, mirroring the existing `failed_label` / `$RALPH_FAILED_LABEL` pattern used by the orchestrator.
+
+- New config key: `stale_parent_label` in both `config.json` and `config.example.json`, default value `"stale-parent"`.
+- New entry in `agent-config/skills/ralph-start/scripts/lib/config.sh`'s `keys` array: `"RALPH_STALE_PARENT_LABEL:stale_parent_label"`. The loader enforces all keys in this array as required, so adding it here is sufficient — missing from a user-customized `config.json` fails loudly on load.
+- `.claude/skills/close-feature-branch/SKILL.md` sources `config.sh` alongside the existing `linear.sh` source in Pre-flight §2, so Step 3.5 sees `$RALPH_STALE_PARENT_LABEL` (and, as a side effect, all other `RALPH_*` exports). The shared loader is preferred over inline jq for one-key parity with the orchestrator and to keep validation (missing key, malformed JSON, `.ralph.json` shape) in one place.
+- `agent-config/skills/ralph-start/SKILL.md`'s Prerequisites section enumerates required `config.json` keys; `stale_parent_label` is added there.
+- `agent-config/skills/ralph-start/scripts/test/config.bats`'s "valid config exports all workflow RALPH_* vars" fixture (the `expected` array) gains `RALPH_STALE_PARENT_LABEL=stale-parent`.
+
+Rationale: operators who rename the label in Linear (team convention, color scheme, namespace collision) change one config value rather than patching the skill. Matches the existing `failed_label` symmetry and keeps the label-name source-of-truth in config.
 
 ### New helpers
 
@@ -102,7 +114,8 @@ The pre-flight block at the top of the current `SKILL.md` duplicates the resolve
 
 ```
 source "$MAIN_REPO/agent-config/skills/ralph-start/scripts/lib/branch_ancestry.sh"
-# linear.sh is already sourced from Pre-flight §2.
+# linear.sh and config.sh are already sourced from Pre-flight §2; config.sh
+# exports $RALPH_STALE_PARENT_LABEL (see "Configurable label name" above).
 
 A_SHA=$(git rev-parse HEAD)
 A_SHORT=$(git rev-parse --short HEAD)
@@ -143,7 +156,7 @@ while IFS= read -r child_id; do
   esac
 done <<< "$children"
 
-[ "$stale_count" -gt 0 ] && WARN+=("applied stale-parent label to $stale_count child(ren)")
+[ "$stale_count" -gt 0 ] && WARN+=("applied $RALPH_STALE_PARENT_LABEL label to $stale_count child(ren)")
 ```
 
 `stale_label_and_comment` is a small in-skill function (not a lib helper — it's orchestration-specific):
@@ -177,7 +190,7 @@ Recommended: rebase this branch onto \`main\` before final review. If the diverg
 COMMENT
 )
 
-  linear_add_label "$child_id" "stale-parent" || return 1
+  linear_add_label "$child_id" "$RALPH_STALE_PARENT_LABEL" || return 1
   # linear_comment takes the body as its second arg; if the body contains
   # markdown backticks or special chars, pass via --body-file per linear.sh
   # patterns elsewhere. For v1 the backticks are fine through --body.
@@ -253,17 +266,22 @@ Cases:
 2. **`main`-literal in the comment body.** Matches the skill's chezmoi-scope. Post-ENG-213 split (global `close-issue` + project-local `close-branch`), the base-branch name would be parameterized from the project-local piece. Documented; not blocking.
 3. **Cascade cost not auto-computed.** Rebasing a stale child cascades to its own In-Review descendants. The comment warns but does not enumerate. ENG-225 tracks broader chained-MR research that may supersede this whole model.
 4. **Cross-machine dispatches.** If a child's local branch is missing (e.g., dispatched from another machine), the skill warns and skips — no label applied. Acceptable because chezmoi's workflow is single-machine today.
-5. **No explicit label-existence preflight.** The `stale-parent` label must exist in Linear as a one-time setup (now done, workspace-scoped). If missing, `linear_add_label` bubbles a diagnostic through the warning banner. ENG-227 tracks the parallel `ralph-failed` setup gap and proposes a preflight that applies to both.
+5. **No explicit label-existence preflight.** The label named by `stale_parent_label` in config (default `stale-parent`, already created workspace-scoped) must exist in Linear as a one-time setup. If missing, `linear_add_label` bubbles a diagnostic through the warning banner. ENG-227 tracks the preflight for both configurable labels (`stale_parent_label` and `failed_label`), reading the names from config rather than hardcoding the defaults.
 
 ## Implementation checklist (for the autonomous session)
 
-1. Add `linear_get_issue_blocks` to `agent-config/skills/ralph-start/scripts/lib/linear.sh` following the pattern and docstring style of `linear_get_issue_blockers`.
-2. Create `agent-config/skills/ralph-start/scripts/lib/branch_ancestry.sh` with `is_branch_fresh_vs_sha`, `list_commits_ahead`, and `resolve_branch_for_issue`. Top-of-file comment notes the pragmatic-location / future-plugin-move.
-3. Refactor the existing pre-flight branch resolution in `.claude/skills/close-feature-branch/SKILL.md` to call `resolve_branch_for_issue`, keeping the Linear-branchName fallback inline for the main issue.
-4. Add Step 3.5 to the same `SKILL.md`, including the `stale_label_and_comment` helper function, warning array, and end-of-ritual banner.
-5. Add `agent-config/skills/ralph-start/scripts/test/branch_ancestry.bats` covering the three cases per helper listed above.
-6. Update the skill's "Red Flags / When to Stop" and "Explicitly out of scope" sections if any new edge cases surface during implementation.
-7. Verify bats tests pass locally. Commit helpers + skill changes + tests together.
+1. Plumb the `stale_parent_label` config key:
+   - Add `"stale_parent_label": "stale-parent"` to `agent-config/skills/ralph-start/config.json` and `config.example.json`.
+   - Add `"RALPH_STALE_PARENT_LABEL:stale_parent_label"` to the `keys` array in `agent-config/skills/ralph-start/scripts/lib/config.sh`.
+   - Add `stale_parent_label` to the required-keys enumeration in `agent-config/skills/ralph-start/SKILL.md`'s Prerequisites section.
+   - Add `RALPH_STALE_PARENT_LABEL=stale-parent` to the `expected` array in the `@test "valid config exports all workflow RALPH_* vars with correct values"` test in `agent-config/skills/ralph-start/scripts/test/config.bats`.
+2. Add `linear_get_issue_blocks` to `agent-config/skills/ralph-start/scripts/lib/linear.sh` following the pattern and docstring style of `linear_get_issue_blockers`.
+3. Create `agent-config/skills/ralph-start/scripts/lib/branch_ancestry.sh` with `is_branch_fresh_vs_sha`, `list_commits_ahead`, and `resolve_branch_for_issue`. Top-of-file comment notes the pragmatic-location / future-plugin-move.
+4. Refactor the existing pre-flight branch resolution in `.claude/skills/close-feature-branch/SKILL.md` to call `resolve_branch_for_issue`, keeping the Linear-branchName fallback inline for the main issue. In the same Pre-flight §2 block, add `source "$MAIN_REPO/agent-config/skills/ralph-start/scripts/lib/config.sh" "${RALPH_CONFIG:-$HOME/.claude/skills/ralph-start/config.json}"` alongside the existing `linear.sh` source so Step 3.5 sees `$RALPH_STALE_PARENT_LABEL`.
+5. Add Step 3.5 to the same `SKILL.md`, including the `stale_label_and_comment` helper function (using `$RALPH_STALE_PARENT_LABEL` rather than the literal), warning array, and end-of-ritual banner.
+6. Add `agent-config/skills/ralph-start/scripts/test/branch_ancestry.bats` covering the three cases per helper listed above.
+7. Update the skill's "Red Flags / When to Stop" and "Explicitly out of scope" sections if any new edge cases surface during implementation.
+8. Verify bats tests pass locally. Commit helpers + skill changes + tests together.
 
 ## References
 
