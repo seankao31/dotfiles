@@ -59,7 +59,7 @@ digraph clean_branch {
 
 ### 1. Identify commits
 
-If a caller passed `--base <sha>`, use it. Otherwise, auto-detect the trunk.
+If a caller passed `--base <sha>`, set `MERGE_BASE` to that SHA and skip trunk detection. Otherwise, auto-detect the trunk:
 
 ```bash
 TRUNK_REF=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null)
