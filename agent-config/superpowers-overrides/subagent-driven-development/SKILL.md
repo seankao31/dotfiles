@@ -298,8 +298,8 @@ Codex review: No critical issues. One minor suggestion about naming.
 **If final codex review finds issues:**
 - STOP. Present the findings to the user.
 - Ask the user which issues to fix. Do NOT auto-apply. There is no implementer subagent currently in scope.
-- After the user directs fixes, dispatch a fix subagent with specific instructions targeting the identified issues, then re-run the final codex review.
-- Only proceed to `superpowers:finishing-a-development-branch` once the review is clean.
+- After the user directs fixes, dispatch a fix subagent with specific instructions targeting the identified issues. Then re-run the final code reviewer so the updated code gets reviewed, and re-run the final codex review.
+- Only proceed to `superpowers:finishing-a-development-branch` once the codex review is clean.
 
 ## Integration
 
