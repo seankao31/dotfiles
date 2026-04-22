@@ -32,9 +32,9 @@ This one-level-at-a-time model keeps the check simple and keeps the labeling syn
 
 ## Prerequisites
 
-- The `stale-parent` label exists at workspace level in Linear. Already created (workspace-scoped, color `#F2994A`).
+- The `stale-parent` label exists at workspace level in Linear. Already created (workspace-scoped, color `#F2994A`, grouped under `Workflow`).
   - If missing on first run, the `linear_add_label` call will surface a diagnostic; the spec documents this as setup, not a code concern.
-- No Linear `blocked-by` relations. ENG-207 is already Done; ENG-213 is deliberately not a blocker (this lands on the current single-skill).
+- Linear `blocked-by` relations: **ENG-184** (Done) is preserved as a historical blocker — it was the "ralph v2 live" pickup gate, now satisfied. No unresolved prerequisites remain. ENG-207 (companion ordering-guardrail) is already Done; ENG-213 (skill split) is deliberately not a blocker — ENG-208 lands on the current single-skill and its helpers relocate cleanly when ENG-213 picks up.
 
 ## Architecture
 
