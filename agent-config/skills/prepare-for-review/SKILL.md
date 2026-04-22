@@ -133,7 +133,12 @@ Invoke the `clean-branch-history` skill to fold feedback-driven fixups, "try X +
 
 ### Step 5: Codex review gate
 
-Invoke the `codex-review-gate` skill in **per-task mode** (not final-branch mode), passing `--base "$BASE_SHA"` (computed above). The review covers the full branch after history cleanup (code + docs). Per-task mode supports the implementer fix loop: iterate on findings, fix, commit, re-run the gate until clean.
+Invoke the `codex-review-gate` skill, passing `--base "$BASE_SHA"` (computed above) so the review is scoped to this branch's commits (code + docs after history cleanup).
+
+**Handle findings here, not by escalating to the user mid-flow:**
+
+- **Actionable findings** (clear defect, missing edge case, anything you can address with confidence) — fix them, commit, and re-run the gate until it reports no issues.
+- **Ambiguous findings** (need human judgment — design tradeoff, deferred scope question, anything where the right call isn't obvious) — do NOT ask mid-flow. Capture them in Step 6's `## Review Summary` (under "Surprises during implementation" or "Known gaps / deferred" as fits) so the human reviewer sees them with full context.
 
 **Known limitation:** If the codex fix loop results in behavioral code changes, the doc/decision captures from Steps 1–3 may be slightly stale. For minor fixes (style, error handling) this is acceptable. For behavioral changes, re-run `/prepare-for-review` from the top on the updated branch.
 
