@@ -232,9 +232,9 @@ source "$MAIN_REPO/agent-config/skills/ralph-start/scripts/lib/branch_ancestry.s
 
 A_SHA=$(git rev-parse HEAD)
 A_SHORT=$(git rev-parse --short HEAD)
-# Warnings accumulate here. Printed as a banner at the very end of the ritual
-# (see Step 7), so the operator sees every post-close note in one place
-# regardless of which step logged it.
+# Warnings accumulate here and are printed at the end of Step 3.5 (not
+# deferred to Step 7), so the operator always sees Linear mutations
+# performed here even if a later step aborts.
 WARN=()
 
 # Verify the workspace-scoped stale-parent label exists BEFORE touching any
@@ -262,11 +262,34 @@ fi
 # descendants further down the chain (C → B → A) are not examined here — C
 # will be evaluated at B's close. One level per close event keeps the
 # propagation aligned with actual close events. The state name comes from
-# $RALPH_REVIEW_STATE (sourced via config.sh in Pre-flight §2) so workspaces
+# $RALPH_REVIEW_STATE (sourced via config.sh in Pre-flight §1) so workspaces
 # with a customized review state keep working.
-children=$(printf '%s' "$blocks_json" \
-  | jq -r --arg review "$RALPH_REVIEW_STATE" '.[] | select(.state == $review) | .id')
+#
+# Shape-guard the helper's output with the same pattern as Pre-flight §2.
+# A null .state or .id in any entry means Linear returned a relation whose
+# `relatedIssue` failed to resolve (schema drift, permission hide, deleted
+# target). Silently dropping such entries would miss genuinely stale
+# children; instead, stop here and let the operator investigate.
+children=$(printf '%s' "$blocks_json" | jq -r --arg review "$RALPH_REVIEW_STATE" '
+  if type == "array" and all(.[]; has("id") and has("state") and .id != null and .state != null) then
+    .[] | select(.state == $review) | .id
+  else
+    error("linear_get_issue_blocks returned unexpected JSON shape (null id/state)")
+  end
+') || {
+  WARN+=("linear_get_issue_blocks returned malformed entries for $ISSUE_ID; skipping stale-parent check")
+  children=""
+}
 
+# Comment-first, label-second: the comment explains WHY the label was applied.
+# If comment posting fails we skip the label (harmless state: no comment,
+# no label). If the label application fails after a successful comment, the
+# warning names that specific failure so the operator can apply the label
+# manually — rather than being left guessing from a generic "label+comment
+# failed" message. Returns:
+#   0 — both succeeded (child is both commented and labeled)
+#   1 — comment failed (nothing applied; safe to skip labeling)
+#   2 — comment succeeded but label failed (partial: comment exists, label missing)
 stale_label_and_comment() {
   local child_id="$1" child_branch="$2" parent_id="$3" parent_sha="$4" parent_short="$5"
   local commits count truncated body
@@ -297,8 +320,8 @@ Recommended: rebase this branch onto \`main\` before final review. If the diverg
 COMMENT
 )
 
-  linear_add_label "$child_id" "$RALPH_STALE_PARENT_LABEL" || return 1
   linear_comment "$child_id" "$body" || return 1
+  linear_add_label "$child_id" "$RALPH_STALE_PARENT_LABEL" || return 2
 }
 
 stale_count=0
@@ -318,15 +341,17 @@ while IFS= read -r child_id; do
 
   # `|| rc=$?` captures the rc without triggering errexit in callers that
   # have it on — same pattern as preflight_labels.sh.
-  rc=0
-  is_branch_fresh_vs_sha "$A_SHA" "refs/heads/$child_branch" || rc=$?
-  case "$rc" in
+  fresh_rc=0
+  is_branch_fresh_vs_sha "$A_SHA" "refs/heads/$child_branch" || fresh_rc=$?
+  case "$fresh_rc" in
     0) ;;
-    1) if stale_label_and_comment "$child_id" "$child_branch" "$ISSUE_ID" "$A_SHA" "$A_SHORT"; then
-         stale_count=$((stale_count + 1))
-       else
-         WARN+=("$child_id: ancestry check said stale, but label+comment failed")
-       fi
+    1) apply_rc=0
+       stale_label_and_comment "$child_id" "$child_branch" "$ISSUE_ID" "$A_SHA" "$A_SHORT" || apply_rc=$?
+       case "$apply_rc" in
+         0) stale_count=$((stale_count + 1)) ;;
+         1) WARN+=("$child_id: stale parent detected but comment-post failed (no label applied)") ;;
+         2) WARN+=("$child_id: stale parent detected; comment posted but label application failed (apply $RALPH_STALE_PARENT_LABEL manually)") ;;
+       esac
        ;;
     2) WARN+=("$child_id ($child_branch): ancestry lookup failed")
        ;;
@@ -334,6 +359,13 @@ while IFS= read -r child_id; do
 done <<< "$children"
 
 [ "$stale_count" -gt 0 ] && WARN+=("applied $RALPH_STALE_PARENT_LABEL label to $stale_count child(ren)")
+
+# Emit accumulated notes immediately so Linear mutations performed here are
+# always visible to the operator, even if a later step aborts the ritual.
+if [ "${#WARN[@]}" -gt 0 ]; then
+  printf '\n⚠️  Step 3.5 notes:\n'
+  printf '  - %s\n' "${WARN[@]}"
+fi
 ```
 
 **Known limitations.** SHA-ancestry flags a child as stale even if the parent's amendment was a pure rebase with content unchanged — the operator dismisses the label manually. No auto-rebase of stale children; the operator decides whether to rebase and re-review, accept the review gap, or reopen review.
@@ -415,14 +447,6 @@ else
 fi
 
 git worktree remove "$WORKTREE_PATH"
-
-# Post-close notes. Any non-fatal warnings accumulated during Step 3.5 (and
-# any future step that appends to `WARN`) print here, after worktree removal,
-# so the operator sees them in one place at the very end of the ritual.
-if [ "${#WARN[@]}" -gt 0 ]; then
-  printf '\n⚠️  Post-close notes:\n'
-  printf '  - %s\n' "${WARN[@]}"
-fi
 ```
 
 **If removal fails:** Do NOT use `--force`. Check for:
