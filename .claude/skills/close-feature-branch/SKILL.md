@@ -239,10 +239,26 @@ A_SHORT=$(git rev-parse --short HEAD)
 # regardless of which step logged it.
 WARN=()
 
-blocks_json=$(linear_get_issue_blocks "$ISSUE_ID") || {
-  WARN+=("could not query outgoing blocks relations for $ISSUE_ID; skipping stale-parent check")
+# Verify the workspace-scoped stale-parent label exists BEFORE touching any
+# children. Linear's `issue update --label` silently no-ops on a nonexistent
+# or team-scoped name, which would otherwise let Step 3.5 increment the
+# "labeled N children" counter against ghosts. ENG-227 plumbed the same check
+# for ralph-start; close-feature-branch doesn't run that preflight, so we
+# gate here once per close event.
+label_rc=0
+linear_label_exists "$RALPH_STALE_PARENT_LABEL" || label_rc=$?
+if [ "$label_rc" -ne 0 ]; then
+  case "$label_rc" in
+    1) WARN+=("workspace label $RALPH_STALE_PARENT_LABEL does not exist — skipping stale-parent check (see ralph-start SKILL.md Prerequisites)") ;;
+    *) WARN+=("could not verify workspace label $RALPH_STALE_PARENT_LABEL exists — skipping stale-parent check") ;;
+  esac
   blocks_json='[]'
-}
+else
+  blocks_json=$(linear_get_issue_blocks "$ISSUE_ID") || {
+    WARN+=("could not query outgoing blocks relations for $ISSUE_ID; skipping stale-parent check")
+    blocks_json='[]'
+  }
+fi
 
 # Walk In-Review children. `blocked-by` descendants further down the chain
 # (C → B → A) are not examined here — C will be evaluated at B's close. One
