@@ -83,34 +83,32 @@ All subsequent shell commands reference `$FEATURE_BRANCH`, `$ISSUE_ID`, `$WORKTR
 
 ## Pre-flight
 
-### 1. Verify the issue is In Review
+### 1. Verify the issue is in the review state
+
+Source `config.sh` once up front — it exports the `RALPH_*` workflow state names (including `$RALPH_REVIEW_STATE` for this step, `$RALPH_DONE_STATE` for §2, `$RALPH_STALE_PARENT_LABEL` for Step 3.5) and transitively sources `lib/linear.sh`. Idempotent across re-sources.
 
 ```bash
+source "$MAIN_REPO/agent-config/skills/ralph-start/scripts/lib/config.sh" \
+  "${RALPH_CONFIG:-$MAIN_REPO/agent-config/skills/ralph-start/config.json}"
+
 linear issue view "$ISSUE_ID" --json 2>/dev/null | jq -r '.state.name'
 ```
 
-Expected: `In Review`.
+Expected: `$RALPH_REVIEW_STATE` (default: `In Review`; workspaces can customize via `config.json`).
 
-- **In Review** — proceed.
-- **In Progress** — the work hasn't been handed off for review yet. Run `/prepare-for-review` first (added in ENG-182; must be merged before this skill is usable on a branch still in In Progress).
-- **Done** — nothing to do; the branch was already closed. Investigate whether this worktree is leftover and can be removed.
+- **Matches `$RALPH_REVIEW_STATE`** — proceed.
+- **Matches `$RALPH_IN_PROGRESS_STATE`** — the work hasn't been handed off for review yet. Run `/prepare-for-review` first (added in ENG-182; must be merged before this skill is usable on a branch still in the in-progress state).
+- **Matches `$RALPH_DONE_STATE`** — nothing to do; the branch was already closed. Investigate whether this worktree is leftover and can be removed.
 - **Any other state** — stop and surface to the user. The dispatch lifecycle is off.
 
 ### 2. Verify all `blocked-by` parents are Done
 
 ```bash
-# config.sh exports RALPH_* workflow vars (including RALPH_STALE_PARENT_LABEL
-# for Step 3.5). It also sources lib/linear.sh transitively, so the blocker
-# helper below is available with no separate source. Source this before any
-# RALPH_* read — config.sh's `_config_load` is idempotent across re-sources.
-source "$MAIN_REPO/agent-config/skills/ralph-start/scripts/lib/config.sh" \
-  "${RALPH_CONFIG:-$MAIN_REPO/agent-config/skills/ralph-start/config.json}"
-
 blockers_json=$(linear_get_issue_blockers "$ISSUE_ID") || exit 1
 
-printf '%s\n' "$blockers_json" | jq -r '
+printf '%s\n' "$blockers_json" | jq -r --arg done "$RALPH_DONE_STATE" '
   if type == "array" and all(.[]; has("id") and has("state")) then
-    .[] | select(.state != "Done") | "\(.id)\t\(.state)"
+    .[] | select(.state != $done) | "\(.id)\t\(.state)"
   else
     error("linear_get_issue_blockers returned unexpected JSON shape")
   end
@@ -260,11 +258,14 @@ else
   }
 fi
 
-# Walk In-Review children. `blocked-by` descendants further down the chain
-# (C → B → A) are not examined here — C will be evaluated at B's close. One
-# level per close event keeps the propagation aligned with actual close events.
+# Walk children currently in the configured review state. `blocked-by`
+# descendants further down the chain (C → B → A) are not examined here — C
+# will be evaluated at B's close. One level per close event keeps the
+# propagation aligned with actual close events. The state name comes from
+# $RALPH_REVIEW_STATE (sourced via config.sh in Pre-flight §2) so workspaces
+# with a customized review state keep working.
 children=$(printf '%s' "$blocks_json" \
-  | jq -r '.[] | select(.state == "In Review") | .id')
+  | jq -r --arg review "$RALPH_REVIEW_STATE" '.[] | select(.state == $review) | .id')
 
 stale_label_and_comment() {
   local child_id="$1" child_branch="$2" parent_id="$3" parent_sha="$4" parent_short="$5"
