@@ -127,9 +127,9 @@ The pre-flight required a clean working tree, so all untracked files staged here
 
 ### Step 4: Clean branch history
 
-Invoke the `clean-branch-history` skill to fold feedback-driven fixups, "try X + revert X" pairs, and review-feedback commits into clean logical units. Codex (next step) then reviews coherent history, and the commit list posted in the Linear comment (Step 6) reads clearly for the human reviewer.
+Invoke the `clean-branch-history` skill with `--base "$BASE_SHA"` to fold feedback-driven fixups, "try X + revert X" pairs, and review-feedback commits into clean logical units. Codex (next step) then reviews coherent history, and the commit list posted in the Linear comment (Step 6) reads clearly for the human reviewer.
 
-`clean-branch-history` computes its own merge-base (`git merge-base HEAD main`), creates and verifies its own safety ref, checks tree-hash integrity, and has a single-commit early-exit — the invocation is unconditional and self-contained. On re-runs of `/prepare-for-review` (e.g., after review-feedback commits land on a branch that's still In Review), this step folds the new fixes into their corresponding commits so each handoff snapshot stays clean.
+`clean-branch-history` uses the `--base "$BASE_SHA"` computed earlier (protecting against stacked-branch breakage), creates and verifies its own safety ref, checks tree-hash integrity, and has a single-commit early-exit — the invocation is unconditional and self-contained. On re-runs of `/prepare-for-review` (e.g., after review-feedback commits land on a branch that's still In Review), this step folds the new fixes into their corresponding commits so each handoff snapshot stays clean.
 
 ### Step 5: Codex review gate
 

@@ -59,8 +59,25 @@ digraph clean_branch {
 
 ### 1. Identify commits
 
+If a caller passed `--base <sha>`, use it. Otherwise, auto-detect the trunk.
+
 ```bash
-MERGE_BASE=$(git merge-base HEAD main)  # or target branch
+TRUNK_REF=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null)
+if [ -n "$TRUNK_REF" ]; then
+  MERGE_BASE=$(git merge-base HEAD "$TRUNK_REF")
+else
+  TRUNK_REF=""
+  git show-ref --verify --quiet refs/heads/main    && TRUNK_REF=refs/heads/main
+  [ -z "$TRUNK_REF" ] && git show-ref --verify --quiet refs/heads/master          && TRUNK_REF=refs/heads/master
+  [ -z "$TRUNK_REF" ] && git show-ref --verify --quiet refs/remotes/origin/main   && TRUNK_REF=refs/remotes/origin/main
+  [ -z "$TRUNK_REF" ] && git show-ref --verify --quiet refs/remotes/origin/master && TRUNK_REF=refs/remotes/origin/master
+  if [ -z "$TRUNK_REF" ]; then
+    echo "Cannot determine trunk. Pass base SHA explicitly via --base <sha>." >&2
+    exit 1
+  fi
+  MERGE_BASE=$(git merge-base HEAD "$TRUNK_REF")
+fi
+
 git log --oneline $MERGE_BASE..HEAD
 ```
 
