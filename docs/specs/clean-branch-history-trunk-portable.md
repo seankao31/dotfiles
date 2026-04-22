@@ -19,7 +19,7 @@ Together these make the skill main-branch / non-stacked only. That's adequate fo
 
 ## Approach
 
-Add an optional `--base <sha>` flag and a trunk-detection fallback to `clean-branch-history`. Mirror the resolution block already in `prepare-for-review/SKILL.md:75-89` verbatim so the two sites stay textually aligned.
+Add an optional `--base <sha>` flag and a trunk-detection fallback to `clean-branch-history`. Mirror the resolution block already in `prepare-for-review/SKILL.md:75-89` closely — identical precedence, variable names, and control flow — so the two sites stay aligned. The only deliberate difference is the error message, which must reference `--base <sha>` (this skill's flag) rather than `.ralph-base-sha` (a `/prepare-for-review`-specific artifact).
 
 ### Interface
 
@@ -96,7 +96,7 @@ No other changes to `/prepare-for-review`. `$BASE_SHA` is already computed above
 
 ## Acceptance criteria
 
-1. `agent-config/skills/clean-branch-history/SKILL.md` Step 1 starts with argument parsing + trunk-detection resolution. Resolution code block matches `/prepare-for-review/SKILL.md:75-89` semantics verbatim (same precedence, same variable names, same error phrasing adjusted to "Pass base SHA explicitly via --base <sha>.").
+1. `agent-config/skills/clean-branch-history/SKILL.md` Step 1 starts with argument parsing + trunk-detection resolution. The resolution block matches `/prepare-for-review/SKILL.md:75-89` in precedence, variable names, and control flow. Error message differs from `/prepare-for-review`'s by design: it reads `Cannot determine trunk. Pass base SHA explicitly via --base <sha>.` (no `.ralph-base-sha` reference, since that's a `/prepare-for-review` concern).
 2. Running `clean-branch-history` with no args on this repo (which has `main`) still works — trunk auto-detect resolves to `main` and the skill proceeds unchanged.
 3. Running `clean-branch-history --base <sha>` skips trunk detection entirely and uses the passed SHA as `$MERGE_BASE`.
 4. Running `clean-branch-history` in a repo that has no `origin/HEAD`, no local `main`/`master`, and no `origin/main`/`origin/master` exits 1 with the exact message `Cannot determine trunk. Pass base SHA explicitly via --base <sha>.` on stderr.
