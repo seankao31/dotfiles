@@ -12,7 +12,7 @@ Rule #1: If you want an exception to ANY rule, you MUST get explicit permission 
 Work happens in one of two modes:
 
 - **Interactive** — Sean is at the keyboard. Default mode, including `/ralph-spec`
-  (spec authoring), `/close-feature-branch` (merge), and any non-ralph work.
+  (spec authoring), `/close-issue` (merge), and any non-ralph work.
 - **Autonomous** — a `claude -p` session dispatched by `/ralph-start` to implement
   an Approved Linear issue. No human in the loop until the session exits.
 

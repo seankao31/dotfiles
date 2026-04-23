@@ -1,5 +1,6 @@
 .DS_Store
 .claude/*
 !.claude/skills/
+.close-branch-result
 .env
 .worktrees/
