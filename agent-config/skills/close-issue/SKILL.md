@@ -49,10 +49,11 @@ fi
 
 Source from the globally-installed ralph-start skill (`$HOME/.claude/skills/ralph-start/`), not from the current project. This treats ralph-start as an installed peer skill and keeps close-issue portable across projects — matches the sourcing style `/ralph-spec` already uses.
 
-`config.sh` exports the `RALPH_*` workflow state names (`$RALPH_REVIEW_STATE`, `$RALPH_DONE_STATE`, `$RALPH_STALE_PARENT_LABEL`) and transitively sources `lib/linear.sh`. `branch_ancestry.sh` is sourced explicitly for `resolve_branch_for_issue`, `is_branch_fresh_vs_sha`, and `list_commits_ahead`.
+Source `lib/linear.sh` first — it defines helpers used throughout Pre-flight and Step 3.5 (`linear_get_issue_blockers`, `linear_label_exists`, `linear_get_issue_blocks`, `linear_comment`, `linear_add_label`) and is a load-time dependency of `config.sh` (the latter's guard rejects callers that forget). Then source `config.sh` to export the `RALPH_*` workflow state names (`$RALPH_REVIEW_STATE`, `$RALPH_DONE_STATE`, `$RALPH_STALE_PARENT_LABEL`). `branch_ancestry.sh` is sourced explicitly for `resolve_branch_for_issue`, `is_branch_fresh_vs_sha`, and `list_commits_ahead`.
 
 ```bash
 RALPH_LIB="$HOME/.claude/skills/ralph-start/scripts/lib"
+source "$RALPH_LIB/linear.sh"
 source "$RALPH_LIB/config.sh" \
   "${RALPH_CONFIG:-$HOME/.claude/skills/ralph-start/config.json}"
 source "$RALPH_LIB/branch_ancestry.sh"
