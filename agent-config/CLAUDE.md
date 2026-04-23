@@ -60,7 +60,7 @@ Still confirm before deleting issues or comments outright (loses history). (auto
 - YOU MUST get Sean's explicit approval before implementing ANY backward compatibility. (autonomous: see playbook)
 - YOU MUST MATCH the style and formatting of surrounding code, even if it differs from standard style guides. Consistency within a file trumps external standards.
 - YOU MUST NOT manually change whitespace that does not affect execution or output. Otherwise, use a formatting tool.
-- Bugs in your current task's scope: fix via TDD. Out-of-scope bugs — any bug in tools, helpers, rituals, infrastructure, or code not covered by the active spec; when uncertain, treat as out of scope — record them for later (via the project's ticketing if present); don't fix ad-hoc and don't let them slip. No commits without TDD and tracking.
+- Bugs in your current task's scope: fix via TDD. Out-of-scope bugs — any bug in tools, helpers, rituals, infrastructure, or code not covered by the active spec; when uncertain, treat as out of scope — record them durably (via the project's configured tracker; if none, document in a session-end comment or summary so the bug is not silently lost); don't fix ad-hoc and don't let them slip. No commits without TDD and tracking.
 
 
 
