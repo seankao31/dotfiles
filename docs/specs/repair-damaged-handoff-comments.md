@@ -1,7 +1,3 @@
-# Retrospectively repair damaged `/prepare-for-review` handoff comments
-
-ENG-248 · Agent Config · blocked-by ENG-216
-
 ## Problem
 
 Between the introduction of `/prepare-for-review` (ENG-182) and the landing of ENG-216, Step 6 of `agent-config/skills/prepare-for-review/SKILL.md` wrote handoff comments through an **unquoted** heredoc that ran command substitution on backticks the agent typed. Every inline-code span in the template body (`` `clean-branch-history` ``, `` `/prepare-for-review` ``, `` `CLAUDE.md` ``, etc.) was interpreted as a shell command and either elided (content-elision — "command not found", empty string substituted) or replaced with the command's stdout (stdout-injection — most often a resolved SHA from a `git merge-base …` expression).
