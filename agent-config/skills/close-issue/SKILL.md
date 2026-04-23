@@ -159,15 +159,22 @@ On entry, `close-branch` can assume:
 - CWD is the main checkout (`.git` is a directory).
 - Linear issue is in `$RALPH_REVIEW_STATE` with all `blocked-by` parents in `$RALPH_DONE_STATE`.
 - Untracked files in `$WORKTREE_PATH` have been preserved or explicitly discarded.
-- `$ISSUE_ID`, `$FEATURE_BRANCH`, `$WORKTREE_PATH` are set in the environment.
+- A file at `$MAIN_REPO/.close-branch-inputs` contains `ISSUE_ID`, `FEATURE_BRANCH`, `WORKTREE_PATH` in single-quoted `KEY='VALUE'` format, readable via `source`.
 
-Before invoking, delete any stale result file from a previously interrupted `/close-issue` run. Without this, a PR-pending `close-branch` (which intentionally writes no result file) would leave the file containing the previous issue's SHA + summary, and close-issue would apply stale-parent labeling and the final message against the wrong integration point:
+Shell variables set in `close-issue`'s Bash calls don't reliably propagate into `close-branch`'s Bash calls — each Bash tool dispatch is a fresh shell, and the spec explicitly notes that exports don't cross Skill-tool invocation boundaries. Pass inputs symmetrically with the return channel: write them to a gitignored file that `close-branch` sources at entry.
+
+Before invoking, also delete any stale result file from a previously interrupted `/close-issue` run. Without this, a PR-pending `close-branch` (which intentionally writes no result file) would leave the file containing the previous issue's SHA + summary, and close-issue would apply stale-parent labeling and the final message against the wrong integration point.
 
 ```bash
 rm -f "$MAIN_REPO/.close-branch-result"
+{
+  printf "ISSUE_ID='%s'\n"       "$ISSUE_ID"
+  printf "FEATURE_BRANCH='%s'\n" "$FEATURE_BRANCH"
+  printf "WORKTREE_PATH='%s'\n"  "$WORKTREE_PATH"
+} > "$MAIN_REPO/.close-branch-inputs"
 ```
 
-Invoke `close-branch` with the three inputs above. On non-zero exit from `close-branch`, print the diagnostic and stop — **no cleanup runs on failure**. Linear Done transition, stale-parent labeling, and worktree removal are all skipped. Partial state is `close-branch`'s concern to report; the operator decides recovery.
+Invoke `close-branch`. It sources and deletes the inputs file at entry. On non-zero exit from `close-branch`, print the diagnostic and stop — **no cleanup runs on failure**. Linear Done transition, stale-parent labeling, and worktree removal are all skipped. Partial state is `close-branch`'s concern to report; the operator decides recovery.
 
 ## Read result file
 

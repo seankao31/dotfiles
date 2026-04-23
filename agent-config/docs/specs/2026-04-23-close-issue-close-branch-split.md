@@ -63,10 +63,13 @@ Two skills, one invariant-only interface:
 - `FEATURE_BRANCH` — resolved by close-issue.
 - `WORKTREE_PATH` — resolved by close-issue.
 
+Inputs are passed symmetrically with the return channel: `close-issue` writes `$MAIN_REPO/.close-branch-inputs` (single-quoted `KEY='VALUE'` format, gitignored) before invoking `Skill(close-branch)`. `close-branch` sources and deletes the file at entry. This matches the return channel's rationale — shell `export` is unreliable across Skill-tool invocation boundaries, so both directions of the contract use a file.
+
 close-branch can assume on entry:
 - CWD is the main checkout (`close-issue` verified `.git` is a directory).
 - Linear issue is in `$RALPH_REVIEW_STATE` with all blockers `$RALPH_DONE_STATE`.
 - Untracked files in `$WORKTREE_PATH` have been handled by close-issue (preserved or explicitly discarded).
+- `$MAIN_REPO/.close-branch-inputs` exists and contains the three inputs above.
 
 **`close-branch` → `close-issue` (on success):**
 - `INTEGRATION_SHA` — git SHA where the reviewed work now lives (e.g., new `main` HEAD after ff-merge). Empty if the project's integration doesn't yet produce a landed SHA (e.g., PR-pending workflows).
@@ -127,7 +130,7 @@ Frontmatter:
 Body sections in execution order:
 
 1. **When to use** — called by `close-issue`, not invoked directly by the user.
-2. **Inputs on entry** — `ISSUE_ID`, `FEATURE_BRANCH`, `WORKTREE_PATH`. CWD is the main checkout.
+2. **Inputs on entry** — `ISSUE_ID`, `FEATURE_BRANCH`, `WORKTREE_PATH`, sourced from `$MAIN_REPO/.close-branch-inputs` (single-quoted `KEY='VALUE'` format, written by close-issue, deleted here after read). CWD is the main checkout.
 3. **Uncommitted-tracked-change gate** — `git -C "$WORKTREE_PATH" status --short`; any non-`??` line aborts (current §3).
 4. **Rebase onto local main** — current Step 1 verbatim, including mechanical-conflict-resolution rules and abort criteria.
 5. **Verify main-checkout clean + ff-merge** — current Step 2. Before running `git merge --ff-only`, capture a safety ref:
@@ -189,7 +192,7 @@ One atomic changeset, in this order:
    - `agent-config/docs/playbooks/ralph-v2-usage.md`.
    - Prior spec docs referencing the old skill name (do not retroactively rewrite historical specs — only update forward-looking playbooks and live documentation).
 4. Update `.claude/settings.local.json` (chezmoi project-local): replace any `Skill(close-feature-branch)` entry with `Skill(close-issue)` and `Skill(close-branch)`. If neither was in the allowlist, add `Skill(close-issue)` so the user isn't prompted on first invocation.
-5. Add `.close-branch-result` to `.gitignore` at the chezmoi repo root (the result file must not be committed).
+5. Add `.close-branch-inputs` and `.close-branch-result` to `.gitignore` at the chezmoi repo root (both handoff files must not be committed).
 
 ### Portability / other-project guarantees
 

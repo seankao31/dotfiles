@@ -19,22 +19,36 @@ Only via `Skill(close-branch)` invoked from `close-issue`. Never a direct user e
 
 ## Inputs on entry
 
-`close-issue` sets these in the shell environment before invoking:
+`close-issue` hands off three values via a file at `$MAIN_REPO/.close-branch-inputs` (single-quoted `KEY='VALUE'` format, sourceable):
 
 - `ISSUE_ID` — Linear issue identifier (for logging).
 - `FEATURE_BRANCH` — local branch name resolved by `close-issue`.
 - `WORKTREE_PATH` — absolute worktree path resolved by `close-issue`.
 
-And these preconditions are guaranteed:
+Shell variables from `close-issue`'s Bash calls don't reliably propagate to this skill's Bash calls — each call is a fresh shell, and the spec calls out that exports don't cross Skill-tool invocation boundaries. File-based handoff is symmetric with the result-file return channel.
+
+These preconditions are also guaranteed:
 
 - CWD is the main checkout (`close-issue` verified `.git` is a directory).
 - Linear issue is in `$RALPH_REVIEW_STATE` with all `blocked-by` parents in `$RALPH_DONE_STATE`.
 - Untracked files in `$WORKTREE_PATH` have been preserved or explicitly discarded.
 
-`MAIN_REPO` is re-derived here for the result-file write:
+Source the inputs and derive `MAIN_REPO`:
 
 ```bash
 MAIN_REPO=$(git rev-parse --show-toplevel)
+if [ ! -f "$MAIN_REPO/.close-branch-inputs" ]; then
+  echo "Error: $MAIN_REPO/.close-branch-inputs is missing — close-issue must write it before invoking close-branch." >&2
+  exit 1
+fi
+# shellcheck disable=SC1091
+source "$MAIN_REPO/.close-branch-inputs"
+rm -f "$MAIN_REPO/.close-branch-inputs"
+
+if [ -z "$ISSUE_ID" ] || [ -z "$FEATURE_BRANCH" ] || [ -z "$WORKTREE_PATH" ]; then
+  echo "Error: one or more of ISSUE_ID/FEATURE_BRANCH/WORKTREE_PATH is empty after sourcing .close-branch-inputs." >&2
+  exit 1
+fi
 ```
 
 All subsequent commands reference `$FEATURE_BRANCH`, `$ISSUE_ID`, `$WORKTREE_PATH`, and `$MAIN_REPO`. The CWD stays at `$MAIN_REPO` throughout; worktree-side operations use `git -C "$WORKTREE_PATH" …`.
