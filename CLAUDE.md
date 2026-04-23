@@ -23,3 +23,5 @@ Issues for this repo go into one of two projects:
 - **Machine Config** (initiative: Machine Config) — changes to chezmoi
   plumbing, dotfiles outside `agent-config/`, or machine-level tooling
   preferences that aren't specific to Claude Code.
+
+For out-of-scope bug discoveries during any session in this repo, file a Linear issue in the appropriate project above.
