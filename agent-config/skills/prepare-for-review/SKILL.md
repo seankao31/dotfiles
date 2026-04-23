@@ -165,10 +165,12 @@ Write the body to a tempfile first (Linear CLI prefers `--body-file` for multi-p
 
 ```bash
 COMMENT_FILE=$(mktemp /tmp/ralph-handoff-XXXXXX)
-cat > "$COMMENT_FILE" <<COMMENT
-## Review Summary
-<!-- review-sha: $CURRENT_SHA -->
 
+# Dynamic prefix: heading + dedup marker
+printf '## Review Summary\n<!-- review-sha: %s -->\n\n' "$CURRENT_SHA" > "$COMMENT_FILE"
+
+# Static body — quoted heredoc keeps backticks (and $) literal
+cat >> "$COMMENT_FILE" <<'COMMENT'
 **What shipped:** <1-3 sentence summary of the implementation>
 
 **Deviations from the PRD:** <bulleted list of anything that differs from the issue description; "None" if identical>
@@ -186,11 +188,11 @@ cat > "$COMMENT_FILE" <<COMMENT
 **Edge cases worth checking:** <bulleted list of risky paths — what was tricky to get right, what boundary conditions exist>
 
 **Known gaps / deferred:** <anything intentionally left unfinished; "None" if complete>
-
-## Commits in this branch
-
-<output of `git log --oneline "$BASE_SHA"..HEAD`>
 COMMENT
+
+# Dynamic footer: commits section header + actual git log output
+printf '\n## Commits in this branch\n\n' >> "$COMMENT_FILE"
+git log --oneline "$BASE_SHA"..HEAD >> "$COMMENT_FILE"
 
 linear issue comment add "$ISSUE_ID" --body-file "$COMMENT_FILE"
 rm -f "$COMMENT_FILE"
