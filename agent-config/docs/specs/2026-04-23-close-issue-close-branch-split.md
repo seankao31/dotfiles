@@ -72,7 +72,14 @@ close-branch can assume on entry:
 - `INTEGRATION_SHA` — git SHA where the reviewed work now lives (e.g., new `main` HEAD after ff-merge). Empty if the project's integration doesn't yet produce a landed SHA (e.g., PR-pending workflows).
 - `INTEGRATION_SUMMARY` — human-readable one-liner for the final user-facing message (`"merged to main @ abc1234 and pushed"`, `"PR opened: https://…"`, etc.).
 
-Both return values are exported shell variables visible to close-issue after close-branch's agent steps complete. No JSON payload; no separate result file.
+**Return channel: result file.** Bash `export` is scoped to its subprocess and is not visible across Skill-tool invocation boundaries. Return values are passed via a file at `$MAIN_REPO/.close-branch-result` in shell-sourceable `KEY=VALUE` format:
+
+```
+INTEGRATION_SHA=abc1234...
+INTEGRATION_SUMMARY=merged to main @ abc1234 and pushed
+```
+
+close-branch writes this file as its last step on success (after branch delete). close-issue sources it immediately after the Skill invocation returns, then deletes it. `.close-branch-result` must be added to `.gitignore`. If the file is absent when close-issue reads (e.g., close-branch succeeded but did not produce a SHA — PR-pending), close-issue treats both values as empty and skips stale-parent.
 
 **`close-branch` → `close-issue` (on failure):**
 - Non-zero exit with a clear diagnostic on stderr.
@@ -98,11 +105,12 @@ Body sections in execution order:
 6. **Linear state preflight** — must be `$RALPH_REVIEW_STATE`. Disposition map for other states identical to today's Pre-flight §1.
 7. **Linear blocker preflight** — `linear_get_issue_blockers`, capture-then-filter pattern with jq shape guard (identical to today's Pre-flight §2).
 8. **Untracked-file preservation** — `git -C "$WORKTREE_PATH" ls-files --others --exclude-standard`; for each file, prompt operator (commit / copy out / discard). Never silently discard.
-9. **Invoke `close-branch`** — Skill tool call with the three inputs. On non-zero exit, print the diagnostic and stop. No cleanup runs on failure.
-10. **Stale-parent labeling (§3.5)** — skip entirely if `$INTEGRATION_SHA` is empty. Otherwise: verify label exists, walk Linear `blocks` children in `$RALPH_REVIEW_STATE`, use `is_branch_fresh_vs_sha "$INTEGRATION_SHA"` to detect stale, label+comment via `stale_label_and_comment` helper. Logic identical to today's Step 3.5; accumulated warnings printed immediately.
-11. **Linear Done transition** — invoke `linear-workflow` with `$ISSUE_ID`, request `In Review → Done`.
-12. **Codex broker reap + worktree removal** — identical to today's Step 7. Worktree removal runs last so CWD at `$MAIN_REPO` remains stable throughout.
-13. **Final message** — print `$INTEGRATION_SUMMARY` if set, otherwise a generic "`$ISSUE_ID` closed" line.
+9. **Invoke `close-branch`** — Skill tool call with the three inputs. On non-zero exit, print the diagnostic and stop. No cleanup runs on failure; the operator decides recovery.
+10. **Read result file** — source `$MAIN_REPO/.close-branch-result` if it exists (sets `$INTEGRATION_SHA` and `$INTEGRATION_SUMMARY`), then delete it. If absent, both values are empty.
+11. **Stale-parent labeling (§3.5)** — skip entirely if `$INTEGRATION_SHA` is empty. Otherwise: verify label exists, walk Linear `blocks` children in `$RALPH_REVIEW_STATE`, use `is_branch_fresh_vs_sha "$INTEGRATION_SHA"` to detect stale, label+comment via `stale_label_and_comment` helper. Logic identical to today's Step 3.5; accumulated warnings printed immediately.
+12. **Linear Done transition** — invoke `linear-workflow` with `$ISSUE_ID`, request `In Review → Done`.
+13. **Codex broker reap + worktree removal** — identical to today's Step 7. Worktree removal runs last so CWD at `$MAIN_REPO` remains stable throughout.
+14. **Final message** — print `$INTEGRATION_SUMMARY` if set, otherwise a generic "`$ISSUE_ID` closed" line.
 14. **Red flags / stop conditions** — Linear preflight failures, close-branch failure, branch not resolvable, worktree-remove failure (never `--force`).
 
 ### `close-branch` structure (chezmoi's implementation)
@@ -124,13 +132,21 @@ Body sections in execution order:
 4. **Rebase onto local main** — current Step 1 verbatim, including mechanical-conflict-resolution rules and abort criteria.
 5. **Verify main-checkout clean + ff-merge** — current Step 2.
 6. **Push** — current Step 3 verbatim, including push-rejection recovery sequence.
-7. **Capture return values** — immediately after successful push:
+7. **Capture return values** — immediately after successful push, before any cleanup:
    ```bash
-   export INTEGRATION_SHA=$(git rev-parse HEAD)
-   export INTEGRATION_SUMMARY="merged to main @ $(git rev-parse --short HEAD) and pushed"
+   INTEGRATION_SHA=$(git rev-parse HEAD)
+   INTEGRATION_SUMMARY="merged to main @ $(git rev-parse --short HEAD) and pushed"
    ```
 8. **Detach HEAD in worktree** — current Step 4.
 9. **Delete branch locally + remote** — current Step 5, `-d` not `-D`.
+10. **Write result file** — last step on success, after branch delete:
+    ```bash
+    {
+      printf 'INTEGRATION_SHA=%s\n' "$INTEGRATION_SHA"
+      printf 'INTEGRATION_SUMMARY=%s\n' "$INTEGRATION_SUMMARY"
+    } > "$MAIN_REPO/.close-branch-result"
+    ```
+    close-issue reads and deletes this file after the Skill invocation returns. On failure at any earlier step, close-branch exits non-zero without writing the file — close-issue treats absent file as empty values.
 10. **Red flags / stop conditions** — rebase-conflict escalation criteria, push-rejection recovery, `-d` refusal (investigate rather than `-D`).
 
 **Removed from today's skill (moved to close-issue):**
@@ -166,6 +182,7 @@ One atomic changeset, in this order:
    - `agent-config/docs/playbooks/ralph-v2-usage.md`.
    - Prior spec docs referencing the old skill name (do not retroactively rewrite historical specs — only update forward-looking playbooks and live documentation).
 4. Update `.claude/settings.local.json` (chezmoi project-local): replace any `Skill(close-feature-branch)` entry with `Skill(close-issue)` and `Skill(close-branch)`. If neither was in the allowlist, add `Skill(close-issue)` so the user isn't prompted on first invocation.
+5. Add `.close-branch-result` to `.gitignore` at the chezmoi repo root (the result file must not be committed).
 
 ### Portability / other-project guarantees
 
