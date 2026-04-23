@@ -89,9 +89,18 @@ Once `call_fn` runs under strict mode, the existing test will fail on HEAD (bash
 
 ## Implementation order (TDD)
 
-1. Add the new null-labels test with `call_fn` still unchanged. Run `linear.bats` — the new test fails. The failure mode is subtle: without `set -u`, jq's null-iteration error propagates via exit status but the `while IFS= read -r` loop just sees empty stdin and exits cleanly, leaving `existing_labels=()`. The function proceeds to `linear issue update --label only-label`, which succeeds. **The test must assert the update call includes the new label** — and it does — but the red phase depends primarily on step 2.
-2. Flip `call_fn` to `bash -c "set -euo pipefail; source '$LINEAR_SH' && $fn_name $*"`. Run `linear.bats` — the new null-labels test now fails loudly (bash empty-array trips under `set -u`). The existing "empty labels" test at line 519 **also** fails, for the same reason. This is the intended red state.
-3. Apply the two-line fix to `linear_add_label`. Run `linear.bats` — all tests in this file pass.
+Do not try to see the new null-labels test fail before flipping `call_fn` — under the non-strict harness the test *accidentally passes* even on buggy code, because neither defect has teeth without `set -u`. That accidental pass is itself the evidence that the harness needs the flip. Concretely:
+
+- jq errors with `Cannot iterate over null (null)` and exits non-zero, but its exit status isn't captured; the `while IFS= read -r` process substitution just closes with empty stdin, so `existing_labels=()`.
+- Without `set -u`, `for lbl in "${existing_labels[@]}"` over an empty array is harmless.
+- The function proceeds to `linear issue update ENG-54 --label only-label`, which the stub accepts with exit 0.
+- The test's `status -eq 0` and update-call assertions both pass.
+
+So the sequence is:
+
+1. Flip `call_fn` to `bash -c "set -euo pipefail; source '$LINEAR_SH' && $fn_name $*"`. Run `linear.bats` — the existing "empty labels" test at line 519 now fails (bash empty-array trips under `set -u`). This is the first half of the red state, using a test that already existed.
+2. Add the new null-labels test with the stub that returns `labels.nodes: null`. Run `linear.bats` — this test also fails, same bash empty-array bug (once jq's null path is hit, `existing_labels` is empty, and strict mode trips). This is the second half of the red state.
+3. Apply the two-line fix to `linear_add_label`. Run `linear.bats` — all tests in this file pass. The jq guard handles the null case; the `${arr[@]+…}` guard handles the empty-array expansion under `set -u`.
 4. Run the full bats suite: `bats agent-config/skills/ralph-start/scripts/test/*.bats`. Any cross-file failures introduced by the strict-mode flip are out of scope per Approach A's blast-radius rule — stop and report back before expanding scope.
 5. Commit the code fix, test harness change, and new test as a single logical unit. Commit message should note the `5a0982e`/`aceb02e` history briefly for provenance.
 
