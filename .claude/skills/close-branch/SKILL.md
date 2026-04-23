@@ -163,11 +163,15 @@ The worktree directory stays intact with a detached HEAD; working files are unch
 
 ### Step 6: Delete the feature branch
 
-With the branch no longer checked out anywhere, delete it locally and on the remote:
+With the branch no longer checked out anywhere, delete it locally. Then delete it on the remote — **but only if it was ever pushed there**. Ralph-dispatched branches are built and merged without ever being pushed to `origin`; the content reaches `main` via Step 2's fast-forward merge and Step 3's push of `main`. For those branches the remote feature ref doesn't exist, and `git push origin --delete` would fail. Check with `git ls-remote` and skip the remote delete when the ref is missing.
 
 ```bash
 git branch -d "$FEATURE_BRANCH"
-git push origin --delete "$FEATURE_BRANCH"
+if git ls-remote --exit-code --heads origin "$FEATURE_BRANCH" >/dev/null 2>&1; then
+  git push origin --delete "$FEATURE_BRANCH"
+else
+  echo "remote ref for $FEATURE_BRANCH does not exist on origin — skipping remote delete (local-only branch)"
+fi
 ```
 
 Use `-d` (safe delete), not `-D` (force delete). If `-d` refuses because the branch isn't merged, something went wrong with the rebase/merge — exit non-zero and let the operator investigate before escalating to `-D`.
