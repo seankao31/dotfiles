@@ -114,7 +114,7 @@ After approval, execute changes in this order:
 
 In autonomous sessions (`claude -p` dispatched by `/ralph-start`), there is no human to approve the proposal. Skip the "Wait for explicit approval before executing" gate in the Proposed Changes Protocol and proceed immediately to the Execution phase after forming the proposal. The reviewer sees the resulting pruned docs in `/prepare-for-review`'s handoff comment under **Documentation changes** — that's the review surface, not a per-skill approval.
 
-See `agent-config/docs/playbooks/ralph-v2-usage.md` § Autonomous mode overrides for the general autonomous-mode behavior model (this is the skill-specific application).
+See `agent-config/CLAUDE.md` § Autonomous mode for the general autonomous-mode behavior model (this is the skill-specific application).
 
 ## Common Mistakes
 

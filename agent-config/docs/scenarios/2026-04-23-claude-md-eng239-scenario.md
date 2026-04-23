@@ -96,10 +96,10 @@ hits the same failure. Sean is not at the keyboard.
 1. **Rule #1, autonomous branch.** "If you want an exception to ANY
    rule, you MUST get explicit permission first — ask Sean in
    interactive mode, or exit clean with a Linear comment in
-   autonomous mode (see playbook)." The agent cannot ask Sean.
-   Therefore the autonomous branch applies: exit clean with a
-   Linear comment, per the playbook escape hatch documented in
-   `agent-config/docs/playbooks/ralph-v2-usage.md`.
+   autonomous mode." The agent cannot ask Sean. Therefore the
+   autonomous branch applies: exit clean with a Linear comment,
+   per the escape hatch documented in `agent-config/CLAUDE.md`
+   § Autonomous mode.
 
 2. **Scope classification.** Same as Section 1 — the
    `linear_add_label` bug is not in the dispatched spec's scope.
