@@ -114,6 +114,7 @@ Frontmatter:
 - `description: ` — chezmoi-specific, notes it's invoked by `close-issue` (not a user entry point).
 - `argument-hint: <issue-id>` (passed through from close-issue).
 - `allowed-tools: Bash, Read, Glob, Grep` (no `Skill` — close-branch invokes no other skills).
+- `disable-model-invocation: true` — close-branch is invoked only by close-issue's explicit `Skill` tool call, never auto-discovered by description matching. Verify during implementation that explicit `Skill(close-branch)` invocation still works with this flag set; if not, remove it.
 
 Body sections in execution order:
 
@@ -150,18 +151,21 @@ Body sections in execution order:
 
 ### Cross-skill library sourcing
 
-All helper sources switch from `$MAIN_REPO/agent-config/skills/ralph-start/scripts/lib/...` to `$HOME/.claude/skills/ralph-start/scripts/lib/...` in both close-issue and close-branch. This treats ralph-start as an installed peer skill, not as content in the host repo — matches how `ralph-spec` already sources its dependencies.
+Post-split, only `close-issue` sources ralph-start's helpers — `close-branch` doesn't need any (its sections are pure git operations, with Linear state names no longer referenced). `close-issue`'s source paths switch from `$MAIN_REPO/agent-config/skills/ralph-start/scripts/lib/...` to `$HOME/.claude/skills/ralph-start/scripts/lib/...`. This treats ralph-start as an installed peer skill, not as content in the host repo — matches how `ralph-spec` already sources its dependencies. The cross-`.claude/` ↔ `agent-config/` boundary violation that motivated ENG-207's concern is dissolved: `close-branch` stops sourcing from `agent-config/` at all; `close-issue` itself lives under `agent-config/skills/`, so its sources are peer-local.
 
 ### Migration
 
 One atomic changeset, in this order:
 
-1. Create `agent-config/skills/close-issue/SKILL.md` with the full close-issue content.
-2. Replace `.claude/skills/close-feature-branch/SKILL.md` with new `.claude/skills/close-branch/SKILL.md` (project-local). Rename the directory in a single git mv to preserve history.
-3. Update `agent-config/CLAUDE.md` and user-global `~/.claude/CLAUDE.md` references from `/close-feature-branch` to `/close-issue`.
-4. Update `agent-config/skills/ralph-start/SKILL.md`'s "When back" section: replace `/close-feature-branch ENG-NNN` with `/close-issue ENG-NNN`.
-5. Update `agent-config/docs/playbooks/ralph-v2-usage.md` and any spec docs that reference the old skill name.
-6. Allow `Skill(close-issue)` in the chezmoi `.claude/settings.local.json` (replacing `Skill(close-feature-branch)` if present).
+1. Create `agent-config/skills/close-issue/SKILL.md` with the full close-issue content (see **`close-issue` structure** above).
+2. Rename `.claude/skills/close-feature-branch/` to `.claude/skills/close-branch/` via `git mv` (preserves SKILL.md's file history), then rewrite the SKILL.md inside with the reduced close-branch content (see **`close-branch` structure** above).
+3. Grep the repo for any remaining `close-feature-branch` references and update to `close-issue`. Known targets:
+   - `agent-config/CLAUDE.md`
+   - User-global `~/.claude/CLAUDE.md` (installed from `dot_claude/symlink_CLAUDE.md.tmpl` or similar — trace the chezmoi source and update there).
+   - `agent-config/skills/ralph-start/SKILL.md` ("When back" section mentions `/close-feature-branch ENG-NNN`).
+   - `agent-config/docs/playbooks/ralph-v2-usage.md`.
+   - Prior spec docs referencing the old skill name (do not retroactively rewrite historical specs — only update forward-looking playbooks and live documentation).
+4. Update `.claude/settings.local.json` (chezmoi project-local): replace any `Skill(close-feature-branch)` entry with `Skill(close-issue)` and `Skill(close-branch)`. If neither was in the allowlist, add `Skill(close-issue)` so the user isn't prompted on first invocation.
 
 ### Portability / other-project guarantees
 
