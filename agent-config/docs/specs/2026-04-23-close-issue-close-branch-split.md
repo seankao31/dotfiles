@@ -130,8 +130,15 @@ Body sections in execution order:
 2. **Inputs on entry** — `ISSUE_ID`, `FEATURE_BRANCH`, `WORKTREE_PATH`. CWD is the main checkout.
 3. **Uncommitted-tracked-change gate** — `git -C "$WORKTREE_PATH" status --short`; any non-`??` line aborts (current §3).
 4. **Rebase onto local main** — current Step 1 verbatim, including mechanical-conflict-resolution rules and abort criteria.
-5. **Verify main-checkout clean + ff-merge** — current Step 2.
-6. **Push** — current Step 3 verbatim, including push-rejection recovery sequence.
+5. **Verify main-checkout clean + ff-merge** — current Step 2. Before running `git merge --ff-only`, capture a safety ref:
+   ```bash
+   PRE_MERGE_SHA=$(git rev-parse main)
+   ```
+6. **Push** — current Step 3, with a strengthened invariant: close-branch must not exit while local main is ahead of `origin/main`. Two compliant exit paths after a push rejection:
+   - **Retry path** (preferred): `git reset --hard origin/main` on local main → re-run Step 4 (rebase onto new origin/main) → re-run Step 5 → re-run push. Identical to today's Step 3 recovery sequence.
+   - **Reset path** (if retry is not recoverable by close-branch): `git reset --hard "$PRE_MERGE_SHA"` to restore local main to its pre-merge state, then exit non-zero with a clear diagnostic for the operator.
+   
+   If neither path can be completed cleanly, escalate to the operator. **Never exit non-zero while local main contains the feature commits but origin/main does not.**
 7. **Capture return values** — immediately after successful push, before any cleanup:
    ```bash
    INTEGRATION_SHA=$(git rev-parse HEAD)
@@ -225,7 +232,8 @@ If X's `close-branch` leaves `$INTEGRATION_SHA` empty (e.g., the project opens a
 Implementation is not covered by automated tests in this skill repo; verification is operator-driven via dogfooding on a real ralph cycle. A reasonable smoke test for the implementation ticket:
 
 - Close a small issue end-to-end using `/close-issue` and confirm all current ritual steps still happen in the same order (rebase, merge, push, stale-parent if applicable, Linear Done, worktree remove).
-- Trigger a close-branch failure case (e.g., dirty worktree) and verify close-issue stops without transitioning Linear or touching the worktree.
+- Trigger a close-branch failure case (e.g., dirty worktree, pre-merge stage) and verify close-issue stops without transitioning Linear or touching the worktree.
+- Simulate a push rejection after a successful ff-merge (e.g., manually advance origin/main before the push step) and verify close-branch either completes the retry path or resets local main to `$PRE_MERGE_SHA` before exiting non-zero — local main must not be left ahead of origin/main on exit.
 - Close an issue with an In-Review child branch to exercise Step 3.5 (requires a ralph-v2 DAG test case — reuse whatever was set up for ENG-208).
 
 Automated tests for `branch_ancestry.sh` and `linear.sh` helpers (under `agent-config/skills/ralph-start/scripts/test/`) are unaffected; they exercise the helpers directly, not via either skill.
