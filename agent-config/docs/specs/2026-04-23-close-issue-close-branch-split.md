@@ -72,11 +72,11 @@ close-branch can assume on entry:
 - `INTEGRATION_SHA` — git SHA where the reviewed work now lives (e.g., new `main` HEAD after ff-merge). Empty if the project's integration doesn't yet produce a landed SHA (e.g., PR-pending workflows).
 - `INTEGRATION_SUMMARY` — human-readable one-liner for the final user-facing message (`"merged to main @ abc1234 and pushed"`, `"PR opened: https://…"`, etc.).
 
-**Return channel: result file.** Bash `export` is scoped to its subprocess and is not visible across Skill-tool invocation boundaries. Return values are passed via a file at `$MAIN_REPO/.close-branch-result` in shell-sourceable `KEY=VALUE` format:
+**Return channel: result file.** Bash `export` is scoped to its subprocess and is not visible across Skill-tool invocation boundaries. Return values are passed via a file at `$MAIN_REPO/.close-branch-result` in shell-sourceable `KEY='VALUE'` format (values MUST be single-quoted — an unquoted `INTEGRATION_SUMMARY=merged to main @ ...` would parse as `VAR=VALUE cmd args`, leaving the summary unset and emitting a command-not-found error when close-issue `source`s the file):
 
 ```
-INTEGRATION_SHA=abc1234...
-INTEGRATION_SUMMARY=merged to main @ abc1234 and pushed
+INTEGRATION_SHA='abc1234...'
+INTEGRATION_SUMMARY='merged to main @ abc1234 and pushed'
 ```
 
 close-branch writes this file as its last step on success (after branch delete). close-issue sources it immediately after the Skill invocation returns, then deletes it. `.close-branch-result` must be added to `.gitignore`. If the file is absent when close-issue reads (e.g., close-branch succeeded but did not produce a SHA — PR-pending), close-issue treats both values as empty and skips stale-parent.
@@ -146,11 +146,11 @@ Body sections in execution order:
    ```
 8. **Detach HEAD in worktree** — current Step 4.
 9. **Delete branch locally + remote** — current Step 5, `-d` not `-D`.
-10. **Write result file** — last step on success, after branch delete:
+10. **Write result file** — last step on success, after branch delete. Values MUST be single-quoted (see Interface contract above for why):
     ```bash
     {
-      printf 'INTEGRATION_SHA=%s\n' "$INTEGRATION_SHA"
-      printf 'INTEGRATION_SUMMARY=%s\n' "$INTEGRATION_SUMMARY"
+      printf "INTEGRATION_SHA='%s'\n" "$INTEGRATION_SHA"
+      printf "INTEGRATION_SUMMARY='%s'\n" "$INTEGRATION_SUMMARY"
     } > "$MAIN_REPO/.close-branch-result"
     ```
     close-issue reads and deletes this file after the Skill invocation returns. On failure at any earlier step, close-branch exits non-zero without writing the file — close-issue treats absent file as empty values.

@@ -157,12 +157,14 @@ Use `-d` (safe delete), not `-D` (force delete). If `-d` refuses because the bra
 
 ### Step 7: Write the result file
 
-Last step on success. Write `$MAIN_REPO/.close-branch-result` with the return values; `close-issue` sources this file on return and deletes it:
+Last step on success. Write `$MAIN_REPO/.close-branch-result` with the return values; `close-issue` sources this file on return and deletes it.
+
+Values must be single-quoted — `close-issue` uses `source` to read the file, and an unquoted `INTEGRATION_SUMMARY=merged to main @ ...` would parse as `VAR=VALUE cmd args` (env-prefix + `to` as a command), leaving the summary unset and emitting a command-not-found error. `INTEGRATION_SHA` is a hex git SHA (no quoting hazard); `INTEGRATION_SUMMARY` here has no embedded single quotes, so plain single-quoting is sufficient:
 
 ```bash
 {
-  printf 'INTEGRATION_SHA=%s\n' "$INTEGRATION_SHA"
-  printf 'INTEGRATION_SUMMARY=%s\n' "$INTEGRATION_SUMMARY"
+  printf "INTEGRATION_SHA='%s'\n" "$INTEGRATION_SHA"
+  printf "INTEGRATION_SUMMARY='%s'\n" "$INTEGRATION_SUMMARY"
 } > "$MAIN_REPO/.close-branch-result"
 ```
 
