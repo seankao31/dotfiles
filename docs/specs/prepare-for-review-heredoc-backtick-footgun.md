@@ -122,16 +122,26 @@ The current template's last line — `<output of \`git log --oneline "$BASE_SHA"
 
 No automated test target exists for SKILL.md (it's prose the agent reads). Manual verification copies the new Step 6 snippet into a scratch shell and inspects the output file. Both heredoc failure modes must be exercised:
 
-1. Set `CURRENT_SHA=deadbeef`, `BASE_SHA=$(git rev-parse HEAD~1)`, `ISSUE_ID=ENG-216` in a scratch shell.
-2. **Stub out** the `linear issue comment add` line — replace it with `cat "$COMMENT_FILE"` so the body prints to stdout instead of posting.
-3. Before running, edit the static-body placeholders to include both stress tests:
-   - **Content-elision test:** include a line with backticked non-command text — e.g., `**What shipped:** Updated \`clean-branch-history\` and \`/prepare-for-review\`.` Confirm both inline-code spans land literally in the output (no gaps, no `command not found` to stderr).
-   - **Stdout-injection test:** include a line with backticked runnable text — e.g., `**Surprises during implementation:** Test injection: \`pwd\` should appear literally.` Confirm the output contains the literal string `` `pwd` `` rather than the working directory path.
-4. Confirm the rendered body has:
+1. Copy the new Step 6 snippet into a scratch shell — do NOT modify the committed `SKILL.md`. The mutations below are scratch-only.
+2. In the scratch copy, set `CURRENT_SHA=deadbeef`, `BASE_SHA=$(git rev-parse HEAD~1)`, `ISSUE_ID=ENG-216`.
+3. **Stub out** the `linear issue comment add` line in the scratch copy — replace it with `cat "$COMMENT_FILE"` so the body prints to stdout instead of posting.
+4. In the scratch copy, replace the static-body placeholders inside the `<<'COMMENT'` block with content that exercises both failure modes. Concretely:
+   - **Content-elision test:** rewrite the `**What shipped:**` line to read (typing real backticks, no escaping):
+     ```
+     **What shipped:** Updated `clean-branch-history` and `/prepare-for-review`.
+     ```
+     Expected: both `` `clean-branch-history` `` and `` `/prepare-for-review` `` land literally in the output. No gaps. No `command not found` on stderr.
+   - **Stdout-injection test:** rewrite the `**Surprises during implementation:**` line to read:
+     ```
+     **Surprises during implementation:** Test injection: `pwd` should appear literally.
+     ```
+     Expected: the output contains the literal string `` `pwd` `` (with backticks, four characters), NOT the working directory path. No `command not found` on stderr.
+5. Run the scratch snippet and confirm the rendered body has:
    - First line: `## Review Summary`
    - Second line: `<!-- review-sha: deadbeef -->`
+   - The two stress-test lines from step 4 with backticks intact (no elision, no `pwd` expansion).
    - A `## Commits in this branch` heading near the end, followed by real `git log --oneline` output.
-5. No `command not found`, `permission denied`, or `no such file or directory` lines appear in stderr during step 2.
+6. No `command not found`, `permission denied`, or `no such file or directory` lines appear in stderr while running the scratch snippet.
 
 The implementer should quote the rendered output (or relevant excerpts) in the handoff comment so the human reviewer can confirm both failure modes are closed.
 
