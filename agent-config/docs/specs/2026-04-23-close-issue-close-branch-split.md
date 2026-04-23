@@ -135,7 +135,7 @@ Body sections in execution order:
    PRE_MERGE_SHA=$(git rev-parse main)
    ```
 6. **Push** — current Step 3, with a strengthened invariant: close-branch must not exit while local main is ahead of `origin/main`. Two compliant exit paths after a push rejection:
-   - **Retry path** (preferred): `git reset --hard origin/main` on local main → re-run Step 4 (rebase onto new origin/main) → re-run Step 5 → re-run push. Identical to today's Step 3 recovery sequence.
+   - **Retry path** (preferred): `git fetch origin main` → `git reset --hard origin/main` on local main → re-run Step 4 (rebase onto refreshed local main) → re-run Step 5 → re-run push. The explicit fetch is required because a rejected push does not reliably update the local `origin/main` tracking ref, and resetting to the stale ref would leave the worktree rebase based on an ancestor of the eventual ff-merge target.
    - **Reset path** (if retry is not recoverable by close-branch): `git reset --hard "$PRE_MERGE_SHA"` to restore local main to its pre-merge state, then exit non-zero with a clear diagnostic for the operator.
    
    If neither path can be completed cleanly, escalate to the operator. **Never exit non-zero while local main contains the feature commits but origin/main does not.**

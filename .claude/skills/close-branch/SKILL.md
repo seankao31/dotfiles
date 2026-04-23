@@ -110,10 +110,11 @@ git push origin main
 **Invariant:** this skill must not exit while local `main` is ahead of `origin/main`. A rejected push leaves local main with a fast-forward merge that origin doesn't accept — exiting here would leave the main checkout in a state where a stray `git push --force` would rewrite shared history. Two compliant exit paths:
 
 1. **Retry path** (preferred): if a push rejection is recoverable by re-rebasing onto the new origin/main, do the full recovery here:
-   1. `git reset --hard origin/main` on local main (discards the local ff-merge; the feature commits are still reachable via `$FEATURE_BRANCH`).
-   2. Re-run Step 1 on the worktree (rebase onto the new origin/main).
-   3. Re-run Step 2 (capture a fresh `$PRE_MERGE_SHA`, ff-merge).
-   4. Re-run the push.
+   1. `git fetch origin main` — a rejected push does not reliably update the local `origin/main` tracking ref. Without an explicit fetch, the subsequent reset would land on the *pre-rejection* origin/main (stale), the worktree rebase would target that stale ref, and Step 2's `git pull --ff-only` would finally advance local main — leaving the worktree branch based on an ancestor of the new HEAD and failing the ff-only merge.
+   2. `git reset --hard origin/main` on local main (discards the local ff-merge; the feature commits are still reachable via `$FEATURE_BRANCH`).
+   3. Re-run Step 1 on the worktree (rebase onto the now-fresh local main, which equals the new origin/main).
+   4. Re-run Step 2 (capture a fresh `$PRE_MERGE_SHA`, ff-merge).
+   5. Re-run the push.
 
 2. **Reset path** (fallback if retry is not recoverable within this skill): restore local main to its pre-merge state so the operator can investigate without the ff-merge in the way, then exit non-zero with a clear diagnostic:
 
