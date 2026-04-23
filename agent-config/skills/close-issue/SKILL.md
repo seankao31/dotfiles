@@ -161,15 +161,21 @@ On entry, `close-branch` can assume:
 - Untracked files in `$WORKTREE_PATH` have been preserved or explicitly discarded.
 - `$ISSUE_ID`, `$FEATURE_BRANCH`, `$WORKTREE_PATH` are set in the environment.
 
-Invoke `close-branch` with these three inputs. On non-zero exit from `close-branch`, print the diagnostic and stop — **no cleanup runs on failure**. Linear Done transition, stale-parent labeling, and worktree removal are all skipped. Partial state is `close-branch`'s concern to report; the operator decides recovery.
+Before invoking, delete any stale result file from a previously interrupted `/close-issue` run. Without this, a PR-pending `close-branch` (which intentionally writes no result file) would leave the file containing the previous issue's SHA + summary, and close-issue would apply stale-parent labeling and the final message against the wrong integration point:
+
+```bash
+rm -f "$MAIN_REPO/.close-branch-result"
+```
+
+Invoke `close-branch` with the three inputs above. On non-zero exit from `close-branch`, print the diagnostic and stop — **no cleanup runs on failure**. Linear Done transition, stale-parent labeling, and worktree removal are all skipped. Partial state is `close-branch`'s concern to report; the operator decides recovery.
 
 ## Read result file
 
-After `close-branch` returns successfully, read the return values via a result file at `$MAIN_REPO/.close-branch-result`. Bash `export` is scoped to its subprocess and is not visible across `Skill`-tool invocation boundaries, so return values flow via a shell-sourceable `KEY=VALUE` file:
+After `close-branch` returns successfully, read the return values via a result file at `$MAIN_REPO/.close-branch-result`. Bash `export` is scoped to its subprocess and is not visible across `Skill`-tool invocation boundaries, so return values flow via a shell-sourceable `KEY='VALUE'` file:
 
 ```
-INTEGRATION_SHA=<sha>
-INTEGRATION_SUMMARY=<one-line summary>
+INTEGRATION_SHA='<sha>'
+INTEGRATION_SUMMARY='<one-line summary>'
 ```
 
 ```bash

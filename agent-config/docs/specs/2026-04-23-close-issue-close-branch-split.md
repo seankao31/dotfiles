@@ -79,7 +79,7 @@ INTEGRATION_SHA='abc1234...'
 INTEGRATION_SUMMARY='merged to main @ abc1234 and pushed'
 ```
 
-close-branch writes this file as its last step on success (after branch delete). close-issue sources it immediately after the Skill invocation returns, then deletes it. `.close-branch-result` must be added to `.gitignore`. If the file is absent when close-issue reads (e.g., close-branch succeeded but did not produce a SHA — PR-pending), close-issue treats both values as empty and skips stale-parent.
+close-branch writes this file as its last step on success (after branch delete). close-issue sources it immediately after the Skill invocation returns, then deletes it. close-issue also deletes any pre-existing `.close-branch-result` *before* invoking close-branch — without that cleanup, a PR-pending close-branch (which writes no file) would cause the subsequent source to read a stale file left over from a previously interrupted run, contaminating stale-parent labeling and the final message with the previous issue's integration SHA. `.close-branch-result` must be added to `.gitignore`. If the file is absent when close-issue reads (e.g., close-branch succeeded but did not produce a SHA — PR-pending), close-issue treats both values as empty and skips stale-parent.
 
 **`close-branch` → `close-issue` (on failure):**
 - Non-zero exit with a clear diagnostic on stderr.
