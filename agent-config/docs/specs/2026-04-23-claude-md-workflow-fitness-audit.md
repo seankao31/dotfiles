@@ -214,7 +214,7 @@ The acceptance criterion requires a synthetic bug-discovery scenario test pass a
 
 ### C1 — Write the scenario document
 
-**File:** `docs/tests/2026-04-23-claude-md-eng239-scenario.md` (new file).
+**File:** `agent-config/docs/scenarios/2026-04-23-claude-md-eng239-scenario.md` (new file).
 
 **Content structure:**
 
@@ -284,17 +284,17 @@ The autonomous session executes these steps on a branch named `eng-240-<slug>` (
 
 Before handoff, the autonomous session verifies each of these. All must pass.
 
-1. `grep -c '(autonomous: see playbook)' agent-config/CLAUDE.md` returns `12` — unchanged from pre-audit state. This audit does not add or remove any ENG-228 markers.
+1. `grep -c '(autonomous: see playbook)' agent-config/CLAUDE.md` returns `13` — unchanged from pre-audit state. The 13 matches are 12 rule markers plus 1 meta-reference inside backticks in the `## Workflow modes` section; this audit does not add or remove any of them.
 2. `## Reviewing code` header does not appear in `agent-config/CLAUDE.md`.
 3. `## Communication` header appears in `agent-config/CLAUDE.md`.
 4. `## Our relationship` header does not appear in `agent-config/CLAUDE.md`.
 5. Rule #1's new phrasing contains both `ask Sean in interactive mode` and `exit clean with a Linear comment in autonomous mode`.
-6. The revised Fix-broken-things rule contains `scope` and `TDD`; does not contain `immediately` or `Don't ask permission to fix bugs`.
+6. The phrase `Fix broken things immediately` does not appear in `agent-config/CLAUDE.md` (would false-positive with line 29's `speak up immediately` if checked on `immediately` alone; use the full phrase). The phrase `Don't ask permission to fix bugs` does not appear. The replacement rule appears verbatim: the exact new-text string from Change 3 is present in the file.
 7. `/Users/seankao/.local/share/chezmoi/CLAUDE.md` contains `For out-of-scope bug discoveries during any session in this repo, file a Linear issue` under the `## Linear` section.
 8. `We're colleagues working together` does not appear in `agent-config/CLAUDE.md`.
 9. `- I depend on this` does not appear in `agent-config/CLAUDE.md`.
 10. `You are not a sycophant` does not appear in `agent-config/CLAUDE.md`.
-11. `docs/tests/2026-04-23-claude-md-eng239-scenario.md` exists, is committed, and covers sections 1–3 from Test protocol step C1.
+11. `agent-config/docs/scenarios/2026-04-23-claude-md-eng239-scenario.md` exists, is committed, and covers sections 1–3 from Test protocol step C1.
 12. Codex standard review: all findings resolved or dismissed with rationale recorded on the Linear issue.
 13. Codex adversarial review: no loopholes flagged, or all flagged loopholes closed via tightening commits (except for workflow-halt-gap findings, which go to the follow-up issue).
 14. Follow-up Linear issue filed in project Agent Config, with title matching "Workflow halt conditions for /prepare-for-review and /close-feature-branch", body referencing ENG-240, and `blocked-by ENG-240` relation set.
