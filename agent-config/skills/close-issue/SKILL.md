@@ -165,12 +165,19 @@ Shell variables set in `close-issue`'s Bash calls don't reliably propagate into 
 
 Before invoking, also delete any stale result file from a previously interrupted `/close-issue` run. Without this, a PR-pending `close-branch` (which intentionally writes no result file) would leave the file containing the previous issue's SHA + summary, and close-issue would apply stale-parent labeling and the final message against the wrong integration point.
 
+Escape embedded single quotes before writing — `WORKTREE_PATH` is an absolute filesystem path and for portable use across projects it may contain quotes (e.g. `/home/Sean's laptop/.worktrees/...`). POSIX single-quote escape: `'` → `'\''` (close the quote, insert an escaped literal, reopen).
+
 ```bash
 rm -f "$MAIN_REPO/.close-branch-result"
+
+sq_escape() {
+  printf "%s" "$1" | sed "s/'/'\\\\''/g"
+}
+
 {
-  printf "ISSUE_ID='%s'\n"       "$ISSUE_ID"
-  printf "FEATURE_BRANCH='%s'\n" "$FEATURE_BRANCH"
-  printf "WORKTREE_PATH='%s'\n"  "$WORKTREE_PATH"
+  printf "ISSUE_ID='%s'\n"       "$(sq_escape "$ISSUE_ID")"
+  printf "FEATURE_BRANCH='%s'\n" "$(sq_escape "$FEATURE_BRANCH")"
+  printf "WORKTREE_PATH='%s'\n"  "$(sq_escape "$WORKTREE_PATH")"
 } > "$MAIN_REPO/.close-branch-inputs"
 ```
 
