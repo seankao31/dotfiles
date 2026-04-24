@@ -92,13 +92,15 @@ Silently picking a side on ambiguous logic is worse than stopping — the "minim
 
 ### Step 2: Fast-forward merge to main
 
-CWD is already the main checkout. Verify it's clean (the user also uses this checkout for ad-hoc edits):
+CWD is already the main checkout. Verify it has no uncommitted tracked-file changes (the user also uses this checkout for ad-hoc edits):
 
 ```bash
-git status --short
+git status --short --untracked-files=no
 ```
 
 If this produces any output, exit non-zero. Do not merge into a dirty main checkout — a failed `git pull --ff-only` or `git merge --ff-only` can leave both the main checkout and the close ritual half-completed.
+
+`--untracked-files=no` suppresses `??` lines so leftover ralph artifacts, stray plan drafts, or any other untracked file in the main checkout don't trip this gate. Only uncommitted changes to *tracked* files threaten a fast-forward merge.
 
 Once clean, capture a safety ref before the merge so Step 3 can restore main if the push is rejected and retry isn't viable:
 
