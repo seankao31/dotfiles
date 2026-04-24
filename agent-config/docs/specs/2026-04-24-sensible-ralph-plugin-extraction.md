@@ -560,29 +560,33 @@ grep -rn '\$HOME/.claude/skills' <plugin-repo>/
 
 ## Acceptance criteria
 
-- [ ] `sensible-ralph` exists at `git@github.com:seankao31/sensible-ralph.git`
+- [x] `sensible-ralph` exists at `git@github.com:seankao31/sensible-ralph.git`
       with `main` pushed.
-- [ ] `.claude-plugin/plugin.json` has the userConfig schema above.
-- [ ] `.claude-plugin/marketplace.json` is the self-marketplace above.
-- [ ] README leads with the five pillars.
-- [ ] `/ralph-start`, `/ralph-spec`, `/ralph-implement` are discovered after
+- [x] `.claude-plugin/plugin.json` has the userConfig schema above.
+- [x] `.claude-plugin/marketplace.json` is the self-marketplace above.
+- [x] README leads with the five pillars.
+- [x] `/ralph-start`, `/ralph-spec`, `/ralph-implement` are discovered after
       `claude plugin marketplace add seankao31/sensible-ralph &&
        claude plugin install sensible-ralph@sensible-ralph`.
-- [ ] Bats suite passes: `bats skills/ralph-start/scripts/test/` green in
-      the new repo.
-- [ ] Git history for moved files is preserved via filter-repo.
-- [ ] Chezmoi cutover commit: ralph skill dirs and triaged docs removed;
-      CLAUDE.md surgery applied; migration note added.
-- [ ] `grep -rn -i 'Sean\|chezmoi\|agent-config' <plugin-repo>/` returns
+- [x] Bats suite passes: `bats skills/ralph-start/scripts/test/` green in
+      the new repo. (151/151; 2026-04-24)
+- [x] Git history for moved files is preserved via filter-repo.
+- [x] Chezmoi cutover commit: ralph skill dirs and triaged docs removed;
+      CLAUDE.md surgery applied; migration note added. Also: close-issue
+      and prepare-for-review moved to the plugin (post-spec scope expansion).
+- [x] `grep -rn -i 'Sean\|chezmoi\|agent-config' <plugin-repo>/` returns
       only intended references (no operator name, no chezmoi-specific
       paths).
-- [ ] `grep -rn 'RALPH_\(APPROVED\|IN_PROGRESS\|REVIEW\|DONE\)_STATE\|RALPH_\(FAILED\|STALE_PARENT\)_LABEL\|RALPH_WORKTREE_BASE\|RALPH_MODEL\|RALPH_STDOUT_LOG' <plugin-repo>/skills/`
+- [x] `grep -rn 'RALPH_\(APPROVED\|IN_PROGRESS\|REVIEW\|DONE\)_STATE\|RALPH_\(FAILED\|STALE_PARENT\)_LABEL\|RALPH_WORKTREE_BASE\|RALPH_MODEL\|RALPH_STDOUT_LOG' <plugin-repo>/skills/`
       returns empty (all renamed to `CLAUDE_PLUGIN_OPTION_*`;
       `RALPH_PROJECTS` is the only `RALPH_*` var retained).
 - [ ] A dispatched test session against a throwaway Linear issue runs
       end-to-end: orchestrator reads userConfig, loads scope, preamble
       injects, `/ralph-implement` runs, `/prepare-for-review` transitions
-      the issue to In Review.
+      the issue to In Review. **Deferred** — plugin installed and dogfooded
+      interactively (ENG-243 close will be the first real dispatch). ENG-270
+      tracks removing the shell-side defaults workaround (ENG-270) that was
+      needed due to a Claude Code harness bug with userConfig defaults.
 
 ## Why
 
