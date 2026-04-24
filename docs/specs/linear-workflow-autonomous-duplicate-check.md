@@ -55,8 +55,8 @@ Rationale: the jq-path bug surfaced during an interactive cancellation flow, so 
 
 ```markdown
 - **Before filing, run the duplicate check.** Run both:
-  1. Linear search via `linear issue query --search "<term>" --json` (per "Duplicate Prevention" above). If the result is empty, re-run without `--search` and filter in jq before trusting it — empty `--search` output has been a jq-path bug before, not a true absence.
-  2. `git log main --oneline --grep "<term>"` — the worktree can lag `main` by hours and a recently-shipped fix may be invisible locally.
+  1. Linear search via `linear issue query --search "term" --json` (per "Duplicate Prevention" above). If the result is empty, re-run without `--search` and filter in jq before trusting it — empty `--search` output has been a jq-path bug before, not a true absence.
+  2. `git log main --oneline --grep "term"` — the worktree can lag `main` by hours and a recently-shipped fix may be invisible locally.
 
   If the check finds a match: exact duplicate → don't create. Partial overlap → file the new issue, add a comment on both linking them so the human reviewer can merge or adjust. Never block waiting on a "let the user decide" prompt.
 ```
