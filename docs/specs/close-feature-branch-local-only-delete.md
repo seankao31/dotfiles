@@ -81,3 +81,12 @@ Both cases must be exercised before declaring the fix complete. If only the loca
 - Parameterizing `origin` or `main` in the skill. `close-feature-branch` is project-local and hardcodes both by design.
 - The related untracked-ralph-artifacts gap mentioned in the ENG-238 ticket. Independent fix, tracked separately.
 - Distinguishing `ls-remote` exit code 2 ("not found") from other non-zero exits ("network/auth error") in Step 5. See the Approach note — unreachable at this point in the ritual.
+
+## Implementation note (post-spec)
+
+This spec was written against `close-feature-branch`. ENG-213 (landed 2026-04-23, one day after this spec was approved) split that skill into:
+
+- `agent-config/skills/close-issue/` — global, Linear-side
+- `.claude/skills/close-branch/` — project-local, VCS-side
+
+The branch-delete step moved to `close-branch` **Step 6** (formerly close-feature-branch Step 5; ENG-213 inserted a "Detach HEAD in the worktree" step before it). The fix described in this spec was retargeted accordingly — the ls-remote gate and prose rewrite landed in `.claude/skills/close-branch/SKILL.md` Step 6, not in `close-feature-branch/SKILL.md` Step 5. The code and rationale are identical; only the file path and step number changed.
