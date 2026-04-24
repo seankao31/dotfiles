@@ -136,7 +136,7 @@ git commit -m 'docs: capture session decisions and add explanatory comments'
 
 In autonomous sessions (`claude -p` dispatched by `/ralph-start`), there is no human to approve the proposal. Skip Step 3's approval gate and proceed immediately to Step 4 (Execute) after forming the proposal. The reviewer sees the resulting decisions in `/prepare-for-review`'s handoff comment under **Documentation changes** — that's the review surface, not a per-skill approval.
 
-See `agent-config/CLAUDE.md` § Autonomous mode for the general autonomous-mode behavior model (this is the skill-specific application).
+See `agent-config/CLAUDE.md` § Autonomous mode for the repo-global autonomous-mode fallback. For ralph-dispatched sessions, the sensible-ralph orchestrator also injects a plugin-specific preamble at session start.
 
 ## What Not to Do
 

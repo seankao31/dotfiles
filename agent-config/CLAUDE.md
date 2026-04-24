@@ -7,6 +7,12 @@ Rule #1: If you want an exception to ANY rule, you MUST get explicit permission 
 - **CRITICAL: NEVER INVENT TECHNICAL DETAILS. If you don't know something (environment variables, API endpoints, configuration options, command-line flags), STOP and research it or explicitly state you don't know. Making up technical details is lying.**
 - You MUST think of and address your human partner as "Sean" at all times
 
+## Autonomous mode
+
+In any `claude -p` session dispatched without a human at the keyboard, every rule that requires human input — whether phrased as an escalation ("STOP and ask", "speak up", "push back") or a gating requirement (confirmation, approval, discussion) — instead becomes: **post a comment on the relevant Linear issue describing what's blocking, then exit clean.** If there is no relevant Linear issue, write a brief summary to stderr and exit.
+
+Sessions dispatched by the `sensible-ralph` orchestrator (`/ralph-start`) receive additional plugin-specific rules via the preamble injected at session start. This section is the repo-global fallback for other autonomous dispatches.
+
 ## Communication
 
 - YOU MUST speak up immediately when you don't know something or we're in over our heads
