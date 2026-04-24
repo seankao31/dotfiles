@@ -279,14 +279,43 @@ Downstream variable renames:
 - `$RALPH_STDOUT_LOG` → `$CLAUDE_PLUGIN_OPTION_STDOUT_LOG_FILENAME`
 - `$RALPH_PROJECTS` — unchanged (comes from `scope.sh`, not userConfig).
 
+### Autonomous-session prerequisites
+
+Before running any extraction steps, the session must verify:
+
+- `git-filter-repo` is on PATH (`command -v git-filter-repo` succeeds). If
+  missing, exit clean with a comment — this is an operator-side install
+  (`brew install git-filter-repo` or similar), not something to fix
+  autonomously.
+- `git push` to `git@github.com:seankao31/sensible-ralph.git` is reachable
+  (`git ls-remote git@github.com:seankao31/sensible-ralph.git` returns
+  successfully). If the remote isn't reachable or SSH auth fails, exit
+  clean — the operator pre-creates the repo and ensures SSH auth before
+  dispatch.
+- The remote is **empty** (no existing `main` branch on origin). The
+  extraction pushes a fresh `main`; pushing over existing commits would be
+  a force-push and is not part of this design. Check with
+  `git ls-remote --heads git@github.com:seankao31/sensible-ralph.git` —
+  expect empty output. Non-empty output = exit clean, operator triages.
+
 ### Extraction mechanics
 
-Scratch location outside chezmoi (e.g., `$HOME/tmp/sensible-ralph-extraction-<timestamp>/`).
+The permanent local checkout of the new plugin repo lives at
+`~/Workplace/Projects/sensible-ralph/`. The autonomous session creates it
+there (the directory does not exist at dispatch time), runs filter-repo
+in place, then pushes to origin. No throwaway scratch directory.
+
+Resolve the chezmoi source from the current worktree via
+`git rev-parse --show-toplevel`. `git clone --no-local` reads the
+shared object database, so cloning from a worktree path works.
 
 ```bash
-SCRATCH="$HOME/tmp/sensible-ralph-extraction-$(date -u +%Y%m%dT%H%M%SZ)"
-git clone --no-local "$CHEZMOI_ROOT" "$SCRATCH"
-cd "$SCRATCH"
+DEST="$HOME/Workplace/Projects/sensible-ralph"
+test ! -e "$DEST" || { echo "$DEST already exists — exit clean"; exit 1; }
+
+CHEZMOI_SOURCE="$(git rev-parse --show-toplevel)"
+git clone --no-local "$CHEZMOI_SOURCE" "$DEST"
+cd "$DEST"
 git filter-repo \
   --path agent-config/skills/ralph-start \
   --path agent-config/skills/ralph-spec \
@@ -321,12 +350,21 @@ separate commit for review readability):
 11. (one commit per SKILL.md)
 12. `docs: rewrite usage.md prose for plugin audience`
 
-Then:
+After filter-repo, `git filter-repo` strips the cloned-from remote as a
+safety default, so the repo has no `origin`. The post-filter commit
+sequence above runs here, then:
 
 ```bash
+# Still in ~/Workplace/Projects/sensible-ralph/
 git remote add origin git@github.com:seankao31/sensible-ralph.git
 git push -u origin main
 ```
+
+After the push, the session returns to the chezmoi worktree
+(`cd "$CHEZMOI_WORKTREE"`) to make the cutover commit on the ENG-243
+branch. The plugin repo stays checked out at
+`~/Workplace/Projects/sensible-ralph/` as the permanent local workspace
+for future sensible-ralph development.
 
 ### Plugin prose scoping rules
 
@@ -402,11 +440,14 @@ One commit in chezmoi that lands after the plugin is pushed and verified:
    session, and chezmoi is itself a consumer (so those entries stay).
 5. `agent-config/docs/playbooks/superpowers-patches.md`: grep for ralph
    path references and update if any land on moved paths.
-6. Add `agent-config/docs/notes/sensible-ralph-migration.md`: short note
-   recording "As of 2026-04-XX, the ralph workflow lives in the
-   sensible-ralph plugin at github.com/seankao31/sensible-ralph. Prior
-   design history pre-extraction remains at specs/decisions paths above.
-   Post-extraction work happens in the plugin repo."
+6. Add `agent-config/docs/sensible-ralph-migration.md`: short note with
+   approximate content "As of {{today's date, ISO format}}, the ralph
+   workflow lives in the sensible-ralph plugin at
+   github.com/seankao31/sensible-ralph. Prior design history
+   pre-extraction remains at specs/decisions paths above. Post-extraction
+   work happens in the plugin repo." The `{{...}}` placeholder is
+   substituted by the implementer with the real commit date at
+   implementation time.
 
 ### Reviewer's coverage check
 
@@ -535,8 +576,9 @@ grep -rn '\$HOME/.claude/skills' <plugin-repo>/
 - [ ] `grep -rn -i 'Sean\|chezmoi\|agent-config' <plugin-repo>/` returns
       only intended references (no operator name, no chezmoi-specific
       paths).
-- [ ] `grep -rn 'RALPH_\(APPROVED\|...\)' <plugin-repo>/skills/` returns
-      empty (all renamed to `CLAUDE_PLUGIN_OPTION_*`).
+- [ ] `grep -rn 'RALPH_\(APPROVED\|IN_PROGRESS\|REVIEW\|DONE\)_STATE\|RALPH_\(FAILED\|STALE_PARENT\)_LABEL\|RALPH_WORKTREE_BASE\|RALPH_MODEL\|RALPH_STDOUT_LOG' <plugin-repo>/skills/`
+      returns empty (all renamed to `CLAUDE_PLUGIN_OPTION_*`;
+      `RALPH_PROJECTS` is the only `RALPH_*` var retained).
 - [ ] A dispatched test session against a throwaway Linear issue runs
       end-to-end: orchestrator reads userConfig, loads scope, preamble
       injects, `/ralph-implement` runs, `/prepare-for-review` transitions
