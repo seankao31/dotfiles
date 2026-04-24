@@ -72,6 +72,18 @@ Negative:
   over-engineered for a self-check. Two bullet points at the end of
   Step 3 do the work.
 
+## Provenance note
+
+`addyosmani/agent-skills/incremental-implementation` ships a
+"NOTICED BUT NOT TOUCHING" protocol that addresses the same gap this
+ADR does, with a ready-made formulation for surfacing adjacent-scope
+observations without acting on them. The Pass 1 recon initially
+dismissed that skill as "duplicates upstream," which caused this ADR
+to reinvent the primitive rather than adopt it. The recon has been
+corrected (see Cross-cutting finding #7 on framing bias). A follow-up
+may consolidate this Step 3 checkpoint with the NOTICED formulation
+once the broader prompt-lift work lands (ENG-260).
+
 ## Scope of this ADR
 
 Bounded to `ralph-implement/SKILL.md` Step 3 text. No changes to:
