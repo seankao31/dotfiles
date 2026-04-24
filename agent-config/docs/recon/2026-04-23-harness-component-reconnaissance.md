@@ -405,7 +405,7 @@ Pilot-gated recommendations (expanded pilot candidates, `karpathy-coder`, spec-c
 
 # Ticket structure
 
-- **This recon ticket (ENG-246):** Pass 1 + recon doc + three ADRs. Scope delta vs PRD: Pass 2 is carved out to a follow-up (rationale in the Scope Note at the top — Pass 2 is architecturally "fresh session per component," not a single-session deliverable). ENG-246 still blocks ENG-247 (the Execute parent) as originally planned — ENG-247 needs the arm lists produced here.
+- **This recon ticket (ENG-246):** Pass 1 + recon doc + two ADRs. Scope delta vs PRD: Pass 2 is carved out to a follow-up (rationale in the Scope Note at the top — Pass 2 is architecturally "fresh session per component," not a single-session deliverable). ENG-246 still blocks ENG-247 (the Execute parent) as originally planned — ENG-247 needs the arm lists produced here.
 - **ENG-259 — Pass 2 pilot shortlist for ENG-246 harness recon.** Blocked by ENG-246; blocks ENG-247. Expanded scope after the comparative-arms re-scoring (finding #7):
   - Phase 1: `/grill-me` and `idea-refine` as brainstorming-shape pilot arms.
   - Phase 2: `planning-and-task-breakdown` as a plan-abstraction-level pilot arm.
