@@ -22,9 +22,10 @@ Edit exactly one file: `agent-config/skills/prepare-for-review/SKILL.md`.
 
 ### Edit 1 — delete Step 4 "Clean branch history"
 
-Remove the Step 4 heading and both rationale paragraphs (the block
-currently at the `### Step 4: Clean branch history` section), along with
-its leading blank line.
+Delete the `### Step 4: Clean branch history` section in its entirety:
+the heading and the two rationale paragraphs that follow it. Normal
+markdown spacing (one blank line between sections) between the
+preceding and following sections is preserved.
 
 ### Edit 2 — promote Step 3.5 → Step 4
 
@@ -121,10 +122,13 @@ After the edits, all three checks must pass:
 2. `grep -n "Step 3\.5\|history cleanup\|after history cleanup" agent-config/skills/prepare-for-review/SKILL.md`
    → zero matches.
 
-3. `grep -n "Step [0-9]" agent-config/skills/prepare-for-review/SKILL.md`
-   → every Step reference resolves to an existing step heading in the
-   file. The file should contain headings for Step 1, Step 2, Step 3,
-   Step 4, Step 5, Step 6, Step 7 (no gap at Step 4).
+3. `grep -n "^### Step" agent-config/skills/prepare-for-review/SKILL.md`
+   → exactly seven headings: Step 1, Step 2, Step 3, Step 4, Step 5,
+   Step 6, Step 7 (no gap at Step 4).
+
+4. Visually audit that every `Step N` reference in the file (from
+   `grep -n "Step [0-9]"`) points to a heading that exists after the
+   edits.
 
 No automated test suite covers this file; verification is manual review
 of the resulting SKILL.md for internal consistency.
