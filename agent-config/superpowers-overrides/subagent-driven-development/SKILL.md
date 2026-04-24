@@ -90,7 +90,7 @@ digraph process {
     "Implementer subagent fixes codex issues" -> "Run codex-review-gate for task changes (task base SHA)" [label="re-review"];
     "Codex review approves task?" -> "Mark task complete in TodoWrite" [label="yes"];
     "Mark task complete in TodoWrite" -> "More tasks remain?";
-    "More tasks remain?" -> "Dispatch implementer subagent (./implementer-prompt.md)" [label="yes"];
+    "More tasks remain?" -> "Record task base SHA (git rev-parse HEAD)" [label="yes"];
     "More tasks remain?" -> "Dispatch final code reviewer subagent for entire implementation" [label="no"];
     "Dispatch final code reviewer subagent for entire implementation" -> "Run codex-review-gate for cross-model review";
     "Run codex-review-gate for cross-model review" -> "Use superpowers:finishing-a-development-branch";

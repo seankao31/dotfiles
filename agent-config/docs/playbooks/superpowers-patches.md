@@ -259,6 +259,7 @@ mark complete:
 "Codex review approves task?" [shape=diamond];
 "Implementer subagent fixes codex issues" [shape=box];
 
+"More tasks remain?" -> "Record task base SHA (git rev-parse HEAD)" [label="yes"];
 "Record task base SHA (git rev-parse HEAD)" -> "Dispatch implementer subagent ...";
 "Code quality reviewer subagent approves?" -> "Run codex-review-gate for task changes (task base SHA)" [label="yes"];
 "Run codex-review-gate for task changes (task base SHA)" -> "Codex review approves task?";
