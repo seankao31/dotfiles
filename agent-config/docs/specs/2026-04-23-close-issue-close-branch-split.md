@@ -125,7 +125,9 @@ Frontmatter:
 - `description: ` — chezmoi-specific, notes it's invoked by `close-issue` (not a user entry point).
 - `argument-hint: <issue-id>` (passed through from close-issue).
 - `allowed-tools: Bash, Read, Glob, Grep` (no `Skill` — close-branch invokes no other skills).
-- `disable-model-invocation: true` — close-branch is invoked only by close-issue's explicit `Skill` tool call, never auto-discovered by description matching. Verify during implementation that explicit `Skill(close-branch)` invocation still works with this flag set; if not, remove it.
+- `user-invocable: false` — hides close-branch from the `/` menu so a human can't accidentally type `/close-branch` instead of `/close-issue`. The description discourages autonomous auto-pick; explicit `Skill(close-branch)` dispatch from close-issue remains the only intended entry path.
+
+`disable-model-invocation: true` was considered but rejected: it blocks *all* model invocation including explicit `Skill(name)` dispatch from another skill, which breaks the intended dispatch contract. A skill should be dispatched as a skill, not read inline as a markdown doc.
 
 Body sections in execution order:
 

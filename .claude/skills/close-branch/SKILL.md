@@ -4,7 +4,7 @@ description: Project-local VCS integration for chezmoi/agent-config. Runs rebase
 argument-hint: <issue-id>
 model: sonnet
 allowed-tools: Bash, Read, Glob, Grep
-disable-model-invocation: true
+user-invocable: false
 ---
 
 # Close Branch (chezmoi)
@@ -15,7 +15,7 @@ The VCS integration half of the close ritual. The global `close-issue` skill han
 
 Only via `Skill(close-branch)` invoked from `close-issue`. Never a direct user entry point.
 
-`disable-model-invocation: true` keeps this skill out of description-based auto-discovery — it's dispatched only by `close-issue`'s explicit `Skill` tool call.
+`user-invocable: false` hides this skill from the `/` menu so a human can't accidentally type `/close-branch` instead of `/close-issue`. The description is phrased to discourage autonomous description-based auto-pick — `close-branch` should only be entered via explicit dispatch from `close-issue`.
 
 ## Inputs on entry
 
