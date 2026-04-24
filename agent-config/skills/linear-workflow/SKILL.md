@@ -120,7 +120,7 @@ After creation, use Linear's auto-generated branch name (e.g. `eng-30-descriptio
 
 **Before creating any issue**, scan for existing issues that overlap:
 
-1. Query issues filtered by the target **project** using `linear issue query --search "term" --json` or scoped with `--team`.
+1. Query issues filtered by the target **project** using `linear issue query --search "term" --json` or scoped with `--team`. Cross-check an empty result by re-running without `--search` and filtering in jq — empty `--search` output has been a jq-path bug before, not a true absence.
 2. Scan titles and descriptions for overlap with the issue you're about to create. Look for:
    - Same feature or data need described differently (e.g., "Recipe data pipeline" vs "Recipe data loads from msgpack")
    - Issues that would be superseded by the new one (e.g., an XIVAPI-based approach replaced by a msgpack approach)
@@ -140,7 +140,11 @@ Some sessions run without a human in the loop — e.g., the spec-queue orchestra
 - **Entry Point 1 does not run.** The orchestrator pre-selects the issue, pre-creates the worktree, and pre-transitions state to `In Progress` before dispatch. The agent reads its issue ID from the prompt and begins implementation directly. There is no "starting work" step to execute.
 - **Entry Point 2 (filing follow-ups) proceeds without confirmation.** Use the defaults in "Creating Issues" below: project per workspace context, priority Urgent for bugs / Medium for features, status `Backlog` when scope is vague or `Todo` when actionable. Always link back to the originating issue via `linear issue relation add` so provenance is preserved for later human review.
 - **Entry Point 3 targets `In Review`, not `Done`.** Autonomous sessions hand off for human review. The `Done` transition is the user's when they merge the branch.
-- **Duplicate prevention resolves without human decision.** Exact duplicates: don't create. Partial overlaps: file the new issue anyway and post a comment on both linking them, so the human reviewer can merge or adjust later. Never block waiting on a "let the user decide" prompt.
+- **Before filing, run the duplicate check.** Run both:
+  1. Linear search via `linear issue query --search "term" --json` (per "Duplicate Prevention" above). If the result is empty, re-run without `--search` and filter in jq before trusting it — empty `--search` output has been a jq-path bug before, not a true absence.
+  2. `git log main --oneline --grep "term"` — the worktree can lag `main` by hours and a recently-shipped fix may be invisible locally.
+
+  If the check finds a match: exact duplicate → don't create. Partial overlap → file the new issue, add a comment on both linking them so the human reviewer can merge or adjust. Never block waiting on a "let the user decide" prompt.
 
 ## When This Does NOT Apply
 
