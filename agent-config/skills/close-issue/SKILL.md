@@ -4,6 +4,7 @@ description: Global skill for the Linear-side close ritual of a ralph-workflow f
 argument-hint: <issue-id>
 model: sonnet
 allowed-tools: Skill, Bash, Read, Glob, Grep
+disable-model-invocation: true
 ---
 
 # Close Issue
