@@ -17,6 +17,16 @@ Skills:
 - `skills/ralph-start/` → plugin `skills/ralph-start/`
 - `skills/ralph-spec/` → plugin `skills/ralph-spec/`
 - `skills/ralph-implement/` → plugin `skills/ralph-implement/`
+- `skills/prepare-for-review/` → plugin `skills/prepare-for-review/`
+- `skills/close-issue/` → plugin `skills/close-issue/`
+
+The plugin versions of `prepare-for-review` and `close-issue` differ from
+the chezmoi-global versions in a few ways: they source from
+`$CLAUDE_PLUGIN_ROOT` instead of `$HOME/.claude/skills/`, use
+`CLAUDE_PLUGIN_OPTION_*` workflow state names instead of the pre-extraction
+`RALPH_*` exports, and inline their `linear issue update --state ...`
+calls directly rather than delegating to an external `linear-workflow`
+skill. The prose contracts are unchanged.
 
 Playbook:
 
