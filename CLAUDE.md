@@ -32,3 +32,30 @@ Issues for this repo go into one of these projects:
   tooling.
 
 For out-of-scope bug discoveries during any session in this repo, file a Linear issue in the appropriate project above.
+
+## Commit messages
+
+[Conventional Commits](https://www.conventionalcommits.org/): `<type>(<scope>): <subject>` — or `<type>: <subject>` for changes that span multiple areas or don't fit a scope.
+
+Scopes are architectural areas, not tickets:
+
+| Scope | Area |
+|---|---|
+| `<skill-name>` | An individual skill (e.g. `close-branch`, `linear-workflow`, `claude-md-improver`) |
+| `<lib-name>` | Shared shell helpers (e.g. `config`, `linear_add_label`) |
+| `claude-md` | `CLAUDE.md` edits (root or `agent-config/`) |
+| `superpowers-overrides` | Files under `agent-config/superpowers-overrides/` |
+| `hooks` | `.claude/settings.json` hooks |
+| _(omit)_ | Multi-area, docs-only (use `docs:` type), or other changes that don't fit a scope |
+
+Linear ticket references go in a `Ref:` git trailer in the body, not in the scope or subject:
+
+```
+fix(close-branch): gate remote delete on ls-remote
+
+<body explaining the change>
+
+Ref: ENG-238
+```
+
+Commits without a Linear ticket omit the `Ref:` trailer.
