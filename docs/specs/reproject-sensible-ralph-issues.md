@@ -28,17 +28,19 @@ For each active AC issue, decide based on the migration doc's partitions.
 
 **Reproject to Sensible Ralph** if the deliverable was/is a change to anything in the migration doc's "What moved" list, including:
 
-- Ralph skills: `ralph-start`, `ralph-spec`, `ralph-implement`, `prepare-for-review`, `close-issue`
-- Plugin-internal workflow components: `codex-review-gate`, `clean-branch-history`, `autonomous-preamble`
+- Ralph skills (plugin-internal): `ralph-start`, `ralph-spec`, `ralph-implement`, `prepare-for-review`, `close-issue`
+- Plugin-internal artifacts: `skills/ralph-start/scripts/autonomous-preamble.md`, plugin manifest (`plugin.json`, `marketplace.json`), `docs/usage.md`
 - Ralph orchestrator behavior: scope model, state machine, queue logic, `progress.json`
 - Plugin-internal config: `CLAUDE_PLUGIN_OPTION_*`, `ralph-failed` label, plugin packaging
 - Design docs / decisions that the migration doc lists as moved (the 2026-04-17 ralph-loop-v2 spec, scope-model spec, ralph-implement spec, and the five decisions enumerated in the doc)
+- Issues about how a plugin-internal skill *invokes* a chezmoi-side skill (e.g. "Remove /clean-branch-history from /prepare-for-review" — the deliverable is a change to `prepare-for-review`, which is plugin-internal). The chezmoi-side skill itself stays in AC; the invocation site is what determines the project.
 
 **Leave in Agent Config** if the deliverable matches the migration doc's "What stayed" or is otherwise chezmoi-side, including:
 
 - Agent-config docs/specs/decisions that the migration doc explicitly lists as stayed (the 2026-04-22 workflow-modes audit, workflow-evaluation spec, the 2026-04-23 autonomous-mode-overrides simplification, the 2026-04-22 visual-companion-glob decision, the 2026-04-18 progress doc, and post-2026-04-22 chezmoi-era hardening decisions)
 - `agent-config/superpowers-overrides/` — overrides live in chezmoi by design
 - `agent-config/hooks/` — chezmoi-local hooks
+- `agent-config/skills/` skills that did NOT move into the plugin: `codex-review-gate`, `clean-branch-history`, `linear-workflow`, `capture-decisions`, `update-stale-docs`, etc. (plus the project-local `.claude/skills/close-branch/` in chezmoi)
 - Edits to chezmoi root `CLAUDE.md` or `agent-config/CLAUDE.md`
 - The plugin-extraction issue itself (ENG-243) and follow-on chezmoi-side audits (e.g. ENG-271, "Audit superpowers overrides for sensible-ralph fitness")
 
