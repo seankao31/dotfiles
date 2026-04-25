@@ -52,12 +52,28 @@ chezmoi's adoption of ralph, not about the ralph workflow itself:
 - `docs/specs/2026-04-22-ralph-v2-workflow-evaluation-design.md`
 - `docs/specs/2026-04-23-simplify-autonomous-mode-overrides-design.md`
 - `docs/decisions/2026-04-22-ralph-spec-visual-companion-glob.md`
-- `docs/progress/2026-04-18-ralph-v2-progress.md`
 
-Decisions post-2026-04-22 that further hardened the ralph skills (e.g.
-`2026-04-23-ralph-implement-step-3-scope-tightening.md`) also stay — they
-document chezmoi-era fixes that the plugin has already absorbed via
-filter-repo + subsequent commits in the plugin repo.
+## Subsequent moves (2026-04-25)
+
+Follow-up moves identified during the ENG-272 housekeeping pass — chezmoi
+artifacts whose subject is plugin-internal behavior or feeds plugin work,
+so they belong alongside the rest of the design trail in the plugin repo:
+
+- `docs/decisions/2026-04-23-ralph-implement-step-3-scope-tightening.md`
+  → plugin `docs/decisions/` (decision about ralph-implement Step 3 shape)
+- `docs/progress/2026-04-18-ralph-v2-progress.md`
+  → plugin `docs/progress/` (frozen archive of the v2 build journal)
+- `docs/recon/2026-04-23-harness-component-reconnaissance.md`
+  → plugin `docs/recon/` (Pass 1 results that ENG-259 Pass 2 builds on)
+- `docs/specs/2026-04-24-remove-clean-branch-history-from-prepare-for-review.md`
+  → plugin `docs/specs/` (forward-looking design for ENG-234)
+
+These were copied as-is via `cp` — git history doesn't cross repos
+without filter-repo, and four files isn't enough volume to justify it.
+Live path references (the spec's edit target, the decision's playbook
+cross-reference) were updated to plugin-relative paths during the move;
+historical narrative in the progress and recon docs was left untouched
+since rewriting paths there would falsify what was true at authorship.
 
 ## How to install the plugin
 
