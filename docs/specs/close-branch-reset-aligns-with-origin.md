@@ -204,18 +204,29 @@ commits. Their content is preserved; their *category* is muddled. For
 chezmoi's single-user context this is acceptable — Sean knows from the
 original session which commits were originally direct-to-main vs feature.
 
-### Note on the Retry path's *different* reset target
+### Note on the Retry path's reset target (post-ENG-257)
 
-ENG-257's Retry path substep 2 uses `git reset --hard "$PRE_MERGE_SHA"` —
-*not* `origin/main`. That asymmetry is intentional. The Retry path's
-reset happens *inside* the recovery sequence with the explicit intent to
-immediately re-rebase and re-push, so divergence between local main and
-origin/main during the Retry attempt is acceptable (it's the ephemeral
-working state of the recovery). ENG-304's Reset path fires *on the way
-out* of the skill — at that point any local-vs-origin divergence becomes
-a force-push hazard, so the reset target is `origin/main` to eliminate
-it. The two reset targets serve different invariants and should not be
-unified.
+*This note describes the state after ENG-257 lands — which is a
+prerequisite of ENG-304.*
+
+In the current live skill, the Retry path's substep 2 is also
+`git reset --hard origin/main` — the same terminal target ENG-304 uses for
+the Reset path. **ENG-257 changes substep 2 to `git reset --hard
+"$PRE_MERGE_SHA"`** so that the Retry path preserves Sean's unpushed
+direct-to-main commits on a branch ref during the recovery sequence. After
+both issues land, the two paths use different targets by design:
+
+- **Retry path substep 2 (after ENG-257):** `git reset --hard "$PRE_MERGE_SHA"` — transient divergence
+  from origin/main is acceptable here because the Retry path immediately
+  continues with a `git rebase origin/main` on local main, re-runs
+  Step 1 on the worktree, re-merges, and re-pushes. Divergence is the
+  intended working state during recovery.
+- **Reset path (ENG-304):** `git fetch origin main; git reset --hard origin/main` — this is a
+  **terminal exit**. Any local-vs-origin divergence at exit becomes a
+  latent `git push --force` hazard. Using `origin/main` as the exit
+  target eliminates that hazard.
+
+The two targets serve different invariants and should not be unified.
 
 ## Out of scope
 
@@ -317,7 +328,9 @@ spec records it.
    `agent-config/`, and the `sensible-ralph` plugin cache. Confirm the
    only remaining matches after this fix are:
    - The Retry path substep 2 in `.claude/skills/close-branch/SKILL.md`
-     (added by ENG-257; this is correct, do not edit).
+     (modified by ENG-257 from `origin/main` to `$PRE_MERGE_SHA`; will
+     be present since ENG-257 is a prerequisite that lands before this
+     issue; do not edit).
    - The Retry-path bullet in
      `agent-config/docs/specs/2026-04-23-close-issue-close-branch-split.md`
      (ENG-257's Edit 4 annotation already covers this).
