@@ -49,11 +49,11 @@ parts to preserve when merging in new upstream changes.
 
 ## 1. brainstorming/SKILL.md
 
+### 1a. Linear-workflow handoff before writing-plans
+
 **Intent:** After the user approves the spec and before invoking writing-plans, invoke
 `linear-workflow` to check for or create a tracking issue. This is the "creation" half
 of issue lifecycle management.
-
-### Changes
 
 **Checklist:** Add a step between "user reviews spec" and "transition to implementation":
 ```
@@ -74,6 +74,17 @@ Remove any direct edge from spec approval to writing-plans.
 - Invoke the `linear-workflow` skill to check for or create a Linear tracking issue
 ```
 And adjust the writing-plans bullet to follow it naturally ("Then invoke...").
+
+### 1b. Remove date prefix from spec path
+
+**Intent:** Sean's preference — `YYYY-MM-DD-` filename prefixes add noise without clear
+value (creation date is in `git log`, and the prefix breaks alphabetical-by-topic
+ordering in directory listings).
+
+**Spec path:** Drop the `YYYY-MM-DD-` prefix from the spec path template. The path
+appears in two places — the checklist step ("Write design doc") and the "After the
+Design → Documentation" bullet — and both must read
+`docs/superpowers/specs/<topic>-design.md`.
 
 ---
 
@@ -230,6 +241,13 @@ Then generate a self-contained execution prompt formatted as a fenced code block
 **Do NOT proceed with execution in the current session.** The whole point is a clean context window.
 ```
 Remove any "If Inline Execution chosen" block or executing-plans reference.
+
+### 4c. Remove date prefix from plan path
+
+**Intent:** Sean's preference — same rationale as 1b. Keep the plan-path template free
+of the `YYYY-MM-DD-` prefix.
+
+**Save plans to line:** `docs/superpowers/plans/<feature-name>.md` (no date prefix).
 
 ---
 
