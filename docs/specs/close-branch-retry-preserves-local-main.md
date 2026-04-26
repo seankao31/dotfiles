@@ -106,14 +106,37 @@ before the conflict-handling paragraph from Edit 2):**
 
 > **The Retry path is bounded to a single attempt.** If the re-push in
 > substep 6 is also rejected — a second collaborator push raced this retry
-> — the Retry path is exhausted. Fall through to the Reset path:
-> `git reset --hard "$PRE_MERGE_SHA"` using the freshly-captured
-> `$PRE_MERGE_SHA` from substep 5 (which now equals the post-substep-3
-> rebased local main, including any replayed direct-to-main commits), then
-> exit non-zero with a diagnostic. This preserves the "must not exit while
-> local main is ahead of origin/main" invariant on every exit path, and
-> avoids an unbounded retry loop in the rare double-race case. The
-> operator investigates and re-runs `/close-issue`.
+> — the Retry path is exhausted. Fetch the new origin tip and reset local
+> main to match it, then exit non-zero with a diagnostic.
+>
+> ```bash
+> git fetch origin main
+> git reset --hard origin/main
+> ```
+>
+> After this reset:
+>
+> - Local main = `origin/main` exactly. No divergence; no `git push
+>   --force` could overwrite shared commits.
+> - `$FEATURE_BRANCH` still points at the substep-5 ff-merge tip, which
+>   contains both Sean's replayed direct-to-main commits (B', C' from
+>   substep 3) and the rebased feature commits (F's). Nothing is orphaned.
+>
+> Recovery: the operator re-runs `/close-issue`. Step 1's worktree rebase
+> onto local main replays all of `$FEATURE_BRANCH`'s commits (B', C', F's)
+> onto the new origin tip, producing fresh B'', C'', F''s in the next
+> attempt. No work is lost; no manual cherry-picking required. This
+> bounded-retry-then-exit-cleanly model avoids an unbounded retry loop in
+> the rare double-race case while keeping the "no force-push hazard"
+> invariant on every exit path.
+>
+> Note: this fallback's reset target (`origin/main`) differs from the
+> existing Reset path's target (`$PRE_MERGE_SHA`, line 138) by design. The
+> existing Reset path has the same divergence flaw whenever Sean has
+> unpushed direct-to-main commits; aligning the two paths is tracked as
+> **ENG-304** and is intentionally out of scope for ENG-257. Using
+> `origin/main` here from the start avoids inheriting the flaw in the new
+> code.
 
 ### Edit 2 — Step 3 Retry path: conflict-handling paragraph
 
@@ -234,15 +257,34 @@ This is *less* destructive than the existing buggy `git reset --hard
 origin/main`, which leaves the unpushed direct-to-main commits reachable
 only via reflog.
 
+**Note on the second-rejection fallback's *different* reset target.** The
+fallback added by Edit 1 uses `git reset --hard origin/main` — *not*
+`$PRE_MERGE_SHA`. That asymmetry is intentional. Substep 2 above happens
+*inside* the Retry path with the explicit intent to immediately re-rebase
+and re-push, so divergence between local main and origin/main during the
+Retry attempt is acceptable (it's the ephemeral working state of the
+recovery). The fallback fires *on the way out* of the skill — at that
+point any local-vs-origin divergence becomes a force-push hazard, so the
+fallback resets to `origin/main` to eliminate it. Sean's work is preserved
+on `$FEATURE_BRANCH` instead of on `main`. See the second-rejection
+fallback paragraph in Edit 1 for the full state-after-fallback.
+
 ## Out of scope
 
 - **Step 2's `git pull --ff-only origin main`** — no change. `--ff-only`
   is already safe; any divergence between local main and origin/main fails
   the pull loudly rather than rewriting history.
-- **The Reset path fallback** (current line 138, `git reset --hard
-  "$PRE_MERGE_SHA"`) — already correct. The fix uses the same target SHA
-  in the Retry path, achieving symmetry; no change to the Reset path text
-  itself.
+- **The existing Reset path** (current line 138, `git reset --hard
+  "$PRE_MERGE_SHA"`) — has the same divergence flaw as the original Retry
+  path whenever Sean has unpushed direct-to-main commits at close-issue
+  invocation time. Codex review of this spec surfaced the flaw; aligning
+  the Reset path with this spec's second-rejection fallback (which resets
+  to `origin/main` instead of `$PRE_MERGE_SHA`) is tracked as **ENG-304**
+  and is intentionally out of scope here. ENG-257's scope is the Retry
+  path's reset target; ENG-304 covers the Reset path's reset target. The
+  two are filed separately because they were surfaced separately and
+  because the Reset path predates ENG-257 (the flaw was always latent
+  there).
 - **Other skills in `agent-config/` or in the `sensible-ralph` plugin** —
   no other live skill uses `git reset --hard origin/main` after a feature
   ff-merge. Verified by `grep -rn "reset --hard origin/main"` across
@@ -296,11 +338,20 @@ result from this commit.
      and are textually unchanged otherwise.
 2. Confirm the **second-rejection fallback paragraph** (added by Edit 1)
    appears immediately after the numbered substep list, before the
-   conflict-handling paragraph. Confirm it explicitly says the Retry path
-   is single-attempt, that a second push rejection falls through to the
-   Reset path using the freshly-captured `$PRE_MERGE_SHA` from substep 5,
-   and that this preserves the "must not exit while local main is ahead of
-   origin/main" invariant.
+   conflict-handling paragraph. Confirm:
+   - It explicitly says the Retry path is single-attempt.
+   - The fallback's reset target is `origin/main` (NOT `$PRE_MERGE_SHA`),
+     fetched fresh via `git fetch origin main` immediately before the reset.
+   - The post-fallback state is described: local main matches origin
+     exactly (no divergence, no force-push hazard); `$FEATURE_BRANCH`
+     preserves both the replayed direct-to-main commits and the rebased
+     feature commits.
+   - The recovery is "operator re-runs `/close-issue`" — Step 1 will
+     replay the preserved commits onto the new origin tip naturally. No
+     manual cherry-picking is required.
+   - The note about ENG-304 is present, explaining that the existing
+     Reset path has the same divergence flaw and that aligning it is
+     out of scope for ENG-257.
 3. Confirm the **rebase conflict-handling paragraph** (Edit 2) appears
    immediately after the second-rejection fallback paragraph, before the
    Reset-path heading. Confirm it inherits Step 1's mechanical-resolution
@@ -331,9 +382,14 @@ result from this commit.
    sequence against the bug's repro scenario (local main = A+B+C+feature,
    origin/main races to A+X+Y) and confirm the end state is
    A+X+Y+B'+C'+feature' on main with no commits orphaned. Then trace the
-   double-race case (substep 6 also rejected) and confirm the fallback
-   reaches the Reset path with main = A+X+Y+B'+C' (no feature commits, no
-   orphaned commits, exit non-zero).
+   double-race case (substep 6 also rejected; origin/main now A+X+Y+Z) and
+   confirm the fallback reaches: `local main = A+X+Y+Z` (matches origin
+   exactly, no divergence), `$FEATURE_BRANCH = A+X+Y+B'+C'+F's` (work
+   preserved on the feature ref), exit non-zero. Then confirm the operator's
+   `/close-issue` re-run from this state succeeds: Step 1 rebases
+   feature_branch's B', C', F's onto local main = A+X+Y+Z, producing
+   A+X+Y+Z+B''+C''+F''s; Step 2 ff-merges; Step 3 push succeeds (no further
+   race).
 
 ## Files touched
 
