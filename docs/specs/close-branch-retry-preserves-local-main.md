@@ -40,7 +40,10 @@ handoff surfaced it; the bug itself predates the split.
 
 ## Fix
 
-Three narrowly-scoped edits to one file: `.claude/skills/close-branch/SKILL.md`.
+Four narrowly-scoped edits across two files: three to the live skill
+`.claude/skills/close-branch/SKILL.md`, plus one in-line annotation on
+the historical spec `agent-config/docs/specs/2026-04-23-close-issue-close-branch-split.md`
+that prevents the original buggy snippet from being lifted via grep.
 
 ### Edit 1 — Step 3 Retry path: replace the reset target and add a rebase
 
@@ -86,8 +89,9 @@ with two substeps that preserve unpushed direct-to-main commits.
 3. `git rebase origin/main` on local main. Replays any commits between
    `$PRE_MERGE_SHA` and the original `origin/main` (i.e., the unpushed
    direct-to-main commits) onto the new collaborator-pushed tip. In the
-   common case (no unpushed commits), this is a no-op fast-forward. **If
-   conflicts arise:** see the conflict-policy paragraph added by Edit 2.
+   common case (no unpushed commits), this is a no-op fast-forward.
+   Conflict handling: see the paragraph beginning "If `git rebase
+   origin/main` in substep 3 conflicts" below the numbered list.
 4. Re-run Step 1 on the worktree (rebase onto the now-fresh local main,
    which equals the new origin/main plus any replayed direct-to-main
    commits).
@@ -97,28 +101,51 @@ with two substeps that preserve unpushed direct-to-main commits.
 The substep numbering shifts by one; substeps 4–6 are textually identical
 to the old substeps 3–5 modulo the renumber.
 
+**Second-rejection fallback (added prose paragraph after the numbered list,
+before the conflict-handling paragraph from Edit 2):**
+
+> **The Retry path is bounded to a single attempt.** If the re-push in
+> substep 6 is also rejected — a second collaborator push raced this retry
+> — the Retry path is exhausted. Fall through to the Reset path:
+> `git reset --hard "$PRE_MERGE_SHA"` using the freshly-captured
+> `$PRE_MERGE_SHA` from substep 5 (which now equals the post-substep-3
+> rebased local main, including any replayed direct-to-main commits), then
+> exit non-zero with a diagnostic. This preserves the "must not exit while
+> local main is ahead of origin/main" invariant on every exit path, and
+> avoids an unbounded retry loop in the rare double-race case. The
+> operator investigates and re-runs `/close-issue`.
+
 ### Edit 2 — Step 3 Retry path: conflict-handling paragraph
 
 **File:** `.claude/skills/close-branch/SKILL.md`
 
 **Section:** Step 3 ("Push"), Retry path. Add a paragraph immediately after
-the new numbered substep list, before the Reset-path heading.
+the second-rejection fallback paragraph from Edit 1, before the Reset-path
+heading.
 
 **Insertion text:**
 
-> **If `git rebase origin/main` in substep 3 conflicts** — the unpushed
-> direct-to-main commits collide substantively with the commits a
-> collaborator pushed — `git rebase --abort` and exit non-zero with a
-> diagnostic naming `$PRE_MERGE_SHA`. Local main lands back at
-> `$PRE_MERGE_SHA` (= the pre-ritual local state with unpushed commits
-> intact); feature commits remain reachable via `$FEATURE_BRANCH`. The
-> operator investigates and re-runs `/close-issue`.
+> **If `git rebase origin/main` in substep 3 conflicts**, apply the same
+> conflict-handling rules as Step 1: the conflict shape here is similar —
+> small documentation, list, or changelog collisions between two streams of
+> work merging into main — and the same mechanical-vs-substantive
+> distinction applies.
 >
-> Step 1's mechanical-resolution carve-outs (formatting, list appends, etc.)
-> deliberately do NOT apply to this rebase. Step 1 reconciles feature work
-> designed to land on main; this rebase reconciles two streams of
-> *direct-to-main* work from different humans. A conflict here is a
-> substantive signal worth a human look — not a mechanical merge.
+> Resolve mechanical conflicts inline, then `git -C "$MAIN_REPO" add
+> <files>` and `git rebase --continue`, then proceed to substep 4.
+> Mechanical cases are the same as Step 1: unrelated edits in adjacent
+> regions (keep both), the same logical change landed on both sides (drop
+> the local-only duplicate; take origin's version), both sides appended
+> different items to the same list/changelog/docs section (merge the
+> content).
+>
+> Abort and exit non-zero only when both sides made substantive
+> contradicting changes to the same logic, when a file was deleted on one
+> side and modified on the other, or when the right answer isn't obvious
+> without operator context. On abort: `git rebase --abort` (local main
+> lands back at `$PRE_MERGE_SHA`; feature commits remain reachable via
+> `$FEATURE_BRANCH`), then exit non-zero with a diagnostic naming
+> `$PRE_MERGE_SHA`. The operator investigates and re-runs `/close-issue`.
 
 ### Edit 3 — Step 1: forward-link to the Retry path's invariant preservation
 
@@ -137,9 +164,47 @@ paragraph that begins "Rebase onto **local** `main`, not `origin/main`."
 > any unpushed direct-to-main commits) rather than to `origin/main` (which
 > would orphan them).
 
-This tie-back prevents a future contributor from "simplifying" the Retry
-path back to `git reset --hard origin/main` without understanding the
-invariant the captured `$PRE_MERGE_SHA` exists to preserve.
+This tie-back is one of two anti-regression guards. The other is Edit 4
+below, which annotates the historical spec so a future implementer cannot
+silently lift the broken `git reset --hard origin/main` snippet from there.
+
+### Edit 4 — Historical spec: in-line deprecation annotation on the bug snippet
+
+**File:** `agent-config/docs/specs/2026-04-23-close-issue-close-branch-split.md`
+
+**Section:** Section "Step 3 — Push", numbered list item 6, the **Retry
+path** sub-bullet (currently line 143).
+
+**Rationale:** the historical spec contains the buggy `git reset --hard
+origin/main` verbatim and is grep-discoverable. A future contributor or
+autonomous session searching for the retry mechanics may read that bullet,
+copy the command, and miss the live skill's correction. The forward-link
+sentence in Edit 3 lives in a different section of a different file and
+cannot be relied upon to surface during a grep-then-lift workflow. An
+in-line annotation immediately above the bullet attaches the deprecation
+warning to the exact line that would otherwise be copied.
+
+**Insertion:** add a blockquote immediately *before* the bullet that
+begins `- **Retry path** (preferred)`. Do not modify the bullet's text
+itself; the historical record of what was decided at ENG-213 time is
+preserved, with the post-ENG-257 correction surfaced alongside it.
+
+**Insertion text:**
+
+```markdown
+   > **DEPRECATED — Updated by ENG-257 (2026-04-26):** the `git reset
+   > --hard origin/main` in the Retry path bullet below was identified as
+   > orphaning unpushed direct-to-main commits and was replaced in the
+   > live skill. **Do not copy this command** into new code or docs. The
+   > current correct behavior lives in `.claude/skills/close-branch/SKILL.md`
+   > Step 3 and is specified in `docs/specs/close-branch-retry-preserves-local-main.md`.
+   > This historical bullet is preserved as a record of the ENG-213 design
+   > decision; it is not the current behavioral spec.
+```
+
+The leading three-space indent matches the surrounding bullet's nesting
+depth so the blockquote renders inside the bullet's scope. No other text
+in `2026-04-23-close-issue-close-branch-split.md` is changed.
 
 ## Why `reset --hard "$PRE_MERGE_SHA"` is safe
 
@@ -179,9 +244,16 @@ only via reflog.
   in the Retry path, achieving symmetry; no change to the Reset path text
   itself.
 - **Other skills in `agent-config/` or in the `sensible-ralph` plugin** —
-  no other location uses `git reset --hard origin/main` after a feature
-  ff-merge. Verified by `grep -r "reset --hard" .claude/ agent-config/`
-  during spec authoring; no other instances of the same anti-pattern.
+  no other live skill uses `git reset --hard origin/main` after a feature
+  ff-merge. Verified by `grep -rn "reset --hard origin/main"` across
+  `.claude/`, `agent-config/`, and the `sensible-ralph` plugin cache during
+  spec authoring; the only other match is in the historical design spec
+  `agent-config/docs/specs/2026-04-23-close-issue-close-branch-split.md`
+  (line 143), which Edit 4 annotates with an in-line deprecation warning
+  pointing to the live skill. The historical bullet's text itself is *not*
+  rewritten — preserving the historical record of the ENG-213 decision —
+  but the annotation immediately above it makes the post-ENG-257
+  correction visible to anyone reading or grepping the bullet.
 - **Automated tests for the Retry path** — `close-branch` is a
   prose/markdown skill, not a script; the existing convention is
   operator-driven dogfooding for git-state behaviors. The bug rule's TDD
@@ -190,8 +262,9 @@ only via reflog.
 - **Hardening other steps for hypothetical race conditions** — the bug is
   scoped to the Retry path's reset target. Do not refactor unrelated steps.
 - **Renumbering, restructuring, or reflowing the rest of the skill** — only
-  the three edits above. Step headings, substep numbering elsewhere, prose
-  in unrelated sections all unchanged.
+  the four edits above (three in the live skill, one annotation in the
+  historical spec). Step headings, substep numbering elsewhere, prose in
+  unrelated sections all unchanged.
 
 ## Verification
 
@@ -216,36 +289,68 @@ result from this commit.
    - The numbered substep list has six entries (was five).
    - Substep 2 reads `git reset --hard "$PRE_MERGE_SHA"` (not
      `git reset --hard origin/main`).
-   - Substep 3 reads `git rebase origin/main` and is followed by a
-     reference to the conflict-handling paragraph.
+   - Substep 3 reads `git rebase origin/main` and points the reader at the
+     "If `git rebase origin/main` in substep 3 conflicts" paragraph below
+     the list.
    - Substeps 4–6 are the renumbered equivalents of the old substeps 3–5
      and are textually unchanged otherwise.
-2. Confirm the conflict-handling paragraph (Edit 2) appears immediately
-   after the numbered substep list, before the Reset-path heading. Confirm
-   it explicitly states the abort-and-exit policy and explicitly notes the
-   asymmetry with Step 1's mechanical-resolution carve-outs.
-3. Read the edited Step 1 rationale paragraph. Confirm the appended
+2. Confirm the **second-rejection fallback paragraph** (added by Edit 1)
+   appears immediately after the numbered substep list, before the
+   conflict-handling paragraph. Confirm it explicitly says the Retry path
+   is single-attempt, that a second push rejection falls through to the
+   Reset path using the freshly-captured `$PRE_MERGE_SHA` from substep 5,
+   and that this preserves the "must not exit while local main is ahead of
+   origin/main" invariant.
+3. Confirm the **rebase conflict-handling paragraph** (Edit 2) appears
+   immediately after the second-rejection fallback paragraph, before the
+   Reset-path heading. Confirm it inherits Step 1's mechanical-resolution
+   rules (formatting/adjacent-region/list-append → resolve inline; same
+   logical change on both sides → drop local-only duplicate; substantive
+   contradicting changes / file deleted vs modified / non-obvious decisions
+   → abort and exit). Confirm the abort path lands main back at
+   `$PRE_MERGE_SHA` with feature commits reachable via `$FEATURE_BRANCH`.
+4. Read the edited Step 1 rationale paragraph. Confirm the appended
    sentence (Edit 3) references `$PRE_MERGE_SHA` and the Retry path. Confirm
    no other text in the paragraph changed.
-4. Confirm no other section, heading, code block, or substep elsewhere in
-   the skill was modified.
-5. Optional (not required for sign-off): mentally trace the new substep
+5. Read `agent-config/docs/specs/2026-04-23-close-issue-close-branch-split.md`
+   around line 143. Confirm:
+   - The annotation blockquote (Edit 4) appears immediately above the
+     `- **Retry path** (preferred):` bullet, indented to the same depth as
+     the bullet (3 spaces).
+   - The annotation references ENG-257, names `git reset --hard origin/main`
+     as the bug-prone command, and points at `.claude/skills/close-branch/SKILL.md`
+     and `docs/specs/close-branch-retry-preserves-local-main.md` as the
+     current source of truth.
+   - The Retry-path bullet's text itself is unchanged from its current
+     content; only the annotation above it is new.
+   - No other content in `2026-04-23-close-issue-close-branch-split.md`
+     is modified.
+6. Confirm no other section, heading, code block, or substep elsewhere in
+   `.claude/skills/close-branch/SKILL.md` was modified.
+7. Optional (not required for sign-off): mentally trace the new substep
    sequence against the bug's repro scenario (local main = A+B+C+feature,
    origin/main races to A+X+Y) and confirm the end state is
-   A+X+Y+B'+C'+feature' on main with no commits orphaned.
+   A+X+Y+B'+C'+feature' on main with no commits orphaned. Then trace the
+   double-race case (substep 6 also rejected) and confirm the fallback
+   reaches the Reset path with main = A+X+Y+B'+C' (no feature commits, no
+   orphaned commits, exit non-zero).
 
 ## Files touched
 
 - `.claude/skills/close-branch/SKILL.md` (one numbered list rewritten in
-  Step 3, one paragraph inserted in Step 3, one sentence appended in Step
-  1).
+  Step 3, two paragraphs inserted in Step 3 — second-rejection fallback
+  and rebase conflict-handling — and one sentence appended in Step 1).
+- `agent-config/docs/specs/2026-04-23-close-issue-close-branch-split.md`
+  (one annotation blockquote inserted above the Retry-path bullet near
+  line 143; bullet text itself unchanged).
 
-No other files. Spec doc itself (`docs/specs/close-branch-retry-preserves-local-main.md`)
+Spec doc itself (`docs/specs/close-branch-retry-preserves-local-main.md`)
 is committed separately as part of the spec workflow, not by this fix.
 
 ## Prerequisites
 
-None. Self-contained edit to one file in `.claude/skills/`.
+None. Self-contained edits to two files (the live skill and one
+historical spec annotation).
 
 ## Commit shape
 
