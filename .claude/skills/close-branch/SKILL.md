@@ -155,13 +155,19 @@ git push origin main
 
    Abort and exit non-zero only when both sides made substantive contradicting changes to the same logic, when a file was deleted on one side and modified on the other, or when the right answer isn't obvious without operator context. On abort: `git rebase --abort` (local main lands back at `$PRE_MERGE_SHA`), then immediately `git reset --hard origin/main` to align local main with the remote before exiting. `$FEATURE_BRANCH` still points at the pre-retry ff-merge tip (containing both Sean's replayed direct-to-main commits and the rebased feature commits), so nothing is orphaned. Exit non-zero with a diagnostic. Recovery: the operator re-runs `/close-issue`; Step 1 rebases `$FEATURE_BRANCH` onto local main (now matching origin), replaying all work fresh.
 
-2. **Reset path** (fallback if retry is not recoverable within this skill): restore local main to its pre-merge state so the operator can investigate without the ff-merge in the way, then exit non-zero with a clear diagnostic:
+2. **Reset path** (fallback if retry is not recoverable within this skill): align local main with the post-rejection origin tip and exit non-zero with a clear diagnostic:
 
    ```bash
-   git reset --hard "$PRE_MERGE_SHA"
+   git fetch origin main
+   git reset --hard origin/main
    ```
 
-   The feature branch ref still points at the rebased feature commits; nothing is destroyed.
+   After this reset:
+
+   - Local main matches `origin/main` exactly. No divergence; no `git push --force` could overwrite shared commits.
+   - `$FEATURE_BRANCH` ref points at the Step 1 rebase tip — which absorbed any unpushed direct-to-main commits during the original Step 1 — so both Sean's pre-ritual direct-to-main commits and the rebased feature commits remain reachable.
+
+   Recovery: the operator re-runs `/close-issue`. Step 1's worktree rebase onto the now-fresh local main replays all of `$FEATURE_BRANCH`'s commits onto the new origin tip. No work is lost; no manual cherry-picking required.
 
 If neither path completes cleanly, escalate to the operator — but **never exit non-zero while local main contains the feature commits and `origin/main` does not.**
 

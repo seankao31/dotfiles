@@ -149,6 +149,16 @@ Body sections in execution order:
    > This historical bullet is preserved as a record of the ENG-213 design
    > decision; it is not the current behavioral spec.
    - **Retry path** (preferred): `git fetch origin main` → `git reset --hard origin/main` on local main → re-run Step 4 (rebase onto refreshed local main) → re-run Step 5 → re-run push. The explicit fetch is required because a rejected push does not reliably update the local `origin/main` tracking ref, and resetting to the stale ref would leave the worktree rebase based on an ancestor of the eventual ff-merge target.
+   > **DEPRECATED — Updated by ENG-304 (2026-04-26):** the `git reset
+   > --hard "$PRE_MERGE_SHA"` in the Reset path bullet below was
+   > identified as leaving local main diverged from origin/main whenever
+   > Sean had unpushed direct-to-main commits at close-issue invocation
+   > time, and was replaced in the live skill. **Do not copy this
+   > command** into new code or docs. The current correct behavior lives
+   > in `.claude/skills/close-branch/SKILL.md` Step 3 and is specified in
+   > `docs/specs/close-branch-reset-aligns-with-origin.md`. This historical
+   > bullet is preserved as a record of the ENG-213 design decision; it
+   > is not the current behavioral spec.
    - **Reset path** (if retry is not recoverable by close-branch): `git reset --hard "$PRE_MERGE_SHA"` to restore local main to its pre-merge state, then exit non-zero with a clear diagnostic for the operator.
    
    If neither path can be completed cleanly, escalate to the operator. **Never exit non-zero while local main contains the feature commits but origin/main does not.**
