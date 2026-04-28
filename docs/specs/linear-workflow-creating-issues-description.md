@@ -74,7 +74,7 @@ Project → … in that order.
 Verbatim text of the new bullet:
 
 ```markdown
-- **Description**: Substantive enough that the issue is actionable without reading the originating context. At minimum: (a) the problem in 1–3 sentences, (b) impact / when it triggers, (c) fix direction or the constraint blocking an obvious fix. Include relevant file paths and code snippets from the originating context. For follow-ups discovered during work on another issue, prefix the description with provenance — e.g. `**Discovered during <issue-id> codex review.** Filed as a follow-up because the fix is outside <issue-id>'s spec scope.` — substituting the actual discovery context (codex review, implementation, code review, testing) so the trail is in the body even before the relation link is read. Use `--description-file <path>` rather than `--description <string>` for any markdown content with code blocks or backticks.
+- **Description**: Substantive enough that the issue is actionable without reading the originating context. At minimum: (a) the problem in 1–3 sentences, (b) impact / when it triggers, (c) fix direction or the constraint blocking an obvious fix. When the originating context includes concrete code evidence, include the relevant file paths and code excerpts directly; for behavior-only or planning issues without code context, describe the observation precisely and skip the path/snippet expectation. For follow-ups discovered during active work on another issue — codex review, implementation, code review, or testing — prefix the description with provenance: `**Discovered during <issue-id> <discovery-phase>.** Filed as a follow-up because the fix is outside <issue-id>'s spec scope.`, where `<discovery-phase>` is one of those four phases. For scope-cut follow-ups (work deliberately deferred from a parent issue's plan), no prefix is required — the `blocked-by`/`blocks` relation to the parent is the provenance signal in that case. Use `--description-file <path>` rather than `--description <string>` for any markdown content with code blocks or backticks.
 ```
 
 Rationale for placement: descriptions are the next field a creator
@@ -85,16 +85,25 @@ that the existing bullet's good/bad examples teach. Inserting at the
 bottom would put a load-bearing requirement after housekeeping fields
 (Labels, Assignee) where it's easier to skip.
 
-Rationale for the discovery-context menu: the four contexts named
+Rationale for the discovery-context menu: the four phases named
 (codex review, implementation, code review, testing) are the
 active-phase discoveries where a "Discovered during X" prefix reads
-naturally. The existing **Follow-ups** bullet adds a fifth — "scope-cut
-from a parent issue" — but that's a one-time event rather than a phase,
-so it doesn't fit the prefix template. Scope-cut follow-ups should
-still carry a description per the rest of the bullet and a relation per
-the **Follow-ups** bullet, just without the "Discovered during" prefix
-(or with a phrasing that reflects the scope-cut origin, at the
-implementer's discretion).
+naturally. The existing **Follow-ups** bullet additionally lists
+"scope-cut from a parent issue" — that's a one-time event rather than
+a phase, so the prefix template doesn't fit. The bullet handles
+scope-cut as an explicit no-prefix case (the `blocked-by`/`blocks`
+relation to the parent is the provenance signal) so the rule has one
+canonical answer for every follow-up class rather than leaving it to
+the implementer's discretion.
+
+Rationale for the code-evidence conditional: the rule is in the
+general `## Creating Issues` checklist, which governs all issue
+creation — not just follow-ups from active code work. Net-new
+features, planning issues, and behavior-only bug reports often have no
+concrete file path or snippet to cite. Making path/snippet inclusion
+unconditional would either pressure the agent into fabricating
+references or get silently downgraded; gating on "concrete code
+evidence" is the smaller, more honest rule.
 
 ### Edit 2 — Append a description-omission callout to Entry Point 2 in `## Autonomous Sessions`
 
@@ -159,19 +168,27 @@ autonomous-context callout is the right size for this fix.
       checklist contains a new bullet titled `**Description**`,
       positioned **after** the **Title** bullet and **before** the
       **Project** bullet.
-- [ ] That bullet covers all four content requirements named in
+- [ ] That bullet covers all five content requirements named in
       "Verbatim text of the new bullet" above: (a)/(b)/(c) minimum
-      content, file-paths-and-code-snippets, the provenance-prefix
-      template with the four-context menu, and the `--description-file`
-      preference for markdown content with backticks.
+      content; conditional file-paths-and-code-snippets gated on
+      concrete code evidence; the active-phase provenance-prefix
+      template with its four-phase menu (codex review, implementation,
+      code review, testing); the scope-cut no-prefix exception; and
+      the `--description-file` preference for markdown content with
+      backticks.
 - [ ] `## Autonomous Sessions` Entry Point 2 bullet ends with the
       three-sentence callout from Edit 2 above, appended to the existing
       bullet (no new bullet, no blank line — same paragraph).
-- [ ] No other lines in the file change. The dot graph, all other Entry
-      Points, Active Work Status, the rest of Creating Issues, the rest
-      of Duplicate Prevention, the rest of Autonomous Sessions, "When
-      This Does NOT Apply", Workspace Context, and Quick Reference are
-      byte-identical to the pre-edit version.
+- [ ] This issue's two edits to
+      `agent-config/skills/linear-workflow/SKILL.md` are purely
+      additive: a new Description bullet within `## Creating Issues`
+      and an appended sentence trio inside the existing Entry Point 2
+      bullet of `## Autonomous Sessions`. No pre-existing line in the
+      file is modified or removed by this issue's diff. The diff
+      baseline is the file as it exists at dispatch time (post-ENG-275,
+      since this issue is `blocked-by ENG-275`); the byte-additive
+      constraint is enforced by the `git diff` check in Verification
+      step 4, not by comparison against any older snapshot.
 - [ ] A reader of the `## Creating Issues` checklist can answer "what
       should the description contain?" from the bullet alone, without
       needing to consult the originating session, the `linear-cli`
