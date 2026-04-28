@@ -8,4 +8,8 @@
 
 # sensible-ralph runtime artifacts
 /.sensible-ralph/
+/.ralph-base-sha
+/.sensible-ralph-base-sha
 ralph-output.log
+/ordered_queue.txt
+/progress.json
