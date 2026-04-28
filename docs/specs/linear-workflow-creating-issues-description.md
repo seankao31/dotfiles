@@ -74,7 +74,7 @@ Project → … in that order.
 Verbatim text of the new bullet:
 
 ```markdown
-- **Description**: Substantive enough that the issue is actionable without reading the originating context. At minimum: (a) the problem in 1–3 sentences, (b) impact / when it triggers, (c) fix direction or the constraint blocking an obvious fix. When the originating context includes concrete code evidence, include the relevant file paths and code excerpts directly; for behavior-only or planning issues without code context, describe the observation precisely and skip the path/snippet expectation. For follow-ups discovered during active work on another issue — codex review, implementation, code review, or testing — prefix the description with the provenance sentence `**Discovered during <issue-id> <discovery-phase>.**` (where `<discovery-phase>` is one of those four phases). Optionally follow with a one-sentence rationale for filing separately when one applies — e.g. `Filed as a follow-up because the fix is outside <issue-id>'s spec scope.` or `Filed separately for risk containment.` — but the provenance sentence alone is sufficient. For scope-cut follow-ups (work deliberately deferred from a parent issue's plan), no prefix is required — the parent-issue relation set per the **Follow-ups** bullet (`blocked-by`/`blocks` when there's a real sequencing dependency, `related` otherwise) carries the provenance. Use `--description-file <path>` rather than `--description <string>` for any markdown content with code blocks or backticks.
+- **Description**: Substantive enough that the issue is actionable without reading the originating context. At minimum: (a) the problem in 1–3 sentences, (b) impact / when it triggers, (c) fix direction or the constraint blocking an obvious fix. When the originating context includes concrete code evidence, include the relevant file paths and code excerpts directly; for behavior-only or planning issues without code context, describe the observation precisely and skip the path/snippet expectation. For follow-ups discovered during active work on another issue — codex review, implementation, code review, or testing — prefix the description with the provenance sentence `**Discovered during <issue-id> <discovery-phase>.**` (where `<discovery-phase>` is one of those four phases). For scope-cut follow-ups (work deliberately deferred from a parent issue's plan), use the alternate prefix `**Scoped out of <issue-id>'s plan.**`. In either case, optionally follow with a one-sentence rationale for filing separately when one applies — e.g. `Filed as a follow-up because the fix is outside <issue-id>'s spec scope.` or `Filed separately for risk containment.` — but the provenance sentence alone is sufficient. The parent-issue relation set per the **Follow-ups** bullet provides additional provenance, but the description prefix carries enough alone to keep the follow-up actionable if the relation is missed. Use `--description-file <path>` rather than `--description <string>` for any markdown content with code blocks or backticks.
 ```
 
 Rationale for placement: descriptions are the next field a creator
@@ -85,26 +85,27 @@ that the existing bullet's good/bad examples teach. Inserting at the
 bottom would put a load-bearing requirement after housekeeping fields
 (Labels, Assignee) where it's easier to skip.
 
-Rationale for the discovery-context menu: the four phases named
-(codex review, implementation, code review, testing) are the
-active-phase discoveries where a "Discovered during X" prefix reads
-naturally. The existing **Follow-ups** bullet additionally lists
-"scope-cut from a parent issue" — that's a one-time event rather than
-a phase, so the prefix template doesn't fit. The bullet handles
-scope-cut as an explicit no-prefix case — the parent-issue relation
-alone (whichever the **Follow-ups** bullet's rule selects, `blocked-by`
-or `related`) is the provenance signal. This keeps the new Description
-rule from overriding the existing **Follow-ups** rule on relation-type
-choice.
+Rationale for the two prefix templates: the four active-phase contexts
+(codex review, implementation, code review, testing) read naturally as
+"Discovered during X". Scope-cut is a one-time event rather than a
+phase, so it gets its own template (`**Scoped out of <issue-id>'s
+plan.**`). Both templates are textual provenance carried in the issue
+body, so every follow-up class — phase-discovered and scope-cut alike
+— is actionable from the description alone. An earlier draft made
+scope-cut prefix-exempt and relied on the parent-issue relation as
+provenance, but the same incident producing this spec (ENG-309/ENG-310)
+also missed the relation step, so leaning on the relation as the sole
+provenance carrier reproduces the failure mode this issue is trying to
+fix.
 
 Rationale for the optional rationale tail: an earlier draft hardcoded
 `Filed as a follow-up because the fix is outside <issue-id>'s spec
-scope.` as the second sentence. Codex review flagged that not every
-follow-up is filed for that reason — risk containment, ownership
-boundaries, and deliberate deferral within scope are all valid causes.
-Demanding the verbatim rationale would pressure the agent to emit a
-false statement. The provenance sentence alone is the load-bearing
-piece; the rationale tail is a useful affordance, not a requirement.
+scope.` as a required second sentence. Not every follow-up is filed
+for that reason — risk containment, ownership boundaries, and
+deliberate deferral within scope are all valid causes. Demanding the
+verbatim rationale would pressure the agent to emit a false statement.
+The provenance sentence alone is the load-bearing piece; the rationale
+tail is a useful affordance, not a requirement.
 
 Rationale for the code-evidence conditional: the rule is in the
 general `## Creating Issues` checklist, which governs all issue
@@ -133,7 +134,7 @@ existing paragraph so the whole bullet still reads as one Entry Point 2
 block):
 
 ```markdown
-**Description omission is the most common autonomous-mode failure mode.** A title-only follow-up is unactionable hours later — the originating session and its transcripts may be gone. Apply the Description requirements from "Creating Issues" verbatim; do not file with an empty body.
+**Description omission is the most common autonomous-mode failure mode.** A title-only follow-up is unactionable hours later — the originating session and its transcripts may be gone. Apply the Description requirements from "Creating Issues" verbatim; do not file with an empty body. **If you cannot fill the (a)/(b)/(c) minimum from current evidence**, do not fabricate content to satisfy the checklist — instead, leave a comment on the originating issue describing what you observed and the missing context, and defer the new-issue creation to human review of the originating handoff. Inventing a plausible but speculative description is worse than not filing.
 ```
 
 Rationale: cross-references get skipped under autonomous load. The
@@ -183,12 +184,15 @@ autonomous-context callout is the right size for this fix.
       content; conditional file-paths-and-code-snippets gated on
       concrete code evidence; the active-phase provenance-prefix
       template with its four-phase menu (codex review, implementation,
-      code review, testing); the scope-cut no-prefix exception; and
-      the `--description-file` preference for markdown content with
+      code review, testing); the scope-cut alternate prefix
+      (`**Scoped out of <issue-id>'s plan.**`); and the
+      `--description-file` preference for markdown content with
       backticks.
 - [ ] `## Autonomous Sessions` Entry Point 2 bullet ends with the
-      three-sentence callout from Edit 2 above, appended to the existing
-      bullet (no new bullet, no blank line — same paragraph).
+      five-sentence callout from Edit 2 above, appended to the
+      existing bullet (no new bullet, no blank line — same paragraph).
+      The callout includes the insufficient-evidence fallback
+      (comment-on-parent-and-defer rather than fabricate or skip).
 - [ ] This issue's two edits to
       `agent-config/skills/linear-workflow/SKILL.md` are purely
       additive: a new Description bullet within `## Creating Issues`
