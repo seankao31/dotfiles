@@ -178,28 +178,28 @@ without requiring them to find the new subsection earlier in the doc.
 
 ## Acceptance criteria
 
-- [ ] `agent-config/skills/linear-workflow/SKILL.md` contains a new
+- [x] `agent-config/skills/linear-workflow/SKILL.md` contains a new
       top-level subsection titled `## The "In Design" State`,
       positioned between `## Integration with Superpowers Workflow`
       and `## Creating Issues`.
-- [ ] That subsection includes the state-machine line
+- [x] That subsection includes the state-machine line
       (`Todo → In Design → …`), a definition paragraph identifying
       `In Design` as interactive-design-session-in-flight, the
       transition table covering `Todo → In Design`,
       `In Design → Approved`, and `In Design → Todo or Backlog`, the
       `/ralph-start` skip note, and the anti-pattern callout
       contrasting `In Design` with `In Progress`.
-- [ ] Entry Point 1's branch list includes a new bullet for
+- [x] Entry Point 1's branch list includes a new bullet for
       `In Design` with the "stop and ask" behavior described above.
-- [ ] The first bullet of the `## Autonomous Sessions` section ends
+- [x] The first bullet of the `## Autonomous Sessions` section ends
       with the appended sentence noting that `/ralph-start` queries
       `Approved` issues only and skips `In Design`.
-- [ ] No other lines in the file change. The dot graph, all other
+- [x] No other lines in the file change. The dot graph, all other
       Entry Point narrative, Active Work Status, Creating Issues,
       Duplicate Prevention, When This Does NOT Apply, Workspace
       Context, and Quick Reference are byte-identical to the pre-edit
       version.
-- [ ] A reader can answer "what does `In Design` mean and when does
+- [x] A reader can answer "what does `In Design` mean and when does
       it transition?" from this skill alone, without needing to look
       at Sensible Ralph plugin docs.
 
