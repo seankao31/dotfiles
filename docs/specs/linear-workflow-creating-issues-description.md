@@ -276,6 +276,38 @@ review at `/prepare-for-review`, which catches edit drift on markdown.
    safely), so co-locating both in `linear-workflow` reads more
    naturally than splitting.
 
+## Known limitations
+
+Three concerns surfaced during codex adversarial review that the
+current spec deliberately does not address. They are recorded here for
+future refinement; let real usage decide whether any need a follow-up
+issue.
+
+1. **Provenance prefix only enumerates four phases** (codex review,
+   implementation, code review, testing) plus the scope-cut alternate.
+   Other discovery contexts (debugging outside a formal review,
+   operational triage, design/spec work outside a codex pass) have no
+   documented prefix. An autonomous agent encountering one of these
+   contexts must pick between omitting the prefix and inventing a new
+   phase string. The four phases were chosen to match the existing
+   **Follow-ups** bullet's enumeration; broadening the menu now risks
+   over-specifying a checklist gap into a taxonomy.
+2. **Insufficient-evidence fallback uses comment-on-parent.** Comments
+   are less durable and less searchable than issues. If the
+   originating issue is closed, the deferred follow-up can be missed.
+   The alternate — file a `NEEDS CONTEXT` placeholder issue — would be
+   more durable but reintroduces the low-quality-issue pattern this
+   spec is trying to fix. The trigger (autonomous agent has insufficient
+   context to write (a)/(b)/(c)) is expected to be rare in practice
+   because most discoveries happen at the point of failure where context
+   is plentiful.
+3. **Code-excerpt size and redaction are unbounded.** The "include
+   relevant file paths and code excerpts" clause does not cap excerpt
+   length, prescribe redaction of secrets, or define when paths alone
+   are sufficient. The current repository's code is not sensitive, so
+   the gap is theoretical here; a different repo using this skill
+   could see disclosure-risk or oversize-issue-body issues.
+
 ## References
 
 * Originating incident: ENG-279 (Sensible Ralph, Done). Symptoms most
