@@ -85,11 +85,16 @@ that the existing bullet's good/bad examples teach. Inserting at the
 bottom would put a load-bearing requirement after housekeeping fields
 (Labels, Assignee) where it's easier to skip.
 
-Rationale for the discovery-context menu: the bullet's prefix
-instruction enumerates the same discovery contexts already named in the
-existing **Follow-ups** bullet ("discovered during implementation,
-review, testing, or scope-cut from a parent issue") so a follow-up's
-description prefix and its relation type stay in sync.
+Rationale for the discovery-context menu: the four contexts named
+(codex review, implementation, code review, testing) are the
+active-phase discoveries where a "Discovered during X" prefix reads
+naturally. The existing **Follow-ups** bullet adds a fifth — "scope-cut
+from a parent issue" — but that's a one-time event rather than a phase,
+so it doesn't fit the prefix template. Scope-cut follow-ups should
+still carry a description per the rest of the bullet and a relation per
+the **Follow-ups** bullet, just without the "Discovered during" prefix
+(or with a phrasing that reflects the scope-cut origin, at the
+implementer's discretion).
 
 ### Edit 2 — Append a description-omission callout to Entry Point 2 in `## Autonomous Sessions`
 
