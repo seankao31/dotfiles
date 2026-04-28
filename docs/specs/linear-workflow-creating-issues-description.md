@@ -74,7 +74,7 @@ Project → … in that order.
 Verbatim text of the new bullet:
 
 ```markdown
-- **Description**: Substantive enough that the issue is actionable without reading the originating context. At minimum: (a) the problem in 1–3 sentences, (b) impact / when it triggers, (c) fix direction or the constraint blocking an obvious fix. When the originating context includes concrete code evidence, include the relevant file paths and code excerpts directly; for behavior-only or planning issues without code context, describe the observation precisely and skip the path/snippet expectation. For follow-ups discovered during active work on another issue — codex review, implementation, code review, or testing — prefix the description with provenance: `**Discovered during <issue-id> <discovery-phase>.** Filed as a follow-up because the fix is outside <issue-id>'s spec scope.`, where `<discovery-phase>` is one of those four phases. For scope-cut follow-ups (work deliberately deferred from a parent issue's plan), no prefix is required — the `blocked-by`/`blocks` relation to the parent is the provenance signal in that case. Use `--description-file <path>` rather than `--description <string>` for any markdown content with code blocks or backticks.
+- **Description**: Substantive enough that the issue is actionable without reading the originating context. At minimum: (a) the problem in 1–3 sentences, (b) impact / when it triggers, (c) fix direction or the constraint blocking an obvious fix. When the originating context includes concrete code evidence, include the relevant file paths and code excerpts directly; for behavior-only or planning issues without code context, describe the observation precisely and skip the path/snippet expectation. For follow-ups discovered during active work on another issue — codex review, implementation, code review, or testing — prefix the description with the provenance sentence `**Discovered during <issue-id> <discovery-phase>.**` (where `<discovery-phase>` is one of those four phases). Optionally follow with a one-sentence rationale for filing separately when one applies — e.g. `Filed as a follow-up because the fix is outside <issue-id>'s spec scope.` or `Filed separately for risk containment.` — but the provenance sentence alone is sufficient. For scope-cut follow-ups (work deliberately deferred from a parent issue's plan), no prefix is required — the parent-issue relation set per the **Follow-ups** bullet (`blocked-by`/`blocks` when there's a real sequencing dependency, `related` otherwise) carries the provenance. Use `--description-file <path>` rather than `--description <string>` for any markdown content with code blocks or backticks.
 ```
 
 Rationale for placement: descriptions are the next field a creator
@@ -91,10 +91,20 @@ active-phase discoveries where a "Discovered during X" prefix reads
 naturally. The existing **Follow-ups** bullet additionally lists
 "scope-cut from a parent issue" — that's a one-time event rather than
 a phase, so the prefix template doesn't fit. The bullet handles
-scope-cut as an explicit no-prefix case (the `blocked-by`/`blocks`
-relation to the parent is the provenance signal) so the rule has one
-canonical answer for every follow-up class rather than leaving it to
-the implementer's discretion.
+scope-cut as an explicit no-prefix case — the parent-issue relation
+alone (whichever the **Follow-ups** bullet's rule selects, `blocked-by`
+or `related`) is the provenance signal. This keeps the new Description
+rule from overriding the existing **Follow-ups** rule on relation-type
+choice.
+
+Rationale for the optional rationale tail: an earlier draft hardcoded
+`Filed as a follow-up because the fix is outside <issue-id>'s spec
+scope.` as the second sentence. Codex review flagged that not every
+follow-up is filed for that reason — risk containment, ownership
+boundaries, and deliberate deferral within scope are all valid causes.
+Demanding the verbatim rationale would pressure the agent to emit a
+false statement. The provenance sentence alone is the load-bearing
+piece; the rationale tail is a useful affordance, not a requirement.
 
 Rationale for the code-evidence conditional: the rule is in the
 general `## Creating Issues` checklist, which governs all issue
