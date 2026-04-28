@@ -72,7 +72,7 @@ git -C "$WORKTREE_PATH" fetch origin main
 git -C "$WORKTREE_PATH" rebase main
 ```
 
-Rebase onto **local** `main`, not `origin/main`. The user sometimes commits directly to local main (progress logs, plan tweaks) without pushing immediately; rebasing onto local main absorbs those commits so Step 2's `git merge --ff-only` succeeds. The `git fetch` is still useful — Step 2's `git pull --ff-only origin main` catches any movement on the remote before the merge.
+Rebase onto **local** `main`, not `origin/main`. The user sometimes commits directly to local main (progress logs, plan tweaks) without pushing immediately; rebasing onto local main absorbs those commits so Step 2's `git merge --ff-only` succeeds. The `git fetch` is still useful — Step 2's `git pull --ff-only origin main` catches any movement on the remote before the merge. The Retry path in Step 3 preserves this same invariant: when a push rejection forces a rewind, it rewinds to `$PRE_MERGE_SHA` (which includes any unpushed direct-to-main commits) rather than to `origin/main` (which would orphan them).
 
 **If rebase fails with conflicts:** resolve them yourself when the right answer is mechanical, then `git -C "$WORKTREE_PATH" add <files>` and `git -C "$WORKTREE_PATH" rebase --continue`. The goal is minimal human intervention *when the decision is mechanical*.
 
@@ -127,10 +127,33 @@ git push origin main
 
 1. **Retry path** (preferred): if a push rejection is recoverable by re-rebasing onto the new origin/main, do the full recovery here:
    1. `git fetch origin main` — a rejected push does not reliably update the local `origin/main` tracking ref. Without an explicit fetch, the subsequent reset would land on the *pre-rejection* origin/main (stale), the worktree rebase would target that stale ref, and Step 2's `git pull --ff-only` would finally advance local main — leaving the worktree branch based on an ancestor of the new HEAD and failing the ff-only merge.
-   2. `git reset --hard origin/main` on local main (discards the local ff-merge; the feature commits are still reachable via `$FEATURE_BRANCH`).
-   3. Re-run Step 1 on the worktree (rebase onto the now-fresh local main, which equals the new origin/main).
-   4. Re-run Step 2 (capture a fresh `$PRE_MERGE_SHA`, ff-merge).
-   5. Re-run the push.
+   2. `git reset --hard "$PRE_MERGE_SHA"` on local main. Restores main to the state captured in Step 2 — the post-pull, pre-ff-merge tip — which includes any unpushed direct-to-main commits Sean made before invoking the close ritual. The feature commits are still reachable via `$FEATURE_BRANCH`; the unpushed direct-to-main commits are now reachable via `main` itself, not only via reflog.
+   3. `git rebase origin/main` on local main. Replays any commits between `$PRE_MERGE_SHA` and the original `origin/main` (i.e., the unpushed direct-to-main commits) onto the new collaborator-pushed tip. In the common case (no unpushed commits), this is a no-op fast-forward. Conflict handling: see the paragraph beginning "If `git rebase origin/main` in substep 3 conflicts" below the numbered list.
+   4. Re-run Step 1 on the worktree (rebase onto the now-fresh local main, which equals the new origin/main plus any replayed direct-to-main commits).
+   5. Re-run Step 2 (capture a fresh `$PRE_MERGE_SHA`, ff-merge).
+   6. Re-run the push.
+
+   **The Retry path is bounded to a single attempt.** If the re-push in substep 6 is also rejected — a second collaborator push raced this retry — the Retry path is exhausted. Fetch the new origin tip and reset local main to match it, then exit non-zero with a diagnostic.
+
+   ```bash
+   git fetch origin main
+   git reset --hard origin/main
+   ```
+
+   After this reset:
+
+   - Local main = `origin/main` exactly. No divergence; no `git push --force` could overwrite shared commits.
+   - `$FEATURE_BRANCH` still points at the substep-5 ff-merge tip, which contains both Sean's replayed direct-to-main commits (B', C' from substep 3) and the rebased feature commits (F's). Nothing is orphaned.
+
+   Recovery: the operator re-runs `/close-issue`. Step 1's worktree rebase onto local main replays all of `$FEATURE_BRANCH`'s commits (B', C', F's) onto the new origin tip, producing fresh B'', C'', F''s in the next attempt. No work is lost; no manual cherry-picking required. This bounded-retry-then-exit-cleanly model avoids an unbounded retry loop in the rare double-race case while keeping the "no force-push hazard" invariant on every exit path.
+
+   Note: this fallback's reset target (`origin/main`) differs from the existing Reset path's target (`$PRE_MERGE_SHA`, line 138) by design. The existing Reset path has the same divergence flaw whenever Sean has unpushed direct-to-main commits; aligning the two paths is tracked as **ENG-304** and is intentionally out of scope for ENG-257. Using `origin/main` here from the start avoids inheriting the flaw in the new code.
+
+   **If `git rebase origin/main` in substep 3 conflicts**, apply the same conflict-handling rules as Step 1: the conflict shape here is similar — small documentation, list, or changelog collisions between two streams of work merging into main — and the same mechanical-vs-substantive distinction applies.
+
+   Resolve mechanical conflicts inline, then `git -C "$MAIN_REPO" add <files>` and `git rebase --continue`, then proceed to substep 4. Mechanical cases are the same as Step 1: unrelated edits in adjacent regions (keep both), the same logical change landed on both sides (drop the local-only duplicate; take origin's version), both sides appended different items to the same list/changelog/docs section (merge the content).
+
+   Abort and exit non-zero only when both sides made substantive contradicting changes to the same logic, when a file was deleted on one side and modified on the other, or when the right answer isn't obvious without operator context. On abort: `git rebase --abort` (local main lands back at `$PRE_MERGE_SHA`; feature commits remain reachable via `$FEATURE_BRANCH`), then exit non-zero with a diagnostic naming `$PRE_MERGE_SHA`. The operator investigates and re-runs `/close-issue`.
 
 2. **Reset path** (fallback if retry is not recoverable within this skill): restore local main to its pre-merge state so the operator can investigate without the ff-merge in the way, then exit non-zero with a clear diagnostic:
 

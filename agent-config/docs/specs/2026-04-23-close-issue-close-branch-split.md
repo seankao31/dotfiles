@@ -140,6 +140,14 @@ Body sections in execution order:
    PRE_MERGE_SHA=$(git rev-parse main)
    ```
 6. **Push** — current Step 3, with a strengthened invariant: close-branch must not exit while local main is ahead of `origin/main`. Two compliant exit paths after a push rejection:
+   > **DEPRECATED — Updated by ENG-257 (2026-04-26):** the `git reset
+   > --hard origin/main` in the Retry path bullet below was identified as
+   > orphaning unpushed direct-to-main commits and was replaced in the
+   > live skill. **Do not copy this command** into new code or docs. The
+   > current correct behavior lives in `.claude/skills/close-branch/SKILL.md`
+   > Step 3 and is specified in `docs/specs/close-branch-retry-preserves-local-main.md`.
+   > This historical bullet is preserved as a record of the ENG-213 design
+   > decision; it is not the current behavioral spec.
    - **Retry path** (preferred): `git fetch origin main` → `git reset --hard origin/main` on local main → re-run Step 4 (rebase onto refreshed local main) → re-run Step 5 → re-run push. The explicit fetch is required because a rejected push does not reliably update the local `origin/main` tracking ref, and resetting to the stale ref would leave the worktree rebase based on an ancestor of the eventual ff-merge target.
    - **Reset path** (if retry is not recoverable by close-branch): `git reset --hard "$PRE_MERGE_SHA"` to restore local main to its pre-merge state, then exit non-zero with a clear diagnostic for the operator.
    
