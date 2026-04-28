@@ -66,6 +66,7 @@ After brainstorming completes and the user commits to building, or when starting
 4. **Move the issue to "In Progress"** with `linear issue update ID --state "In Progress"` — but read the current state first via `linear issue view ID --json` and branch on it:
    - Already `In Progress`: skip the write. Another actor (e.g., the spec-queue orchestrator) may have pre-transitioned at dispatch; a second write is unnecessary noise.
    - `Triage`, `Backlog`, `Todo`, `Approved`, or `In Review`: transition to `In Progress`. The `In Review` case is legitimate — when resuming implementation to address review feedback, the board must reflect that code is changing again (ralph v2's DAG rule treats `In Review` as resolved-enough-to-build-on, so downstream dispatch races if state lags behind reality).
+   - `In Design`: stop and ask. The state signals that an interactive design session was started but didn't conclude. Starting implementation without first concluding the design (→ `Approved`) means moving forward without a finalized spec. Prompt the user to choose: resume `/ralph-spec`, mark `Approved` and proceed, or abandon back to `Todo`/`Backlog`. See the `In Design` state subsection for context.
    - `Done` or `Canceled`: stop and ask the user. These are terminal; reopening warrants explicit confirmation.
 
 Then continue to writing-plans or TDD as normal.
@@ -95,6 +96,33 @@ These transitions are independent of how the work was integrated. Don't wait for
 When implementation begins on an issue (after Entry Point 1), update its status to "In Progress". This keeps the board accurate — anyone looking at Linear can see what's actively being worked on.
 
 Don't set "In Progress" when merely filing an issue (Entry Point 2) or during exploratory/brainstorming phases before committing to build.
+
+## The "In Design" State
+
+The Linear workflow in this workspace places `In Design` between `Todo` and `Approved`:
+
+`Todo → In Design → Approved → In Progress → In Review → Done`
+
+`In Design` signals that **a human has picked up the issue and is actively running an interactive design or spec session** — typically `/ralph-spec`. It is distinct from `In Progress`, which is reserved for *implementation* (often autonomous, dispatched by `/ralph-start`).
+
+`/ralph-start`'s queue builder deliberately does **not** dispatch issues in `In Design`. The state sits outside the autonomous queue so that a half-formed design doesn't get picked up for implementation.
+
+### Transitions involving `In Design`
+
+| From | To | Trigger |
+|---|---|---|
+| `Todo` | `In Design` | A human opens an interactive design session on the ticket (typically `/ralph-spec`, which transitions automatically at session start). Don't write `In Design` directly from this skill. |
+| `In Design` | `Approved` | The interactive design session concludes successfully and the spec is ready for autonomous dispatch. `/ralph-spec` does this in its finalization step. Don't write `Approved` directly from this skill. |
+| `In Design` | `Todo` or `Backlog` | The design session is abandoned without producing an Approved spec. The human resets the issue manually — back to `Todo` if it remains actionable, `Backlog` if the scope needs more thinking. |
+
+### Anti-pattern
+
+`In Design` is **not** for autonomous implementation work — that's `In Progress`. The two states are semantically distinct:
+
+- `In Design` = *design* in flight (interactive, human-driven dialogue).
+- `In Progress` = *implementation* in flight (autonomous or interactive coding work).
+
+Don't transition an issue to `In Design` to mean "I'm working on it" when the work is actually implementation. And don't dispatch an `In Design` issue for autonomous coding — `/ralph-start` already prevents this, but the same rule applies if you're writing code directly: complete the design (move to `Approved`) before transitioning to `In Progress`.
 
 ## Creating Issues
 
@@ -137,7 +165,7 @@ This applies to all entry points — starting work, filing issues, and batch-cre
 
 Some sessions run without a human in the loop — e.g., the spec-queue orchestrator (ralph v2) dispatches autonomous `claude -p` sessions against pre-approved issues. In that context:
 
-- **Entry Point 1 does not run.** The orchestrator pre-selects the issue, pre-creates the worktree, and pre-transitions state to `In Progress` before dispatch. The agent reads its issue ID from the prompt and begins implementation directly. There is no "starting work" step to execute.
+- **Entry Point 1 does not run.** The orchestrator pre-selects the issue, pre-creates the worktree, and pre-transitions state to `In Progress` before dispatch. The agent reads its issue ID from the prompt and begins implementation directly. There is no "starting work" step to execute. The orchestrator queries `Approved` issues only — issues in `In Design` are deliberately skipped, since they represent in-flight interactive design work, not autonomous-ready implementation work.
 - **Entry Point 2 (filing follow-ups) proceeds without confirmation.** Use the defaults in "Creating Issues" below: project per workspace context, priority Urgent for bugs / Medium for features, status `Backlog` when scope is vague or `Todo` when actionable. Always link back to the originating issue via `linear issue relation add` so provenance is preserved for later human review.
 - **Entry Point 3 targets `In Review`, not `Done`.** Autonomous sessions hand off for human review. The `Done` transition is the user's when they merge the branch.
 - **Before filing, run the duplicate check.** Run both:
