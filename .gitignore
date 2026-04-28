@@ -6,8 +6,6 @@
 .env
 .worktrees/
 
-# Ralph orchestrator artifacts (ENG-237)
-/.ralph-base-sha
-/ralph-output.log
-/ordered_queue.txt
-/progress.json
+# sensible-ralph runtime artifacts
+/.sensible-ralph/
+ralph-output.log
