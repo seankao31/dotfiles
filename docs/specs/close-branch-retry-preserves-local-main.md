@@ -166,9 +166,14 @@ heading.
 > contradicting changes to the same logic, when a file was deleted on one
 > side and modified on the other, or when the right answer isn't obvious
 > without operator context. On abort: `git rebase --abort` (local main
-> lands back at `$PRE_MERGE_SHA`; feature commits remain reachable via
-> `$FEATURE_BRANCH`), then exit non-zero with a diagnostic naming
-> `$PRE_MERGE_SHA`. The operator investigates and re-runs `/close-issue`.
+> lands back at `$PRE_MERGE_SHA`), then immediately `git reset --hard
+> origin/main` to align local main with the remote before exiting.
+> `$FEATURE_BRANCH` still points at the pre-retry ff-merge tip (containing
+> both Sean's replayed direct-to-main commits and the rebased feature
+> commits), so nothing is orphaned. Exit non-zero with a diagnostic.
+> Recovery: the operator re-runs `/close-issue`; Step 1 rebases
+> `$FEATURE_BRANCH` onto local main (now matching origin), replaying all
+> work fresh.
 
 ### Edit 3 — Step 1: forward-link to the Retry path's invariant preservation
 
@@ -358,8 +363,11 @@ result from this commit.
    rules (formatting/adjacent-region/list-append → resolve inline; same
    logical change on both sides → drop local-only duplicate; substantive
    contradicting changes / file deleted vs modified / non-obvious decisions
-   → abort and exit). Confirm the abort path lands main back at
-   `$PRE_MERGE_SHA` with feature commits reachable via `$FEATURE_BRANCH`.
+   → abort and exit). Confirm the abort path: `git rebase --abort` followed
+   by `git reset --hard origin/main` (local main aligns with origin, no
+   divergence), then exit non-zero. `$FEATURE_BRANCH` preserves all work
+   (direct-to-main replays + feature commits). Recovery is operator
+   re-runs `/close-issue` from this clean state.
 4. Read the edited Step 1 rationale paragraph. Confirm the appended
    sentence (Edit 3) references `$PRE_MERGE_SHA` and the Retry path. Confirm
    no other text in the paragraph changed.
