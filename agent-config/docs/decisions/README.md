@@ -1,6 +1,6 @@
 # ADR or Linear issue?
 
-`agent-config/docs/decisions/` holds two shapes of decision content that have asymmetric failure modes. The one that bites is commit-shaped decisions — "adopt X, here's why" — filed as ADR files without a lifecycle to track whether their implementation work ever lands. ENG-246 surfaced this concretely: a HITL/AFK-labels ADR (added in `ee58a872`, reverted in `7c11d8f`) was filed alongside two siblings that did get implemented, but its own implementation work was never done. Nothing on the ADR file flagged it as inert; the gap surfaced only on wrap-up review.
+`agent-config/docs/decisions/` holds two shapes of decision content that have asymmetric failure modes. The one that bites is commit-shaped decisions — "adopt X, here's why" — filed as ADR files without a lifecycle to track whether their implementation work ever lands. An ADR file has no triage state, no assignee, no in-progress → done arc; nothing flags it as inert when its implementation work is forgotten.
 
 ---
 
@@ -40,7 +40,6 @@ Examples — decisions that are or would be commit-shaped:
 
 - **`2026-04-23-adopt-verification-before-completion-in-ralph-implement.md`** — adopting an upstream skill, modifying `ralph-implement` Step 4. Under this convention: a Linear issue with the rationale in the description, closed on the commit landing the edit.
 - **`2026-04-23-config-sh-portability-caller-reorder.md`** — reordering source calls across four entry points. Pure code change; rationale belongs in the issue body and the commit.
-- **The reverted HITL/AFK ADR** (added `ee58a872`, reverted `7c11d8f`) — the exemplar of the failure mode. Under this convention it would have been a Linear issue; the triage-on-the-issue cycle would have surfaced the gap before wrap-up.
 
 ---
 
