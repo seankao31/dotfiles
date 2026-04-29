@@ -4,7 +4,7 @@
 
 ---
 
-**Does this decision have a load-bearing implementation step?**
+**Does this decision have a load-bearing implementation step (work yet to land)?**
 
 - **Yes** → file a Linear issue.
 - **No** → write an ADR file.
@@ -34,7 +34,7 @@ Recommended description headings (mirrors ADR structure so rationale survives th
 ## Alternatives considered
 ```
 
-For project routing (Agent Config, Sensible Ralph, Machine Config), defer to `agent-config/CLAUDE.md` § Linear.
+For project routing (Agent Config, Sensible Ralph, Machine Config), defer to `CLAUDE.md` § Linear.
 
 Examples — decisions that are or would be commit-shaped:
 
