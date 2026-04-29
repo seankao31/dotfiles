@@ -102,7 +102,7 @@ If this produces any output, exit non-zero. Do not merge into a dirty main check
 
 `--untracked-files=no` suppresses `??` lines so leftover ralph artifacts, stray plan drafts, or any other untracked file in the main checkout don't trip this gate. Only uncommitted changes to *tracked* files threaten a fast-forward merge.
 
-Once clean, capture a safety ref before the merge so Step 3 can restore main if the push is rejected and retry isn't viable:
+Once clean, capture a safety ref before the merge so Step 3's Retry path can preserve any unpushed direct-to-main commits during a push-rejection recovery:
 
 ```bash
 git checkout main
@@ -146,8 +146,6 @@ git push origin main
    - `$FEATURE_BRANCH` still points at the substep-5 ff-merge tip, which contains both Sean's replayed direct-to-main commits (B', C' from substep 3) and the rebased feature commits (F's). Nothing is orphaned.
 
    Recovery: the operator re-runs `/close-issue`. Step 1's worktree rebase onto local main replays all of `$FEATURE_BRANCH`'s commits (B', C', F's) onto the new origin tip, producing fresh B'', C'', F''s in the next attempt. No work is lost; no manual cherry-picking required. This bounded-retry-then-exit-cleanly model avoids an unbounded retry loop in the rare double-race case while keeping the "no force-push hazard" invariant on every exit path.
-
-   Note: this fallback's reset target (`origin/main`) differs from the existing Reset path's target (`$PRE_MERGE_SHA`, line 138) by design. The existing Reset path has the same divergence flaw whenever Sean has unpushed direct-to-main commits; aligning the two paths is tracked as **ENG-304** and is intentionally out of scope for ENG-257. Using `origin/main` here from the start avoids inheriting the flaw in the new code.
 
    **If `git rebase origin/main` in substep 3 conflicts**, apply the same conflict-handling rules as Step 1: the conflict shape here is similar — small documentation, list, or changelog collisions between two streams of work merging into main — and the same mechanical-vs-substantive distinction applies.
 
